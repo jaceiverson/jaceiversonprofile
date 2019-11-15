@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Jace Iverson</title>
+
+    <link rel="icon" href= "./static/images/salvador logo/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="./static/css/reset.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.css">
+    <link href="https://fonts.googleapis.com/css?family=PT+Mono" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Archivo+Black" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Merriweather&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="./static/css/index.css">
+    <link rel="stylesheet" type="text/css" href="./static/css/layout.css">
+
+  </head>
+  <body>
+
+    <section>
+      <header>
+        <!-- fixed-top makes the navbar stick to the top of the screen as the user is scrolling -->
+        <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <!-- ml-auto makes content of navbar to the left, but not the logo -->
+            <ul class="navbar-nav ml-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="#aboutme">About</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="./templates/projects.html">Projects</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="./templates/experiences.html">Experience</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="./templates/designs.html">Designs</a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </header>
+    </section>
+
+  <main>
+    <!-- *************************************
+      Jumbotron Section
+    -->
+    <div class="jumbotron jumbotron-fluid">
+      <div class="container-fluid">
+        <h1>Salvador Villalon</h1>
+        <p>Software Engineer Intern at Vusar</p>
+        <p>University of California, Irvine</p>
+        <p>B.S in Computer Science</p>
+      </div>
+    </div>
+
+
+    <!-- *************************************
+      About Me Section
+    -->
+    <div class="about-me" id="aboutme">
+      <div class="container">
+        <div class="row">
+
+          <div class="col-md-4">
+            <div class="about-picture">
+            </div>
+          </div>
+
+          <div class="col-md-8">
+            <div class="about-text">
+              <h2>About Salvador Villalon</h2>
+              <p>Hello, my name is Salvador Villalon. A lot of people call me Sal so feel free to call me that. I study computer science at the University of California, Irvine and I love it.</p>
+              <p>I was raised in <a href="https://www.visitmexico.com/en/main-destinations/baja-california/tecate">Tecate, Baja California</a>, then <a  href="https://www.visitmexico.com/en/main-destinations/baja-california/mexicali">Mexicali, Baja California</a>. I started my life in the U.S. in the small town of <a  href="https://en.wikipedia.org/wiki/Calexico,_California">Calexico, CA</a>.</p>
+              <p>I like to fill up my life with learning new things, teaching, and Computer Science. But when I have some time, I spent it analyzing shows such as <a  href="https://www.pokemon.com/us/">Pokémon</a> and <a  href="https://bokunoheroacademia.fandom.com/wiki/My_Hero_Academia_Wiki#Anime">My Hero Academia</a> (You can learn a lot about life from these shows) or playing tennis and exercising (I love a good sweat).</p>
+              <p>This place exists as a way to show the things I am working on. As I am always learning new things, this site is always going to be a work in progress.</p>
+              <p>Now that you know a little about me. Take a peek around! If you want to go on my LinkedIn or resume click on the buttons below.</p>
+              <p>Thank you for visiting!</p>
+              <img src="./static/images/salvador logo/transparent/logo_transparent_cropped.png" alt="Logo" style="width:250px;">
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- *************************************
+      Experiences Section
+    -->
+    <div class="experiences section">
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="title">
+              <h2>The Experience</h2>
+              <em><p class="project-title"> Get to know my experiences </p></em>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="row pics">
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="./static/documents/resume/Villalon_Salvador_Resume.pdf" role="button">Resume</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="./templates/projects.html" role="button">Projects</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="./templates/experiences.html" role="button">Experiences</a>
+          </div>
+        </div>
+
+      </div> <!-- End Experiences Container -->
+    </div> <!-- End Experiences Section -->
+
+    <!-- *************************************
+      Contact Section
+    -->
+    <div class="contact section">
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="title">
+              <h2> Contact </h2>
+              <em><p class="project-title">Get in touch</p></em>
+            </div>
+          </div>
+        </div>
+
+        <div class="row contact-btns">
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="mailto:salvav1@uci.edu" role="button">Email Me</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="https://github.com/salvillalon45" role="button">GitHub</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="https://www.linkedin.com/in/salvadorvillalon/" role="button">LinkedIn</a>
+          </div>
+        </div>
+
+      </div> <!-- End Contact Container -->
+    </div> <!-- End Contact Section -->
+
+
+</main>
+
+
+
+  <!-- *************************************
+    Footer Section
+  -->
+  <footer class="footer">
+    <p> Made by Salvador Villalon </p>
+    <ul>
+      <a  href="https://medium.com/@salvav1"><li>Medium</li></a>
+      <li> | </li>
+      <a  href="https://github.com/salvillalon45"><li>GitHub</li></a>
+      <li> | </li>
+      <a  href="https://www.linkedin.com/in/salvadorvillalon/"><li>LinkedIn</li></a>
+      <li> | </li>
+      <a  href="../index.html"><li>personal website version 2</li></a>
+      <li> | </li>
+      <a  href="http://salvador-villalon.appspot.com/"><li>personal website version 1</li></a>
+    </ul>
+  </footer>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+
+  </body>
+</html>
