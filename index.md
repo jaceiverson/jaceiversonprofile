@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Bootstrap Example</title>
+  <title>Jace Iverson</title>
   <meta charset="utf-8">
   <meta name="viewport">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
@@ -30,7 +30,7 @@
 
   <div class="row">
     <div class="col-sm-4">
-      <a target="_blank" href="res.pdf" class="btn btn-primary" role="button"><h3>Résumé</h3></a>
+      <a target="_blank" href=".docs/res.pdf" class="btn btn-primary" role="button"><h3>Résumé</h3></a>
     </div>
     <div class="col-sm-4">
       <a target="_blank" href="https://www.linkedin.com/in/jaceiverson" class="btn btn-primary" role="button"><h3>LinkedIn</h3></a>
