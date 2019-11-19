@@ -1,2 +1,2 @@
-# jaceiversonprofile
-my site about me
+# Jace Iverson
+personal portfolio site
