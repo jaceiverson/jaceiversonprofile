@@ -15,7 +15,7 @@ h2 {
 */
 /* Do this if you want to change the color of the navbar */
 .navbar.bg-dark {
-  background-color: black !important;
+  background-color: black;
 }
 
 .navbar-dark .navbar-nav .nav-link {
