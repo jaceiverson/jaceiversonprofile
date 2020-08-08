@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Jace Iverson</title>
+
+
+    <link rel="stylesheet" type="text/css" href="./static/css/reset.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.css">
+    <link href="https://fonts.googleapis.com/css?family=PT+Mono" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Archivo+Black" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Merriweather&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="./static/css/index.css">
+    <link rel="stylesheet" type="text/css" href="./static/css/layout.css">
+    <link rel="stylesheet" type="text/css" href="Arial.css">
+  </head>
+  <body>
+
+    <section>
+      <header>
+        <!-- fixed-top makes the navbar stick to the top of the screen as the user is scrolling -->
+        <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <!-- ml-auto makes content of navbar to the left, but not the logo -->
+            <ul class="navbar-nav ml-auto">
+              <li class="nav-item">
+              <!-- Need to create a projects folder in github
+              -->
+                <a class="nav-link" href="linkedin.com/in/jaceiverson">LinkedIn</a>
+              </li>
+              <li class="nav-item">
+              <!--You can put links in here. If you host on github, you can host files
+              by using the ./ method of calling a file-->
+                <a class="nav-link" href="#aboutme">About</a>
+              </li>
+              <li class="nav-item">
+              <!-- Need to create a projects folder in github
+              -->
+                <a class="nav-link" href="./templates/projects.html">Projects</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="./templates/experiences.html">Experience</a>
+              </li>
+              <li class="nav-item">
+
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </header>
+    </section>
+
+  <main>
+    <!-- *************************************
+      Jumbotron Section
+    -->
+    <div class="jumbotron text-right">
+
+        <h1>Jace Iverson</h1>
+        <p>Data Analyst at ICON Health and Fitness</p>
+        <p>B.A. in MIS from Utah State University</p>
+
+    </div>
+
+
+    <!-- *************************************
+      About Me Section
+    -->
+    <div class="about-me" id="aboutme">
+      <div class="container">
+        <div class="row">
+
+          <div class="col-md-4">
+            <div class="about-picture">
+            </div>
+          </div>
+
+          <div class="col-md-8">
+            <div class="about-text">
+              <h2>Hey, I'm Jace</h2>
+              <p>Line one.</p>
+              <p>Thank you for visiting!</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- *************************************
+      Button Section
+    -->
+    <div class="experiences section">
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="title">
+              <h2>The Experience</h2>
+              <em><p class="project-title"> Get to know my experiences </p></em>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="row pics">
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="." role="button">Resume</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="./templates/projects.html" role="button">Projects</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="./templates/experiences.html" role="button">Experiences</a>
+          </div>
+        </div>
+
+      </div> <!-- End Experiences Container -->
+    </div> <!-- End Experiences Section -->
+
+    <!-- *************************************
+      Contact Section
+    -->
+    <div class="contact section">
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="title">
+              <h2> Contact </h2>
+              <em><p class="project-title">Get in touch</p></em>
+            </div>
+          </div>
+        </div>
+
+        <div class="row contact-btns">
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="mailto:iverson.jace@gmail.com" role="button">Email Me</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="https://github.com/jaceiverson" role="button">GitHub</a>
+          </div>
+
+          <div class="col-md-4">
+            <a class="btn btn-primary" href="https://www.linkedin.com/in/jaceiverson/" role="button">LinkedIn</a>
+          </div>
+        </div>
+
+      </div> <!-- End Contact Container -->
+    </div> <!-- End Contact Section -->
+
+
+</main>
+
+
+
+  <!-- *************************************
+    Footer Section
+  -->
+  <footer class="footer">
+    <p> Created by Jace Iverson</p>
+    <ul>
+      <a  href="https://www.codewars.com/users/jaceiverson"><li>CodeWars Profile</li></a>
+      <li> | </li>
+      <a  href="https://github.com/jaceiverson"><li>GitHub</li></a>
+      <li> | </li>
+      <a  href="https://www.linkedin.com/in/jaceiverson/"><li>LinkedIn</li></a>
+      <li> | </li>
+    </ul>
+  </footer>
+
+  </body>
+</html>

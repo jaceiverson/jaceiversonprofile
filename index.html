@@ -1,69 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>Jace Iverson</title>
-  <meta charset="utf-8">
-  <meta name="viewport">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="./css/Arial.css">
-  <link rel="stylesheet" type="text/css" href="./css/layout.css">
-</head>
-<body>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jace Iverson</title>
+    <link rel="stylesheet" href="./css/bulma.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+  </head>
+  <header>
+    <!-- Main container -->
+    <nav class="level navbar is-black">
+      <!-- Left side -->
+        <div class="level-item">
+          <p class="subtitle is-3" style='margin-left:10%'>
+            <strong color='white'>JaceIverson.com</strong>
+          </p>
+        </div>
 
-<div class="jumbotron text-right" padding='40px'>
-  <h1>Jace Iverson</h1><br>
-  <p>Data Analyst at <a target='_blank' href='https://www.iconfitness.com'>ICON Health and Fitness</a></p>
-  <p>B.A. <a target='_blank' href='https://huntsman.usu.edu/advising/majors/management_information_systems_major'>MIS</a> from Utah State University</p>
-</div>
-<!--Image
-<img class="center" src="falls.jpg" alt="Vernal Falls" >
--->
-<div class="container" margin='0 auto'>
 
-  <div class="row">
-    <div class="col-md-4">
-      <a target="_blank" href="./docs/res.pdf" class="btn btn-primary" role="button"><h3>Résumé</h3></a>
-    </div>
-    <div class="col-md-4">
-      <a target="_blank" href="https://www.linkedin.com/in/jaceiverson" class="btn btn-primary" role="button"><h3>LinkedIn</h3></a>
-    </div>
-    <div class="col-md-4">
-      <a target="_blank" href="https://www.github.com/jaceiverson" class="btn btn-primary" role="button"><h3>GitHub</h3></a>
-    </div>
-    <div class='row'>
-      <a target="_blank" href="./bulma/bulmatest.html" class="btn btn-primary" role="button"><h3>newSite:beta</h3></a>
-    </div>
-    <div class='row'>
-      <br>
-    </div>
-
-    <div class='row'>
-      <div class = 'col-md-6'>
-        <img class = 'img-rounded' src='./img/falls.jpg' width="50%">
+      <!-- Right side -->
+      <div class="level-right" style='margin-right:10%'>
+        <p class="level-item"></p>
+        <p class="level-item"><a target='_blank'href="./docs/res.pdf">Resume</a></p>
+        <p class="level-item"><a class="button is-success" href='mailto:iverson.jace@gmail.com'>Email Me</a></p>
       </div>
-      <div class = 'col-md-6'>
-        <p>Hey, I'm Jace. I love learning, playing with code, and having a good time. Check out this picture of me hiking in Yosemite this summer.</p>
-      </div>
-    </div>
+    </nav>
+  </header>
+  <body>
+
+<section class="section">
+  <div class="container">
+    <h1 class="title">
+      Jace Iverson
+    </h1>
+    <p class="subtitle">
+      My personal porfolio
+    </p>
   </div>
+
+<div class="columns">
+<div class="column">
+<!--I will put a nice list/menu thing of some project here.-->
 </div>
-<!--This will be a footer-->
-<div class="footer">
-  <p>Made by Jace</p>
-  <ul>
-    <li>
-      <a href='linkedin.com/in/jaceiverson'>LinkedIn</a>
-    </li>
-    <li>
+<div class="column">
+  <p>Hey, I'm Jace.</p><br>
+  <p>
+    I am a data analyst for ICON Health and Fitness.
+    Currently I am working on projects for various stages of the supply chain.
+    I enjoy using Python, Tableau, and SQL to help automate the different reporting processes and make time for the important decisions.
+    I graduated from Utah State University in Logan, UT in Management Information Systems.
+    As a proud Aggie, I learned the merits of hard work and collaboration;
+    I use these skills to help ICON improve day by day.
 
-    </li>
-    <li>
-
-    </li>
-  </ul>
+    </p>
+    <br><br>
+    A little about me; I like to have a good time and enjoy playing games, being outdoors,
+    watching YouTube (yes it is possible to like both), and spending time
+    with my wife. When I am not working a personal project you can find me
+    watching sports or whatever series me and my wife are into right now.
+    <br><br>
+    Enjoy the site.
+  </p>
 </div>
 
-</body>
+<div class="column">
+  <figure class='image'>
+    <img style='border-radius:10%'src="./img/falls.jpg" alt="Jace at Vernal Falls-Yosemite National Park">
+  </figure>
+</div>
+<div class="column">
+<!--I will put something else here TBD.-->
+</div>
+</div>
+</section>
+  <section class="section">
+      <div class="columns">
+        <div class='column is-one-third'>
+          <a class="column button is-black" target='_blank'href='./docs/res.pdf'>Resume</a>
+        </div>
+        <div class="column">
+          <a class="column button is-black" target='_blank' href='https://www.linkedin.com/in/jaceiverson'>
+          LinkedIn
+          </a>
+        </div>
+        <div class="column">
+          <a class="column button is-black"target='_blank'href="https://jaceiverson.github.io/">GitHub</a>
+        </div>
+      </div>
+
+  </section>
+  </body>
 </html>
