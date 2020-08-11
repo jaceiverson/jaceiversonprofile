@@ -8,20 +8,41 @@
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
   </head>
   <header>
+      <style>
+  @media screen and (max-width: 1023px) {
+    /* show mavbar-menu on screen less than 1024px */
+    #menu-toggle:checked ~ #paliNavbarMenu { display: block; }
+
+    /* make navbar-burger become cross on screen less than 1024px */
+    #menu-toggle:checked + .navbar-brand > label > span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+    #menu-toggle:checked + .navbar-brand > label > span:nth-child(2) { opacity: 0; }
+    #menu-toggle:checked + .navbar-brand > label > span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+    /* you can also replace + with ~ in above three rules and get the same result */
+  }
+</style>
     <!-- Main container -->
 <nav class="navbar is-black" role="navigation" aria-label="main navigation">
+  <input type="checkbox" id="menu-toggle" class="is-hidden">
   <div class="navbar-brand">
-    <a class="navbar-item subtitle is-3" href="jaceiverson.com" style="padding-left: 50px"><strong style="color:white">JaceIverson.com</strong>
+    <a class="navbar-item" href="jaceiverson.com"><strong style="color:white; padding-left: 50px; padding-right: 50px">
+           JaceIverson.com
+    </strong>
+
     </a>
+
+    <label for="menu-toggle" class="navbar-burger burger">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </label>
   </div>
 
-    <div id="navbarBasicExample" class="navbar-menu">
+
+  <div id="paliNavbarMenu" class="navbar-menu">
+      <div class="navbar-start">
+        <p class="level-item"><a class="button is-success" href='mailto:iverson.jace@gmail.com'>Email Me</a></p>
+      </div>
     <div class="navbar-end" style="padding-right: 50px">
-        <div class="navbar-item has-dropdown is-hoverable">
-                <a class="navbar-link">
-                  More
-                </a>
-            <div class="navbar-dropdown">
                       <a href="projects.html" class="navbar-item">
                         Projects
                       </a>
@@ -37,13 +58,11 @@
                     <a target='_blank' href="https://www.linkedin.com/in/jaceiverson" class="navbar-item">
                         LinkedIn
                       </a>
-            </div>
-
-        </div>
-        <p class="level-item"><a class="button is-success" href='mailto:iverson.jace@gmail.com'>Email Me</a></p>
-      </div>
     </div>
-    </nav>
+
+  </div>
+</nav>
+
   </header>
   <body>
 

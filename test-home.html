@@ -1,69 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Jace Iverson</title>
-    <link rel="stylesheet" href="./css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
-  </head>
-  <header>
-      <style>
-  @media screen and (max-width: 1023px) {
-    /* show mavbar-menu on screen less than 1024px */
-    #menu-toggle:checked ~ #paliNavbarMenu { display: block; }
-
-    /* make navbar-burger become cross on screen less than 1024px */
-    #menu-toggle:checked + .navbar-brand > label > span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
-    #menu-toggle:checked + .navbar-brand > label > span:nth-child(2) { opacity: 0; }
-    #menu-toggle:checked + .navbar-brand > label > span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
-    /* you can also replace + with ~ in above three rules and get the same result */
-  }
-</style>
-    <!-- Main container -->
-<nav class="navbar is-black" role="navigation" aria-label="main navigation">
-  <input type="checkbox" id="menu-toggle" class="is-hidden">
-  <div class="navbar-brand">
-    <a class="navbar-item"><strong style="color:white; padding-left: 50px">
-            JaceIverson.com
-    </strong>
-
-    </a>
-
-    <label for="menu-toggle" class="navbar-burger burger">
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-    </label>
-  </div>
-
-
-  <div id="paliNavbarMenu" class="navbar-menu">
-      <div class="navbar-start" style="padding-left: 50px">
-        <p class="level-item"><a class="button is-success" href='mailto:iverson.jace@gmail.com'>Email Me</a></p>
-      </div>
-    <div class="navbar-end" style="padding-right: 50px">
-                      <a href="projects.html" class="navbar-item">
-                        Projects
-                      </a>
-                      <a href="skills.html" class="navbar-item">
-                        Skills
-                      </a>
-                      <a target='_blank' href="./docs/pdf-res.pdf" class="navbar-item">
-                        Resume
-                      </a>
-                      <a target='_blank' href="https://jaceiverson.github.io/" class="navbar-item">
-                        GitHub
-                      </a>
-                    <a target='_blank' href="https://www.linkedin.com/in/jaceiverson" class="navbar-item">
-                        LinkedIn
-                      </a>
-    </div>
-
-  </div>
-</nav>
-
-  </header>
+<header>
+  <?php include "./header.html" ?>
+</header>
   <body>
 
 <section class="section">
