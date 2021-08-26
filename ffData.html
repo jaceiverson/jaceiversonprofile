@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="import" href="import/header-template.html">
+    <link rel="stylesheet" href="./css/bulma.min.css">
+
+    <script type="text/javascript" src="ffData.json"></script>
+    <script type="text/javascript" >
+        function load() {
+            var mydata = JSON.parse(data);
+            alert(mydata.length);
+
+            var div = document.getElementById('data');
+
+            for(var i = 0;i < mydata.length; i++)
+            {
+                div.innerHTML = div.innerHTML + "<p class='inner' id="+i+">"+ mydata[i].name +"</p>" + "<br>";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <script>
+    var doc = document.querySelector('link[rel="import"]').import;
+    // Grab DOM from doc.html's document.
+    var text = doc.querySelector('.ff_weekly_results.html');
+    document.body.appendChild(text.cloneNode(true));
+    </script>
+    <link   rel="import" href="ff_weekly_results.html">
+
+
+    <div id="data">
+
+    </div>
+</body>
+
+
+</html>
