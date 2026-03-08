@@ -919,6 +919,52 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 }
 
 /* ===========================
+   AI Section
+   =========================== */
+.human-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+  background: rgba(19, 154, 67, 0.08);
+  border: 1px solid rgba(19, 154, 67, 0.25);
+  border-radius: 100px;
+  padding: 0.2rem 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.ai-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: rgba(20, 54, 66, 0.08);
+  border: 1px solid rgba(20, 54, 66, 0.2);
+  border-radius: 100px;
+  padding: 0.2rem 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.ai-image-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ai-caption {
+  font-size: 0.78rem;
+  color: var(--grey);
+  text-align: center;
+  font-style: italic;
+  margin: 0;
+  padding: 0 0.5rem;
+}
+
+/* ===========================
    Utility
    =========================== */
 .mt-1 { margin-top: 0.5rem; }
