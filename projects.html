@@ -1,174 +1,203 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Jace Iverson</title>
-    <link rel="stylesheet" href="./css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
-  </head>
-  <header>
-      <style>
-  @media screen and (max-width: 1023px) {
-    /* show mavbar-menu on screen less than 1024px */
-    #menu-toggle:checked ~ #paliNavbarMenu { display: block; }
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects — Jace Iverson</title>
+  <meta name="description" content="A collection of projects by Jace Iverson — from data pipelines and APIs to web development.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/style.css">
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-175301597-1');
+  </script>
+</head>
+<body>
 
-    /* make navbar-burger become cross on screen less than 1024px */
-    #menu-toggle:checked + .navbar-brand > label > span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
-    #menu-toggle:checked + .navbar-brand > label > span:nth-child(2) { opacity: 0; }
-    #menu-toggle:checked + .navbar-brand > label > span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
-    /* you can also replace + with ~ in above three rules and get the same result */
-  }
-</style>
-    <!-- Main container -->
-<nav class="navbar is-black" role="navigation" aria-label="main navigation">
-  <input type="checkbox" id="menu-toggle" class="is-hidden">
-  <div class="navbar-brand">
-    <a class="navbar-item" href="https://jaceiverson.com"><strong style="color:white; padding-left: 50px; padding-right: 50px">
-           JaceIverson.com
-    </strong>
-
-    </a>
-
-    <label for="menu-toggle" class="navbar-burger burger">
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-    </label>
-  </div>
-
-
-  <div id="paliNavbarMenu" class="navbar-menu">
-      <div class="navbar-start">
-        <p class="level-item"><a class="button is-success" href='mailto:iverson.jace@gmail.com'>Email Me</a></p>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+        <a href="index.html" class="navbar-brand">Jace Iverson</a>
+        <button class="navbar-toggle" id="navToggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="navbar-nav" id="navMenu">
+          <li><a href="index.html" class="navbar-link">Home</a></li>
+          <li><a href="projects.html" class="navbar-link active">Projects</a></li>
+          <li><a href="resume.html" class="navbar-link">Resume</a></li>
+          <li><a href="links.html" class="navbar-link">Links</a></li>
+          <li><a href="mailto:iverson.jace@gmail.com" class="navbar-link navbar-cta">Email Me</a></li>
+        </ul>
       </div>
-    <div class="navbar-end" style="padding-right: 50px">
-                      <a href="projects.html" class="navbar-item">
-                        Projects
-                      </a>
-                      <a href="skills.html" class="navbar-item">
-                        Skills
-                      </a>
-                      <a target='_blank' href="./docs/Oct-2021.pdf" class="navbar-item">
-                        Resume
-                      </a>
-                      <a target='_blank' href="https://jaceiverson.github.io/" class="navbar-item">
-                        GitHub
-                      </a>
-                    <a target='_blank' href="https://www.linkedin.com/in/jaceiverson" class="navbar-item">
-                        LinkedIn
-                      </a>
     </div>
+  </nav>
 
-  </div>
-</nav>
-
-  </header>
-  <body>
-
-<section class="section">
-  <div class="container">
-    <h1 class="title">
-      My Projects
-    </h1>
-    <p class="subtitle">I am still working on this. Bear with me</p>
-  </div>
-
-<section class="section">
-
-
-  <div class="row">
-    <div class ="columns">
-      <div class="column subtitle">
-        <b>This site</b>
-      </div>
-      <div class="column">
-        Wanting to learn more, I built this site. It isn't pretty, but it is mine. 
-      </div>
-      <div class="column"></div>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <h1>Projects</h1>
+      <p>Things I've built — professionally, academically, and just for fun.</p>
     </div>
   </div>
 
-
-  <div class="row">
-    <div class ="columns">
-      <div class="column subtitle">
-        <b>Riot API</b>-MIS5350
-      </div>
-      <div class="column">
-    Being a fan of video games,
-    I worked on a project using Python and one of its frameworks (Flask) to create a site that pulled data from my own API.
-    The API included GET, POST, and DELETE functionality.
-      </div>
-      <div class="column"></div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class ="columns">
-      <div class="column subtitle">
-        <b>ICON Automation</b>-ICON Health and Fitness
-      </div>
-      <div class="column">
-      <!--Write about RIOT API Project-->
-      </div>
-      <div class="column"></div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class ="columns">
-      <div class="column subtitle">
-        <b>CRM Change</b>-The Insurance Center
-      </div>
-      <div class="column">
-      <!--Write about RIOT API Project-->
-      Over the course of 8 months, I worked with a team of 12 people across 2 locations to migrate management systems. 
-      This included onsite trainings, multiple classes and Q&A sessions. This was one of the hardest things I have ever done.
-      Anyone who has transitioned sytems, knows what I am talking about. 
-      </div>
-      <div class="column"></div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class ="columns">
-      <div class="column subtitle">
-        <b>FBAC Order Processing System</b>MIS5300
-      </div>
-      <div class="column">
-      <!--Write about RIOT API Project-->
-      In college we built a order processing system for a farmer. It included an admin portal where the admin could download reports, 
-      view orders, and see individual order history. It was build using MySQL and PHP.
-      </div>
-      <div class="column"></div>
-    </div>
-  </div>
-
-</section>
-
+  <!-- Projects Grid -->
   <section class="section">
-      <div class="columns">
-                <div class="column">
-          <a class="column button is-black" href="projects.html">Projects</a>
-        </div>
-                <div class="column">
-          <a class="column button is-black"  href='skills.html'>
-          Skills
+    <div class="container">
+      <div class="grid-3">
+
+        <!-- Project: background-auto-updater -->
+        <div class="card">
+          <div class="card-icon">🖼️</div>
+          <h3>Background Auto-Updater</h3>
+          <p>
+            Automatically updates your desktop wallpaper on a schedule using Python.
+            Pulls images from a configured source and applies them without any manual steps.
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag">Automation</span>
+          </div>
+          <a href="https://github.com/jaceiverson/background-auto-updater" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
           </a>
         </div>
-                <div class='column'>
-          <a class="column button is-black" target='_blank'href='./docs/Oct-2021.pdf'>Resume</a>
-        </div>
-        <div class="column">
-          <a class="column button is-black" target='_blank' href='https://www.linkedin.com/in/jaceiverson'>
-          LinkedIn
+
+        <!-- Project: GHIN -->
+        <div class="card">
+          <div class="card-icon">⛳</div>
+          <h3>GHIN Alternate Handicap</h3>
+          <p>
+            Alternative handicap metrics and calculations using the GHIN API. Goes beyond
+            the standard Best-8 handicap to surface Last 4, Last 8, Drop 4HL, standard
+            deviation, and next-round projections — rendered as rich terminal tables and charts.
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag tag-accent">GHIN API</span>
+            <span class="tag">Data Analysis</span>
+          </div>
+          <a href="https://github.com/jaceiverson/ghin_golf" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
           </a>
         </div>
-        <div class="column">
-          <a class="column button is-black"target='_blank'href="https://jaceiverson.github.io/">GitHub</a>
+
+        <!-- Project: aoc-util -->
+        <div class="card">
+          <div class="card-icon">🎄</div>
+          <h3>Advent of Code Utility</h3>
+          <p>
+            A tool to automate web scraping, file creation, and project structure setup for
+            Advent of Code. Includes detailed documentation so anyone can replicate the workflow
+            and jump straight into solving puzzles.
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag">Automation</span>
+            <span class="tag">Web Scraping</span>
+          </div>
+          <a href="https://github.com/jaceiverson/aoc-util" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
+          </a>
+        </div>
+
+        <!-- Project: geoguessr -->
+        <div class="card">
+          <div class="card-icon">🌍</div>
+          <h3>GeoGuessr</h3>
+          <p>
+            A Python project built around the GeoGuessr platform. Interfaces with the
+            GeoGuessr API to track, analyze, or automate game-related workflows.
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag tag-accent">GeoGuessr API</span>
+          </div>
+          <a href="https://github.com/jaceiverson/geoguessr" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
+          </a>
+        </div>
+
+        <!-- Project: Personal Portfolio Site -->
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <h3>Personal Portfolio Site</h3>
+          <p>
+            This site — built from scratch with plain HTML, CSS, and a Python-powered
+            resume generator. Hosted on GitHub Pages with a custom domain. Resume is driven
+            from a single YAML file.
+          </p>
+          <div class="card-tags">
+            <span class="tag">HTML</span>
+            <span class="tag">CSS</span>
+            <span class="tag">Python</span>
+            <span class="tag">GitHub Pages</span>
+          </div>
+          <a href="https://github.com/jaceiverson/jaceiversonprofile" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
+          </a>
+        </div>
+
+        <!-- Project: Premier League Discord -->
+        <div class="card">
+          <div class="card-icon">⚽</div>
+          <h3>Premier League Discord Bot</h3>
+          <p>
+            A Discord bot that facilitates week-to-week Premier League match predictions.
+            Uses the Fotmob, IMGBB, Discord, and AWS APIs, with reaction events to track
+            weekly picks and season-long statistics via JSON.
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag">Discord API</span>
+            <span class="tag tag-accent">AWS</span>
+          </div>
         </div>
 
       </div>
-  </body>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section section-alt section-sm">
+    <div class="container" style="text-align:center;">
+      <h2 class="mb-2">Want to collaborate?</h2>
+      <p class="text-muted mb-4" style="max-width:460px; margin-left:auto; margin-right:auto;">
+        I'm always interested in interesting problems. Feel free to reach out.
+      </p>
+      <a href="mailto:iverson.jace@gmail.com" class="btn btn-primary">Get in Touch</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">Jace Iverson</span>
+        <div class="footer-links">
+          <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:iverson.jace@gmail.com">Email</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a coffee</a>
+        </div>
+        <span>&copy; <script>document.write(new Date().getFullYear())</script> Jace Iverson</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+  </script>
+</body>
 </html>

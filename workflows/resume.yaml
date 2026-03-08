@@ -1,0 +1,406 @@
+# ============================================================
+#  Resume data source — edit this file, then run:
+#    python3 workflows/generate_resume.py
+#  to regenerate resume.html.
+# ============================================================
+
+name: Jace Iverson
+title: Data Engineer
+
+contact:
+  email: iverson.jace@gmail.com
+  website: jaceiverson.com
+  website_url: https://jaceiverson.com
+  linkedin: linkedin.com/in/jaceiverson
+  linkedin_url: https://www.linkedin.com/in/jaceiverson
+  github: github.com/jaceiverson
+  github_url: https://github.com/jaceiverson
+
+summary: >
+  Data Engineer with a background in Management Information Systems and 5+ years of experience
+  building distributed ETL/ELT pipelines, cloud infrastructure, and developer tooling. Deep expertise
+  in Python, dbt, Snowflake, AWS, and Prefect. Track record of automating complex workflows,
+  reducing costs, and enabling data-driven decisions at scale.
+
+experience:
+  - title: Senior Data Engineer
+    company: Terakeet
+    location: Syracuse, NY (Remote)
+    dates: "Apr 2025 – Present"
+
+  - title: Data Engineer
+    company: Terakeet
+    location: Syracuse, NY (Remote)
+    dates: "Sep 2023 – Apr 2025"
+    bullets:
+      - Plan, build, and maintain ETL/ELT pipelines storing billions of rows of data in Snowflake and Google BigQuery.
+      - Develop and maintain deployment automation for Data Engineering pipelines through GitHub Actions.
+      - Primary maintainer of multiple private GitHub repos, each with custom CI/CD strategies and workflows.
+      - Collaborate with Data Science team to align pipeline architecture with modeling and AI needs.
+
+  - title: Senior Business Intelligence Analyst
+    company: Terakeet
+    location: Syracuse, NY (Remote)
+    dates: "Jun 2022 – Aug 2023"
+    bullets:
+      - Built automated reports to analyze raw HTML data and identify website changes period-over-period.
+      - Developed custom API wrappers and ETL pipelines for keyword tracking and analytics platforms.
+      - Analyzed 30+ GSC properties for CTR patterns using Snowflake; delivered Tableau dashboards to leadership.
+
+  - title: SEO Analyst
+    company: Terakeet
+    location: Syracuse, NY (Remote)
+    dates: "Sep 2020 – Jun 2022"
+    bullets:
+      - Built data pipelines using Python and Google App Script to automate reporting workflows.
+      - Organized and taught weekly Python courses helping team members implement Python in daily work.
+      - Automated Google Doc template creation from Google Sheets, saving over 4,000 hours monthly.
+      - Created data visualizations and dashboards in Tableau to communicate SEO performance to clients.
+
+  - title: Solutions Team Analyst
+    company: "iFit Health and Fitness Inc. (Home Delivery Team)"
+    location: Logan, UT
+    dates: "Jan 2020 – Sep 2020"
+    bullets:
+      - Automated 50+ hours of recurring work processes using Python, MSSQL, Google Sheets, and Tableau.
+      - Created interactive dashboards to visualize supply chain data and KPIs; managed Tableau Online Site.
+      - Saved $100,000/year through contract analysis with a new carrier.
+      - Predicted total delivery costs monthly and coordinated with accounting to validate results.
+
+  - title: Junior Data Analyst
+    company: Mechanical and Aerospace Engineering Department, Utah State University
+    location: Logan, UT
+    dates: "Sep 2020 – Dec 2020"
+    bullets:
+      - Visualized 5 years of departmental data for ABET accreditation using Tableau and Excel.
+      - Provided weekly summaries to ABET supervisor in preparation for department meetings.
+
+  - title: Network Operations Center Engineer Intern
+    company: "The Church of Jesus Christ of Latter-Day Saints — Information and Communication Services"
+    location: Salt Lake City, UT
+    dates: "May 2019 – Aug 2019"
+    bullets:
+      - Monitored global WAN comprising over 10,000 network devices.
+      - Oversaw all internal and external applications including 15+ public-facing systems.
+      - Performed routine maintenance on 2,000+ Windows and Linux servers.
+
+  - title: "Licensed Property & Casualty Insurance Agent & IT Specialist"
+    company: The Insurance Center LLC
+    location: Ogden, UT
+    dates: "Aug 2016 – Dec 2019"
+    bullets:
+      - Managed 6 company websites, 40+ company email addresses, and 15 VoIP phones.
+      - Trained Ogden, Logan, and Midway agencies on a new internet-based phone system.
+      - Designed data-driven presentations tailored to top clients and prospects.
+
+projects:
+  - heading: "2025 – Present"
+  - name: Cost Tracking Dashboard
+    subtitle: "Q1 2025 – Q2 2025 | Terakeet"
+    bullets:
+      - Built 12 dbt models from 5 sources of Snowflake query history data into a format ready for visualization.
+      - Planned and implemented a query tagging strategy across 4 tools to attribute Snowflake compute costs and AI consumption down to the client and query level.
+      - Designed and built a Sigma dashboard to surface those insights for business stakeholders.
+
+  - name: AI Insights Project
+    subtitle: "Terakeet"
+    bullets:
+      - Primary engineer on a dbt project comprising 26 models across 14 unique sources.
+      - Incorporated 3 Snowflake AI functions, AWS Comprehend integration, and recursive CTEs for parsing nested JSON with changing schema.
+      - Coordinated dependencies outside of Snowflake, including a Postgres database synced via PeerDB and external AWS Lambda proxies.
+
+  - name: URL Classifier via dbt & Snowflake AI
+    subtitle: "Terakeet"
+    bullets:
+      - Developed a dbt model using custom Snowflake AI functions to classify unique URLs sourced from upstream model outputs.
+
+  - name: AWS Comprehend Pipeline
+    subtitle: "Terakeet"
+    bullets:
+      - Developed a pipeline using Prefect, Snowpark, and dbt to extract targeted sentiment analysis from AWS Comprehend.
+
+  - name: TAM Project
+    subtitle: "Q1 2024 – Present | Terakeet"
+    bullets:
+      - Developed a distributed pipeline using FastAPI and Prefect with Dask, AWS Elasticache, and Snowflake — targeting 150,000 requests processed per hour.
+      - Primary maintainer of 3 private GitHub repos, each with its own CI/CD strategy.
+      - Built a robust test suite with mocked Snowflake, Prefect, AWS, and request objects.
+      - Incorporated retry mechanisms on key API calls; collaborated regularly with Data Science team.
+
+  - name: Premier League Discord Bot
+    subtitle: "Aug 2024 – Present | Personal"
+    bullets:
+      - Built a bot using Fotmob, IMGBB, Discord, and AWS APIs to facilitate weekly game predictions.
+      - Used reaction events to track weekly predictions and season-long statistics via JSON data structures.
+
+  - name: GHIN Alternate Handicap Calculator
+    subtitle: "Personal"
+    links:
+      - label: GitHub Repo
+        url: https://github.com/jaceiverson/ghin_golf
+    bullets:
+      - Built a pipeline to calculate alternative golf handicap values using internal GHIN APIs.
+      - Increased insight into playing ability through alternative calculations and visualizations.
+
+  - name: Tee Time Selector
+    subtitle: "Personal"
+    bullets:
+      - Consolidated available tee times by querying APIs from multiple tee-time booking websites.
+
+  - heading: "2023"
+  - name: GitHub Action Deployment Automation
+    subtitle: "Q3 2023 | Terakeet"
+    bullets:
+      - Created deployment pipelines for Prefect and Snowflake stored procedures inside GitHub Actions.
+      - Built and tested conditional deploys based on branch and commit status; significantly reduced manual deployment time.
+
+  - name: Keyword Research Pipeline Tool
+    subtitle: "Q3 2023 | Terakeet"
+    bullets:
+      - Built a system that takes user input, makes API calls to 6 different endpoints, conditionally transforms data, and displays final output.
+      - Wrote documentation covering API costs, input types, and usage tips; implemented logging and error handling.
+
+  - name: CTR Analysis to Revamp Internal Tooling
+    subtitle: "Q1 2023 | Terakeet"
+    bullets:
+      - Analyzed 30+ GSC properties and separated data into 3 CTR buckets for use in internal tooling.
+      - Used Snowflake to clean data and separate branded vs non-branded terms using regex.
+      - Delivered interactive Tableau visualizations to upper management.
+
+  - name: Seasonality Metrics Comparative Analysis
+    subtitle: "Q1 2023 | Terakeet"
+    bullets:
+      - Compiled GSC, MOZ, SEMRush, and Google Trends data in Snowflake using their respective APIs.
+      - Built a comprehensive Tableau dashboard outlining multiple methods of computing seasonality.
+      - Presented recommendations and deployment plan to internal stakeholders.
+
+  - name: Asset Graph Project
+    subtitle: "Q1 2023 – Present | Terakeet"
+    bullets:
+      - Built a data lake comprising 5 external API sources called via AWS Lambda.
+      - Automated ingestion into Snowflake using UDFs and stored procedures (ELT); scheduled via Prefect.
+
+  - heading: "2022"
+  - name: app.getstat.com API Wrapper
+    subtitle: "Q2 2022 | Terakeet"
+    bullets:
+      - Developed a custom API wrapper for a keyword tracking platform to facilitate monthly reports.
+      - Built an ETL pipeline to clean and store data long-term in Google BigQuery.
+
+  - name: AppsScript Email Automation
+    subtitle: "Q1 2022 | Terakeet"
+    bullets:
+      - Automated email notifications from Google Sheets based on cell criteria using AppsScript.
+      - Notified project managers when tasks were ready via HTML emails with direct cell links.
+
+  - name: Content Audit Automation
+    subtitle: "Jan 2022 – Present | Terakeet"
+    bullets:
+      - Scrapes published pages from a Sheet, compares the live site to recommended changes, and produces an implementation scorecard.
+      - Currently saves each content specialist approximately 10 hours per audit.
+
+  - heading: "2021"
+  - name: Python Course Instructor
+    subtitle: "Oct 2021 – Present | Terakeet"
+    bullets:
+      - Organized and taught weekly Python courses for team members, from fundamentals through advanced topics.
+      - Prepared Colab notebooks with examples and assignments covering database connections, web scraping, and APIs.
+
+  - name: Advent of Code Automation
+    subtitle: "Dec 2021 | Personal"
+    bullets:
+      - Created a tool to automate web scraping, file creation, and project structure setup for Advent of Code.
+      - Provided detailed documentation for replication; uses engaging challenges to drive continued Python learning.
+
+  - name: Project Management System Integration
+    subtitle: "Dec 2021 | Terakeet"
+    bullets:
+      - Integrated Asana with Google Sheets via AppsScript for real-time task creation and retrieval using the Asana API.
+      - Reduced confusion and provided a centralized source of truth for project managers.
+
+  - name: FHS Golf Analysis & Visualization
+    subtitle: "Sep 2021 | Personal"
+    links:
+      - label: GitHub Repo
+        url: https://github.com/jaceiverson/deseret-hs-sports-api
+    bullets:
+      - Provided detailed comparative statistics for a local high school golf team.
+      - Displayed data in a Google Data Studio visualization for easy interpretation by coaches and players.
+
+  - name: Reporting Automation
+    subtitle: "Sep 2021 | Terakeet"
+    bullets:
+      - Developed automated weekly and monthly reporting from GA and GSC data.
+      - Files saved to Google Drive; email confirmations with performance comparisons sent to key stakeholders.
+
+  - name: Projections Tool
+    subtitle: "Q3 2021 – Q4 2021 | Terakeet"
+    bullets:
+      - Created a quick way to do seasonal time series projections using GSC or GA data.
+      - Leveraged Facebook's open-source Prophet library to generate projection visualizations.
+
+  - name: People Also Ask Tool
+    subtitle: "Q3 2021 | Terakeet"
+    bullets:
+      - Developed a tool to analyze the first 4-5 PAA questions from a SERP result.
+
+  - name: "ELO & Google Sheets"
+    subtitle: "Q2 2021 – Present | Personal"
+    links:
+      - label: GitHub Repo
+        url: https://github.com/jaceiverson/Elo-Project
+    bullets:
+      - Built an ELO rating system integrated with Google Sheets including custom App Scripts to maintain formatting.
+
+  - name: Google Doc Template Creation with Apps Script
+    subtitle: "Jun 2021 | Terakeet"
+    bullets:
+      - Created an interactive menu for document creation from Google Sheets data fields.
+      - Saved over 4,000 hours monthly; reduced hiring need from 8 employees down to 2.
+
+  - name: Chess.com API Project
+    subtitle: "Jun 2021 | Personal"
+    bullets: []
+
+  - name: Deseret Sports Web Scraping Project
+    subtitle: "May 2021 | Personal"
+    bullets: []
+
+  - name: Screaming Frog Crawl Comparison
+    subtitle: "Q2 2021 | Terakeet"
+    bullets:
+      - Built a comparison tool providing a detailed diff between two Screaming Frog crawls.
+      - Outputs added/removed URLs and each changed element per URL, plus a summary page.
+
+  - name: pandas-compare (PyPI)
+    subtitle: "Q2 2021 | Personal"
+    bullets: []
+
+  - name: Google Trends Custom Extraction
+    subtitle: "Q2 2021 | Terakeet"
+    bullets:
+      - Built a Colab notebook that extracts queries from a Sheet and outputs Google Trends data.
+      - Displayed results in an interactive Google Data Studio dashboard grouped by query category.
+
+  - name: GSC Projections
+    subtitle: "Q1 2021 | Terakeet"
+    bullets:
+      - Forecasted a two-year expected plan for organic site traffic using GSC data.
+      - Built a reusable Colab process for anyone with time series CSV data to generate predictions.
+
+  - name: GSC to GBQ Data Pipeline
+    subtitle: "Q1 2021 | Terakeet"
+    bullets:
+      - Connected Google Search Console API to Google BigQuery and automated the full ETL process.
+      - Built tests, logs, and automated morning email reports; added a fail-safe to auto-recover from errant API pulls.
+
+  - name: slackbot
+    subtitle: "Q1 2021 – Present | Terakeet"
+    bullets: []
+
+  - heading: "2020"
+  - name: googlewrapper (PyPI)
+    subtitle: "Q4 2020 – Present | Personal"
+    bullets:
+      - Developed and maintain a custom Python API wrapper for Google products.
+      - "Products: Google Analytics, Search Console, Sheets, Docs, BigQuery, Pagespeed, and Calendar."
+
+  - name: Personal Portfolio Site
+    subtitle: "Jan 2020 – Present | Personal"
+    bullets:
+      - Designed and built a personal portfolio site with plain HTML, CSS, and vanilla JS.
+      - Hosted on GitHub Pages with a custom domain via CNAME.
+
+  - heading: "2019"
+  - name: FBAC Online Order Processing System
+    subtitle: "Jan 2019 – May 2019 | MIS5900 (Program Capstone)"
+    bullets:
+      - Created an online ordering system to replace a voicemail-based ordering workflow.
+      - Built using Laravel (PHP) and MySQL; utilized UML techniques for documentation and system architecture.
+
+  - name: Custom Riot Games API & Flask App
+    subtitle: "May 2019 | College Project"
+    bullets: []
+
+  - name: Management System Change
+    subtitle: "Aug 2018 – Aug 2019 | The Insurance Center"
+    bullets:
+      - Led agency (4 locations, 15 agents) through a management system migration for the first time in 19 years.
+      - Attended weekly WebEx trainings and passed instruction to employees and management.
+      - Analyzed data conversion to verify accuracy; applied change management principles to drive adoption.
+
+  - heading: "2018"
+  - name: BI Group Alumni Research
+    subtitle: "Sep 2018 – Dec 2018 | BI Group"
+    bullets:
+      - Created a specialized Qualtrics survey for BI Group alumni to analyze career relationships and paths.
+      - Collaborated on analysis with master-level MHR and MMIS students.
+      - Organized a presentation for the MIS department head to promote interdisciplinary student groups.
+
+  - name: Claim Analysis
+    subtitle: "Jun 2018 | The Insurance Center"
+    bullets:
+      - Created models to predict customer claim trends and visualize cost breakdowns of various coverage options.
+      - Retained a top client by presenting data-driven coverage analysis to company executives.
+
+  - name: Overland Peak Resort Analysis
+    subtitle: "Feb 2018 – May 2018 | BI Group"
+    bullets:
+      - Performed advanced SQL queries on a relational database with 203,140 data points.
+      - Applied linear regression, cluster, and decision tree analysis in RapidMiner to solve business problems.
+
+education:
+  - degree: B.A. Management Information Systems
+    school: Jon M. Huntsman School of Business, Utah State University
+    location: Logan, UT
+    date: December 2019
+    bullets:
+      - Member of the exclusive Huntsman Scholar Program, providing international business experience.
+      - Member of BI Group and Association of Information Systems; Volunteer Ambassador of BlueCrew.
+      - "Dean's List: Spring 2017, Fall 2017, Spring 2018."
+      - Recipient of the Dean's Scholarship (academic-based 2-year full-tuition scholarship).
+
+leadership:
+  - title: Huntsman Scholar Peer Mentor
+    organization: Jon M. Huntsman School of Business, Utah State University
+    location: Logan, UT
+    dates: "Aug 2018 – Present"
+    bullets:
+      - Mentored 5 fellow scholars through their college experience at Utah State.
+      - Set and followed up on semester goals; assisted peers in finding academic and professional resources.
+
+  - title: BI Group Team Lead
+    organization: BI Group, Utah State University
+    location: Logan, UT
+    dates: "Aug 2018 – Dec 2019"
+    image: img/bi-group.jpeg
+    bullets:
+      - Led a select group of MIS students performing analytics projects for local companies.
+      - Advised, consulted, and presented analytical findings directly to business clients.
+
+  - title: "Secretary & Volunteer Ambassador"
+    organization: BlueCrew (USU Student Association)
+    location: Logan, UT
+    dates: "Sep 2016 – May 2018"
+    image: img/blue-crew.JPG
+    bullets:
+      - Took detailed minutes of weekly meetings and prepared agendas for committee president.
+      - Encouraged student involvement on and off campus through personal interaction and social media.
+
+  - title: Portuguese Speaking Service Volunteer (Full-Time)
+    organization: LDS Church - Non-profit
+    location: "São Paulo, Brazil"
+    dates: "Aug 2014 – Aug 2016"
+    links:
+      - label: Mom did a good job following along. Here is the blog.
+        url: https://dotheworkofsalvation.blogspot.com/
+    bullets:
+      - Led groups of 10-20 people through weekly trainings, goal setting, and daily follow-ups.
+      - Became fluent in Portuguese through daily conversation and interaction with locals.
+      - Adapted to new cultures, strengthening ability to work effectively with diverse teams.
+
+skills:
+  - category: Advanced
+    items: "Python, Automation, Data Pipelines, dbt, AWS (S3 / Lambda / API Gateway / ECS), Snowflake, Prefect, Docker, Google Cloud Platform, Google App Script, Google API Suite, Excel, PowerBI, Tableau, Git / GitHub / GitHub Actions / Pre-Commit, Slack Development"
+  - category: Basic
+    items: "Linux, C++"
