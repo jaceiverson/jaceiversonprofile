@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Projects — Jace Iverson</title>
-  <meta name="description" content="A collection of projects by Jace Iverson — from data pipelines and APIs to web development.">
+  <meta name="description" content="A collection of projects by Jace Iverson. Some cool shit.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,41 +42,51 @@
   <!-- Page Header -->
   <div class="page-header">
     <div class="container">
-      <h1>Projects</h1>
-      <p>Things I've built — professionally, academically, and just for fun.</p>
+      <h1>Personal Projects</h1>
+      <p>Some things I've built that I think are cool. 
+        Maybe you will too. 
+        Some of these have images (click the project title) and some have GitHub links. 
+        Check them out.
+      </p>
     </div>
   </div>
 
   <!-- Projects Grid -->
   <section class="section">
     <div class="container">
+
+      <div class="section-header" style="margin-top: 3rem;">
+        <h2>Hidden APIs</h2>
+        <div class="section-divider"></div>
+        <p class="text-muted">Some API's are public and some you have to go searching for. Thanks network tools. These projects involve some investigation and reverse engineering.</p>
+      </div>
       <div class="grid-3">
 
-        <!-- Project: background-auto-updater -->
+        <!-- Project: Premier League Discord -->
         <div class="card">
-          <div class="card-icon">🖼️</div>
-          <h3>Background Auto-Updater</h3>
+          <div class="card-icon">⚽</div>
+          <h3><span class="img-trigger" data-src="img/pl-discord-bot.png" data-alt="Premier League Discord Bot screenshot" tabindex="0" role="button" title="Click to view screenshot">Premier League Discord Bot</span></h3>
           <p>
-            Automatically updates your desktop wallpaper on a schedule using Python.
-            Pulls images from a configured source and applies them without any manual steps.
+            A Discord bot that facilitates week-to-week Premier League match predictions.
+            Uses the Fotmob, IMGBB, Discord, and AWS APIs, with reaction events to track
+            weekly picks and season-long statistics. Involves some spoofing including selenium drivers
+            so I can get an active cookie so the API works.
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
-            <span class="tag">Automation</span>
+            <span class="tag">Discord API</span>
+            <span class="tag tag-accent">AWS</span>
           </div>
-          <a href="https://github.com/jaceiverson/background-auto-updater" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            View on GitHub
-          </a>
         </div>
 
         <!-- Project: GHIN -->
         <div class="card">
           <div class="card-icon">⛳</div>
-          <h3>GHIN Alternate Handicap</h3>
+          <h3><span class="img-trigger" data-src="img/ghin-golf.png" data-alt="GHIN Alternate Handicap screenshot" tabindex="0" role="button" title="Click to view screenshot">GHIN Alternate Handicap</span></h3>
           <p>
             Alternative handicap metrics and calculations using the GHIN API. Goes beyond
-            the standard Best-8 handicap to surface Last 4, Last 8, Drop 4HL, standard
-            deviation, and next-round projections — rendered as rich terminal tables and charts.
+            the standard Best-8 handicap to try to get more insights from your differential scores 
+            — rendered using <code>rich</code> terminal tables and charts.
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
@@ -88,14 +98,58 @@
           </a>
         </div>
 
+        <!-- Project: geoguessr -->
+        <div class="card">
+          <div class="card-icon">🌍</div>
+          <h3><span class="img-trigger" data-src="img/geoguessr-sheet.png" data-alt="GeoGuessr screenshot" tabindex="0" role="button" title="Click to view screenshot">GeoGuessr</span></h3>
+          <p>
+            This project pulls data from the hidden GeoGuessr API so I can keep track of scores and stats for 
+            challenges I have sent to my friends. Really useful when integrated with my ELO library. I integrated this with a Google Sheet
+            and output the scores so I could keep track of the running totals and averages. 
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag tag-accent">GeoGuessr API</span>
+          </div>
+          <a href="https://github.com/jaceiverson/geoguessr" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
+          </a>
+        </div>
+
+      </div>
+
+      <div class="section-header">
+        <h2>Other Cool Stuff</h2>
+        <div class="section-divider"></div>
+      </div>
+      <div class="grid-3">
+
+        <!-- Project: background-auto-updater -->
+        <div class="card">
+          <div class="card-icon">🖼️</div>
+          <h3>Background Auto-Updater</h3>
+          <p>
+            Automatically updates your desktop wallpaper on a schedule using Python.
+            Pulls images from a configured source and applies them without any manual steps.
+            Works really great for an "image of the day" page (like NASA).
+          </p>
+          <div class="card-tags">
+            <span class="tag">Python</span>
+            <span class="tag">Automation</span>
+          </div>
+          <a href="https://github.com/jaceiverson/background-auto-updater" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+            View on GitHub
+          </a>
+        </div>
+
         <!-- Project: aoc-util -->
         <div class="card">
           <div class="card-icon">🎄</div>
           <h3>Advent of Code Utility</h3>
           <p>
-            A tool to automate web scraping, file creation, and project structure setup for
-            Advent of Code. Includes detailed documentation so anyone can replicate the workflow
-            and jump straight into solving puzzles.
+            If you have heard of AOC you know its great. This is a utility (mostly to help myself). 
+            It will automate the process of pulling the data and file creation so I can focus on just 
+            solving the puzzles that Eric puts out. 
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
@@ -107,31 +161,14 @@
           </a>
         </div>
 
-        <!-- Project: geoguessr -->
-        <div class="card">
-          <div class="card-icon">🌍</div>
-          <h3>GeoGuessr</h3>
-          <p>
-            A Python project built around the GeoGuessr platform. Interfaces with the
-            GeoGuessr API to track, analyze, or automate game-related workflows.
-          </p>
-          <div class="card-tags">
-            <span class="tag">Python</span>
-            <span class="tag tag-accent">GeoGuessr API</span>
-          </div>
-          <a href="https://github.com/jaceiverson/geoguessr" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            View on GitHub
-          </a>
-        </div>
-
         <!-- Project: Personal Portfolio Site -->
         <div class="card">
           <div class="card-icon">🌐</div>
           <h3>Personal Portfolio Site</h3>
           <p>
-            This site — built from scratch with plain HTML, CSS, and a Python-powered
-            resume generator. Hosted on GitHub Pages with a custom domain. Resume is driven
-            from a single YAML file.
+            This site — built from scratch (kinda, I mean thanks AI) with plain HTML, CSS, and a Python-powered
+            resume generator. Hosted on GitHub Pages with a custom domain. I think it looks pretty neat
+            and you are here, so it must be alright.
           </p>
           <div class="card-tags">
             <span class="tag">HTML</span>
@@ -142,22 +179,6 @@
           <a href="https://github.com/jaceiverson/jaceiversonprofile" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
             View on GitHub
           </a>
-        </div>
-
-        <!-- Project: Premier League Discord -->
-        <div class="card">
-          <div class="card-icon">⚽</div>
-          <h3>Premier League Discord Bot</h3>
-          <p>
-            A Discord bot that facilitates week-to-week Premier League match predictions.
-            Uses the Fotmob, IMGBB, Discord, and AWS APIs, with reaction events to track
-            weekly picks and season-long statistics via JSON.
-          </p>
-          <div class="card-tags">
-            <span class="tag">Python</span>
-            <span class="tag">Discord API</span>
-            <span class="tag tag-accent">AWS</span>
-          </div>
         </div>
 
       </div>
@@ -191,6 +212,16 @@
     </div>
   </footer>
 
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <div class="lightbox-backdrop"></div>
+    <div class="lightbox-content">
+      <button class="lightbox-close" aria-label="Close photo">&times;</button>
+      <img id="lightbox-img" src="" alt="">
+      <p id="lightbox-caption" class="lightbox-caption"></p>
+    </div>
+  </div>
+
   <script>
     const toggle = document.getElementById('navToggle');
     const menu = document.getElementById('navMenu');
@@ -198,6 +229,33 @@
       toggle.classList.toggle('open');
       menu.classList.toggle('open');
     });
+
+    // Lightbox
+    const lightbox  = document.getElementById('lightbox');
+    const lbImg     = document.getElementById('lightbox-img');
+    const lbCaption = document.getElementById('lightbox-caption');
+
+    function openLightbox(src, alt) {
+      lbImg.src = src;
+      lbCaption.textContent = alt;
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+      lbImg.src = '';
+    }
+
+    document.querySelectorAll('.img-trigger').forEach(el => {
+      el.addEventListener('click', () => openLightbox(el.dataset.src, el.dataset.alt));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openLightbox(el.dataset.src, el.dataset.alt); });
+    });
+
+    lightbox.querySelector('.lightbox-backdrop').addEventListener('click', closeLightbox);
+    lightbox.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
   </script>
 </body>
 </html>

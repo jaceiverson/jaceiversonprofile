@@ -919,6 +919,30 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 }
 
 /* ===========================
+   About Block (stacked layout)
+   =========================== */
+.about-block {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.about-block-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.about-block-image img {
+  max-height: 420px;
+  width: auto;
+  max-width: 100%;
+}
+
+/* ===========================
    AI Section
    =========================== */
 .human-eyebrow {
@@ -955,7 +979,8 @@ h3 { font-size: 1.2rem; font-weight: 600; }
   gap: 0.6rem;
 }
 
-.ai-caption {
+.ai-caption,
+.human-caption {
   font-size: 0.78rem;
   color: var(--grey);
   text-align: center;
