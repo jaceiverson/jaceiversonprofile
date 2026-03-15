@@ -46,8 +46,8 @@
         <div class="hero-content">
           <h1>Hi, I'm Jace</h1>
           <p class="hero-subtitle">
-            Data Engineer with a passion for learning. 
-            I build things that sound fun and interesting. 
+            Data Engineer with a passion for learning.
+            I build things that sound fun and interesting.
             Automation is cool, and I love to find creative solutions to tough problems.
           </p>
           <div class="hero-actions">
@@ -55,99 +55,90 @@
             <a href="resume" class="btn btn-outline">See My Resume</a>
           </div>
         </div>
-        <div class="hero-image">
-          <img
-            src="./img/falls.jpg"
-            alt="Jace at Vernal Falls, Yosemite National Park"
-            class="hero-photo"
-          >
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- About Me by Me -->
-  <section class="section">
+  <!-- About Me (toggle Human / AI) -->
+  <section class="section about-section">
     <div class="container">
       <div class="about-block">
         <div class="section-header">
           <h2>About Me</h2>
           <div class="section-divider"></div>
-          <span class="human-eyebrow">&#9998; Human Generated</span>
+          <div class="about-tabs" role="tablist" aria-label="About me content source">
+            <button type="button" class="about-tab about-tab-human active" role="tab" aria-selected="true" aria-controls="panel-human" id="tab-human" data-panel="human">&#9998; Human Generated</button>
+            <button type="button" class="about-tab about-tab-ai" role="tab" aria-selected="false" aria-controls="panel-ai" id="tab-ai" data-panel="ai">✦ AI Generated</button>
+          </div>
         </div>
-        <div class="about-block-image">
-          <img
-            src="./img/jace-main-page.jpg"
-            alt="Jace Iverson"
-            style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);"
-          >
-          <p class="human-caption">
-            <span style="font-style: normal;">👤</span> Human-generated image (kind of...it was a phone) — produced by my wife
-          </p>
-        </div>
-        <div class="about-text">
-          <p>
-            I'm currently a Senior Data Engineer at Terakeet (based in Syracuse, NY, I work remotely). My work revolves around data —
-            building pipelines, curating datasets, and automating repetitive tasks so teams can
-            focus on what matters most in their strategic direction.
-          </p>
-          <p>
-            Outside of work I enjoy being outdoors, watching sports, playing games, and spending
-            time with my wife and kids.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- About Me by AI -->
-  <section class="section section-alt">
-    <div class="container">
-      <div class="about-block">
-        <div class="section-header">
-          <h2>About Me</h2>
-          <div class="section-divider"></div>
-          <span class="ai-eyebrow">✦ AI Generated</span>
-        </div>
-        <div class="about-block-image">
-          <img
-            src="./img/jace-main-page-ai.png"
-            alt="AI-generated portrait of Jace Iverson"
-            style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);"
-          >
-          <p class="ai-caption">
-            <span style="font-style: normal;">🤖</span> AI-generated image — produced from conversation history
-          </p>
-        </div>
-        <div class="about-text">
-          <p>
-            Jace Iverson is a Senior Data Engineer whose career arc tells a consistent
-            story: find a manual process, understand it deeply, then eliminate it. Starting
-            in SEO analytics, he built Python scripts and Google App Script automations that
-            saved his team thousands of hours. That instinct to automate compounded — he
-            moved into BI, then data engineering, each role adding a new layer of technical
-            depth on top of real business context.
-          </p>
-          <p>
-            Technically, he operates across the full modern data stack — Python, dbt,
-            Snowflake, AWS (Lambda, ECS, Elasticache, API Gateway), Prefect, Docker, and
-            GitHub Actions. He's built distributed pipelines processing 150,000 requests
-            per hour, managed multi-repo CI/CD strategies, and written comprehensive test
-            suites that mock cloud infrastructure. He's comfortable at the data layer,
-            the orchestration layer, and the deployment layer simultaneously.
-          </p>
-          <p>
-            What stands out beyond the technical range is that Jace builds things for
-            himself too — a golf handicap analyzer, an Advent of Code automation suite, a
-            Premier League predictions Discord bot. Side projects like those are a reliable
-            signal: the motivation is genuine curiosity, not just professional obligation.
-            He also organized and taught weekly Python courses for teammates, which
-            suggests he can explain complex things clearly — a rarer skill than it sounds.
-          </p>
-          <p>
-            If you need someone who can architect a pipeline, own it end-to-end, and
-            make the people around them better at data — that profile fits Jace well.
-          </p>
+        <div class="about-panels">
+          <div class="about-panel about-panel-human active" id="panel-human" role="tabpanel" aria-labelledby="tab-human">
+            <div class="about-block-image">
+              <img
+                src="./img/jace-main-page.jpg"
+                alt="Jace Iverson"
+                style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);"
+              >
+              <p class="human-caption">
+                <span style="font-style: normal;">👤</span> Human-generated image (kind of...it was a phone) — produced by my wife
+              </p>
+            </div>
+            <div class="about-text">
+              <p>
+                I'm currently a Senior Data Engineer at Terakeet (based in Syracuse, NY, I work remotely). My work revolves around data —
+                building pipelines, curating datasets, and automating repetitive tasks so teams can
+                focus on what matters most in their strategic direction.
+              </p>
+              <p>
+                Outside of work I enjoy being outdoors, watching sports, playing games, and spending
+                time with my wife and kids.
+              </p>
+            </div>
+          </div>
+
+          <div class="about-panel about-panel-ai" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
+            <div class="about-block-image">
+              <img
+                src="./img/jace-main-page-ai.png"
+                alt="AI-generated portrait of Jace Iverson"
+                style="border-radius: var(--radius-lg); box-shadow: var(--shadow-md);"
+              >
+              <p class="ai-caption">
+                <span style="font-style: normal;">🤖</span> AI-generated image — produced from conversation history
+              </p>
+            </div>
+            <div class="about-text">
+              <p>
+                Jace Iverson is a Senior Data Engineer whose career arc tells a consistent
+                story: find a manual process, understand it deeply, then eliminate it. Starting
+                in SEO analytics, he built Python scripts and Google App Script automations that
+                saved his team thousands of hours. That instinct to automate compounded — he
+                moved into BI, then data engineering, each role adding a new layer of technical
+                depth on top of real business context.
+              </p>
+              <p>
+                Technically, he operates across the full modern data stack — Python, dbt,
+                Snowflake, AWS (Lambda, ECS, Elasticache, API Gateway), Prefect, Docker, and
+                GitHub Actions. He's built distributed pipelines processing 150,000 requests
+                per hour, managed multi-repo CI/CD strategies, and written comprehensive test
+                suites that mock cloud infrastructure. He's comfortable at the data layer,
+                the orchestration layer, and the deployment layer simultaneously.
+              </p>
+              <p>
+                What stands out beyond the technical range is that Jace builds things for
+                himself too — a golf handicap analyzer, an Advent of Code automation suite, a
+                Premier League predictions Discord bot. Side projects like those are a reliable
+                signal: the motivation is genuine curiosity, not just professional obligation.
+                He also organized and taught weekly Python courses for teammates, which
+                suggests he can explain complex things clearly — a rarer skill than it sounds.
+              </p>
+              <p>
+                If you need someone who can architect a pipeline, own it end-to-end, and
+                make the people around them better at data — that profile fits Jace well.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -191,6 +182,40 @@
       toggle.classList.toggle('open');
       menu.classList.toggle('open');
     });
+
+    // About Me tabs: switch Human / AI with fade
+    (function () {
+      const tabs = document.querySelectorAll('.about-tab');
+      const panels = document.querySelectorAll('.about-panel');
+      if (!tabs.length || !panels.length) return;
+
+      function showPanel(panelId) {
+        panels.forEach(function (p) {
+          const isActive = p.id === panelId;
+          p.classList.toggle('active', isActive);
+          p.hidden = !isActive;
+          p.setAttribute('aria-hidden', !isActive);
+        });
+        tabs.forEach(function (t) {
+          const isSelected = ('panel-' + t.getAttribute('data-panel')) === panelId;
+          t.classList.toggle('active', isSelected);
+          t.setAttribute('aria-selected', isSelected);
+        });
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          const panelId = 'panel-' + tab.getAttribute('data-panel');
+          showPanel(panelId);
+        });
+        tab.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            tab.click();
+          }
+        });
+      });
+    })();
   </script>
 </body>
 </html>
