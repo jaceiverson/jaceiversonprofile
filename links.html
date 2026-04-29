@@ -10,7 +10,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/style.css">
-  <script src="js/page-header-bg.js"></script>
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -41,8 +40,9 @@
     </div>
   </nav>
 
-  <!-- Page Header -->
+  <!-- Page header photo: inline background-image so url() is resolved from this HTML file (not css/style.css). -->
   <div class="page-header">
+    <div class="page-header-media" style="background-image: url('img/snowbasin-images/tron.jpeg');" role="presentation" aria-hidden="true"></div>
     <div class="container">
       <h1>Links</h1>
       <p>Find me around the inter webs.</p>

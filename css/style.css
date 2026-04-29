@@ -833,38 +833,54 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 /* ===========================
    Page Header Banner
    =========================== */
+/* Photo: use .page-header-media in HTML with inline background-image (url must be on the page so paths resolve from the HTML document, not from this CSS file). */
 .page-header {
-  --page-header-bg: none;
-  background: linear-gradient(135deg, rgba(20, 54, 66, 0.82) 0%, rgba(20, 54, 66, 0.68) 50%, rgba(28, 85, 104, 0.72) 100%),
-    var(--page-header-bg) center / cover no-repeat;
+  background-color: var(--navy);
   color: var(--white);
-  padding: 2.25rem 0;
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+  min-height: clamp(12rem, 32vh, 18rem);
+  display: flex;
+  align-items: center;
   position: relative;
   overflow: hidden;
 }
 
-.page-header::before {
+.page-header-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.page-header::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  z-index: 1;
+  background: linear-gradient(135deg, rgba(20, 54, 66, 0.82) 0%, rgba(20, 54, 66, 0.88) 50%, rgba(15, 42, 52, 0.9) 100%);
   pointer-events: none;
 }
 
 .page-header .container {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  flex: 1;
+  width: 100%;
 }
 
 .page-header h1 {
   color: var(--white);
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   margin-bottom: 0.4rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 24px rgba(0, 0, 0, 0.2);
 }
 
 .page-header p {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 /* ===========================
