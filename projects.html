@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,11 +15,12 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
     gtag('config', 'UA-175301597-1');
   </script>
 </head>
+
 <body>
 
   <!-- Navbar -->
@@ -42,12 +44,13 @@
 
   <!-- Page header photo: inline background-image so url() is resolved from this HTML file (not css/style.css). -->
   <div class="page-header">
-    <div class="page-header-media" style="background-image: url('img/snowbasin-images/sunset-2.jpeg');" role="presentation" aria-hidden="true"></div>
+    <div class="page-header-media" style="background-image: url('img/snowbasin-images/sunset-2.jpeg');"
+      role="presentation" aria-hidden="true"></div>
     <div class="container">
       <h1>Personal Projects</h1>
-      <p>Some things I've built that I think are cool. 
-        Maybe you will too. 
-        Some of these have images (click the project title) and some have GitHub links. 
+      <p>Some things I've built that I think are cool.
+        Maybe you will too.
+        Some of these have images (click the project title) and some have GitHub links.
         Check them out.
       </p>
     </div>
@@ -60,14 +63,17 @@
       <div class="section-header" style="margin-top: 3rem;">
         <h2>Hidden APIs</h2>
         <div class="section-divider"></div>
-        <p class="text-muted">Some API's are public and some you have to go searching for. Thanks network tools. These projects involve some investigation and reverse engineering.</p>
+        <p class="text-muted">Some API's are public and some you have to go searching for. Thanks network tools. These
+          projects involve some investigation and reverse engineering.</p>
       </div>
       <div class="grid-3">
 
         <!-- Project: Premier League Discord -->
         <div class="card">
           <div class="card-icon">⚽</div>
-          <h3><span class="img-trigger" data-src="img/pl-discord-bot.png" data-alt="Premier League Discord Bot screenshot" tabindex="0" role="button" title="Click to view screenshot">Premier League Discord Bot</span></h3>
+          <h3><span class="img-trigger" data-src="img/pl-discord-bot.png"
+              data-alt="Premier League Discord Bot screenshot" tabindex="0" role="button"
+              title="Click to view screenshot">Premier League Discord Bot</span></h3>
           <p>
             A Discord bot that facilitates week-to-week Premier League match predictions.
             Uses the Fotmob, IMGBB, Discord, and AWS APIs, with reaction events to track
@@ -84,38 +90,63 @@
         <!-- Project: GHIN -->
         <div class="card">
           <div class="card-icon">⛳</div>
-          <h3><span class="img-trigger" data-src="img/ghin-golf.png" data-alt="GHIN Alternate Handicap screenshot" tabindex="0" role="button" title="Click to view screenshot">GHIN Alternate Handicap</span></h3>
+          <h3><span class="img-trigger" data-src="img/ghin-golf.png" data-alt="GHIN Alternate Handicap screenshot"
+              tabindex="0" role="button" title="Click to view screenshot">GHIN-sights</span></h3>
           <p>
-            Alternative handicap metrics and calculations using the GHIN API. Goes beyond
-            the standard Best-8 handicap to try to get more insights from your differential scores 
-            — rendered using <code>rich</code> terminal tables and charts.
+            Alternative handicap metrics and calculations using the GHIN API. Now a browser extension in the Chrome
+            store!
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
             <span class="tag tag-accent">GHIN API</span>
             <span class="tag">Data Analysis</span>
           </div>
-          <a href="https://github.com/jaceiverson/ghin_golf" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-            View on GitHub
-          </a>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+            <a href="https://chromewebstore.google.com/detail/ghin-sights/kgcacidkdecamdnhlbmioadbogdajhon"
+              target="_blank" rel="noopener" class="btn btn-navy btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="11.5" fill="#fff" stroke="#e0e0e0" />
+                <path fill="#EA4335" d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.33 2.5L3.34 5.5A10 10 0 0 1 12 2z" />
+                <path fill="#4285F4" d="M20.66 7H12a5 5 0 0 1 4.6 3.03l4.34 7.51A10 10 0 0 0 20.66 7z" />
+                <path fill="#FBBC05"
+                  d="M3.34 5.5l4.33 7.5A5 5 0 0 0 12 17a5 5 0 0 0 4.33-2.5l-4.1 7.11a10 10 0 0 1-8.89-16.11z" />
+                <path fill="#34A853" d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+                <circle cx="12" cy="12" r="3.2" fill="#fff" />
+                <circle cx="12" cy="12" r="2.4" fill="#4285F4" />
+              </svg>
+              Get it on Chrome
+            </a>
+            <a href="https://github.com/jaceiverson/ghin_golf" target="_blank" rel="noopener"
+              class="btn btn-navy btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path
+                  d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+              </svg>
+              View on GitHub
+            </a>
+          </div>
         </div>
 
         <!-- Project: geoguessr -->
         <div class="card">
           <div class="card-icon">🌍</div>
-          <h3><span class="img-trigger" data-src="img/geoguessr-sheet.png" data-alt="GeoGuessr screenshot" tabindex="0" role="button" title="Click to view screenshot">GeoGuessr</span></h3>
+          <h3><span class="img-trigger" data-src="img/geoguessr-sheet.png" data-alt="GeoGuessr screenshot" tabindex="0"
+              role="button" title="Click to view screenshot">GeoGuessr</span></h3>
           <p>
-            This project pulls data from the hidden GeoGuessr API so I can keep track of scores and stats for 
-            challenges I have sent to my friends. Really useful when integrated with my ELO library. I integrated this with a Google Sheet
-            and output the scores so I could keep track of the running totals and averages. 
+            This project pulls data from the hidden GeoGuessr API so I can keep track of scores and stats for
+            challenges I have sent to my friends. Really useful when integrated with my ELO library. I integrated this
+            with a Google Sheet
+            and output the scores so I could keep track of the running totals and averages.
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
             <span class="tag tag-accent">GeoGuessr API</span>
           </div>
           <a href="https://github.com/jaceiverson/geoguessr" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
             View on GitHub
           </a>
         </div>
@@ -132,20 +163,26 @@
         <!-- Project: background-auto-updater -->
         <div class="card">
           <div class="card-icon">🖼️</div>
-          <h3><span class="img-trigger" data-src="img/snowbasin-background.gif" data-alt="Time lapse of a April 2026 snow storm using captured images on 4-26-2026" tabindex="0" role="button" title="Click to view preview">Background Auto-Updater</span></h3>
+          <h3><span class="img-trigger" data-src="img/snowbasin-background.gif"
+              data-alt="Time lapse of a April 2026 snow storm using captured images on 4-26-2026" tabindex="0"
+              role="button" title="Click to view preview">Background Auto-Updater</span></h3>
           <p>
             Automatically updates your desktop wallpaper on a schedule using Python.
             Pulls images from a configured source and applies them without any manual steps.
             Works really great for an "image of the day" page (like NASA). I set mine up for my local ski resort.
-            If you'd like to see what a .gif of a storm looks like, click on this project title. After capturing all 
+            If you'd like to see what a .gif of a storm looks like, click on this project title. After capturing all
             images for 3 days during a storm, I used Mac Shortcuts to automate .gif creation and this was the result.
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
             <span class="tag">Automation</span>
           </div>
-          <a href="https://github.com/jaceiverson/background-auto-updater" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          <a href="https://github.com/jaceiverson/background-auto-updater" target="_blank" rel="noopener"
+            class="btn btn-navy btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
             View on GitHub
           </a>
         </div>
@@ -155,9 +192,9 @@
           <div class="card-icon">🎄</div>
           <h3>Advent of Code Utility</h3>
           <p>
-            If you have heard of AOC you know its great. This is a utility (mostly to help myself). 
-            It will automate the process of pulling the data and file creation so I can focus on just 
-            solving the puzzles that Eric puts out. 
+            If you have heard of AOC you know its great. This is a utility (mostly to help myself).
+            It will automate the process of pulling the data and file creation so I can focus on just
+            solving the puzzles that Eric puts out.
           </p>
           <div class="card-tags">
             <span class="tag">Python</span>
@@ -165,7 +202,10 @@
             <span class="tag">Web Scraping</span>
           </div>
           <a href="https://github.com/jaceiverson/aoc-util" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
             View on GitHub
           </a>
         </div>
@@ -185,8 +225,12 @@
             <span class="tag">Python</span>
             <span class="tag">GitHub Pages</span>
           </div>
-          <a href="https://github.com/jaceiverson/jaceiversonprofile" target="_blank" rel="noopener" class="btn btn-navy btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          <a href="https://github.com/jaceiverson/jaceiversonprofile" target="_blank" rel="noopener"
+            class="btn btn-navy btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
             View on GitHub
           </a>
         </div>
@@ -215,9 +259,12 @@
           <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
           <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
           <a href="mailto:iverson.jace@gmail.com">Email</a>
-          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a coffee</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a
+            coffee</a>
         </div>
-        <span>&copy; <script>document.write(new Date().getFullYear())</script> Jace Iverson</span>
+        <span>&copy;
+          <script>document.write(new Date().getFullYear())</script> Jace Iverson
+        </span>
       </div>
     </div>
   </footer>
@@ -241,8 +288,8 @@
     });
 
     // Lightbox
-    const lightbox  = document.getElementById('lightbox');
-    const lbImg     = document.getElementById('lightbox-img');
+    const lightbox = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightbox-img');
     const lbCaption = document.getElementById('lightbox-caption');
 
     function openLightbox(src, alt) {
@@ -268,4 +315,5 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
   </script>
 </body>
+
 </html>
