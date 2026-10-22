@@ -1694,6 +1694,8 @@
         { id: 'picture-frame', icon: '🖼️', name: 'Picture Frame', desc: 'Fill every square around the outside edge of the board.' },
         { id: 'first-game', icon: '🐣', name: "Beginner's Skill", desc: 'Finish your first game.' },
         { id: 'sudoku-secret', icon: '🤫', name: 'Sudoku Secret', desc: 'Finish 45 games.' },
+        { id: 'random-layout', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
+        { id: 'custom-layout', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
         { id: 'zero', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
         { id: 'zero-with-discards', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' }
       ];
@@ -2027,6 +2029,9 @@
         'picture-frame': () => isFull(BORDER),
         'first-game': () => gamesFinished() >= 1,
         'sudoku-secret': () => gamesFinished() >= 45,
+        // Rearranging any spades during setup turns the layout into 'custom'
+        'random-layout': () => layout === 'random',
+        'custom-layout': () => layout === 'custom',
         'zero': s => s.total === 0,
         'zero-with-discards': s => s.total === 0 && discarded >= 1
       };
