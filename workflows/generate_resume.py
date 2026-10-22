@@ -233,6 +233,7 @@ def render_html(data: dict) -> str:
         <ul class="navbar-nav" id="navMenu">
           <li><a href="index.html" class="navbar-link">Home</a></li>
           <li><a href="projects.html" class="navbar-link">Projects</a></li>
+          <li><a href="games/" class="navbar-link">Games</a></li>
           <li><a href="resume.html" class="navbar-link active">Resume</a></li>
           <li><a href="links.html" class="navbar-link">Links</a></li>
           <li><a href="mailto:{esc(data.get('contact', {}).get('email', ''))}" class="navbar-link navbar-cta">Email Me</a></li>
