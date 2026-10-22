@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Tic Tac Toe — Jace Iverson</title>
+  <meta name="description" content="Play Super Tic Tac Toe in your browser, locally or online with a friend, using Dead Square or Free Square rules.">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'UA-175301597-1');
+  </script>
+  <!-- PeerJS: browser-to-browser connection for online play (no server of our own needed) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    /* Player colors: X = navy, O = accent green */
+    .sttt {
+      --x-color: var(--navy-400);
+      --o-color: var(--accent);
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .sttt-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .sttt-rules {
+      display: inline-flex;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .sttt-rule {
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border: 0;
+      background: var(--white);
+      color: var(--grey-700);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .sttt-rule + .sttt-rule { border-left: 1px solid var(--grey-300); }
+    .sttt-rule:hover:not(:disabled) { background: var(--navy-50); }
+    .sttt-rule.active { background: var(--navy); color: var(--white); }
+    .sttt-rule:disabled { cursor: not-allowed; opacity: 0.7; }
+
+    .sttt-ruleset {
+      font-size: 0.9rem;
+      color: var(--grey-700);
+      background: var(--navy-50);
+      border-radius: var(--radius);
+      padding: 0.45rem 0.9rem;
+    }
+
+    .sttt-ruleset strong { color: var(--navy); }
+
+    .sttt-actions { display: flex; gap: 0.5rem; }
+    .sttt .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Site .btn-outline is built for dark backgrounds; invert it on this light page */
+    .sttt .btn-outline,
+    .sttt-modal .btn-outline { color: var(--navy); border-color: var(--navy-100); background: var(--white); }
+    .sttt .btn-outline:hover:not(:disabled),
+    .sttt-modal .btn-outline:hover { color: var(--navy); border-color: var(--navy); background: var(--navy-50); }
+
+    /* Online status panel */
+    .sttt-online {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--warm);
+      border: 1px solid var(--warm-dark);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.95rem;
+    }
+
+    .sttt-online[hidden] { display: none; }
+    .sttt-online-msg { margin-right: auto; color: var(--navy); }
+
+    /* Game mode modal */
+    .sttt-modal {
+      width: min(600px, calc(100% - 32px));
+      margin: auto;
+      border: 0;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      color: var(--grey-700);
+    }
+
+    .sttt-modal::backdrop {
+      background: rgba(20, 54, 66, 0.6);
+      backdrop-filter: blur(3px);
+    }
+
+    .sttt-modal h2 {
+      color: var(--navy);
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    .sttt-modal-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--grey-500);
+      margin-bottom: 0.4rem;
+    }
+
+    .sttt-modal-rules {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .sttt-modal-rules p {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+      margin-top: 0.5rem;
+    }
+
+    .sttt-modes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .sttt-mode {
+      font: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      text-align: center;
+      padding: 1.25rem 1rem;
+      border: 2px solid var(--grey-100);
+      border-radius: var(--radius);
+      background: var(--grey-50);
+      color: var(--grey-700);
+    }
+
+    button.sttt-mode { cursor: pointer; transition: border-color var(--transition), background var(--transition); }
+    button.sttt-mode:hover { border-color: var(--navy-100); background: var(--navy-50); }
+
+    .sttt-mode strong { color: var(--navy); font-size: 1.1rem; }
+    .sttt-mode-icon { font-size: 2rem; line-height: 1; }
+    .sttt-mode-desc { font-size: 0.9rem; margin-bottom: 0.5rem; }
+
+    .sttt-join {
+      display: flex;
+      gap: 0.4rem;
+      width: 100%;
+      margin-top: 0.4rem;
+    }
+
+    .sttt-join input {
+      font: inherit;
+      font-size: 0.9rem;
+      flex: 1;
+      min-width: 0;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius-sm);
+      text-transform: lowercase;
+    }
+
+    .sttt-mode .btn { justify-content: center; }
+    .sttt-mode > .btn { width: 100%; }
+    button.sttt-mode > .btn { margin-top: auto; }
+
+    @media (max-width: 560px) {
+      .sttt-modal { padding: 1.5rem 1.25rem; }
+      .sttt-modes { grid-template-columns: 1fr; }
+    }
+
+    .sttt-status {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 1rem;
+      min-height: 1.8rem;
+    }
+
+    .sttt-status .x { color: var(--x-color); }
+    .sttt-status .o { color: var(--o-color); }
+
+    /* minmax(0, 1fr) keeps every track equal so marks never resize cells */
+    .sttt-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      background: var(--navy);
+      padding: 10px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      aspect-ratio: 1 / 1;
+    }
+
+    .sttt-mini {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      min-width: 0;
+      min-height: 0;
+      gap: 3px;
+      padding: 4px;
+      background: var(--grey-300);
+      border-radius: var(--radius);
+      transition: box-shadow var(--transition), background var(--transition);
+    }
+
+    .sttt-mini.playable {
+      background: var(--warm-darker);
+      box-shadow: 0 0 0 3px var(--warm-darker);
+    }
+
+    .sttt-cell {
+      font: inherit;
+      font-weight: 700;
+      font-size: clamp(0.9rem, 4.2vw, 1.6rem);
+      line-height: 1;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: var(--white);
+      cursor: default;
+      padding: 0;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition);
+    }
+
+    .sttt-mini.playable .sttt-cell:not(:disabled) {
+      background: var(--warm);
+      cursor: pointer;
+    }
+
+    .sttt-mini.playable .sttt-cell:not(:disabled):hover { background: var(--navy-50); }
+
+    .sttt-cell.x { color: var(--x-color); }
+    .sttt-cell.o { color: var(--o-color); }
+    .sttt-cell.last { box-shadow: inset 0 0 0 2px var(--warm-darker); }
+
+    /* Big mark drawn over a won quadrant */
+    .sttt-mini[data-winner]::after {
+      content: attr(data-winner);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: clamp(3rem, 16vw, 6.5rem);
+      line-height: 1;
+      border-radius: var(--radius);
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .sttt-mini[data-winner="X"]::after { color: var(--x-color); }
+    .sttt-mini[data-winner="O"]::after { color: var(--o-color); }
+    .sttt-mini[data-winner="–"]::after { color: var(--grey-500); }
+
+    /* Dead Square: the big mark fades so the board underneath stays playable */
+    .sttt.dead-mode .sttt-mini.playable[data-winner]::after { background: rgba(255, 255, 255, 0.35); opacity: 0.45; }
+
+    .sttt-rules-text {
+      margin-top: 2.5rem;
+    }
+
+    .sttt-rules-text h3 {
+      color: var(--navy);
+      margin: 1.25rem 0 0.4rem;
+    }
+
+    .sttt-rules-text ol,
+    .sttt-rules-text ul {
+      padding-left: 1.25rem;
+      list-style: revert;
+    }
+
+    .sttt-rules-text li { margin-bottom: 0.35rem; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+        <a href="/" class="navbar-brand">Jace Iverson</a>
+        <button class="navbar-toggle" id="navToggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="navbar-nav" id="navMenu">
+          <li><a href="/" class="navbar-link">Home</a></li>
+          <li><a href="/projects" class="navbar-link active">Projects</a></li>
+          <li><a href="/resume" class="navbar-link">Resume</a></li>
+          <li><a href="/links" class="navbar-link">Links</a></li>
+          <li><a href="mailto:iverson.jace@gmail.com" class="navbar-link navbar-cta">Email Me</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page header photo: inline background-image so url() is resolved from this HTML file (not css/style.css). -->
+  <div class="page-header">
+    <div class="page-header-media" style="background-image: url('../img/snowbasin-images/night-grooming.jpeg');"
+      role="presentation" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/projects">Projects</a> › <a href="/games/">Games</a></nav>
+      <h1>Super Tic Tac Toe</h1>
+      <p>Nine games of tic tac toe in one. Win a small board to claim that square of the big board,
+        then win three big squares in a row to win it all. Pass the mouse to a friend, or host a game
+        and play them online.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <div class="sttt" id="game">
+
+        <div class="sttt-controls">
+          <div class="sttt-ruleset">Rules: <strong id="rulesetName">Dead Square</strong></div>
+          <div class="sttt-actions">
+            <button type="button" class="btn btn-outline btn-sm" id="modeBtn">Change Mode</button>
+            <button type="button" class="btn btn-outline btn-sm" id="undoBtn">Undo</button>
+            <button type="button" class="btn btn-primary btn-sm" id="newBtn">New Game</button>
+          </div>
+        </div>
+
+        <div class="sttt-online" id="onlinePanel" hidden>
+          <span class="sttt-online-msg" id="onlineMsg" aria-live="polite"></span>
+          <button type="button" class="btn btn-outline btn-sm" id="copyBtn" hidden>Copy Link</button>
+        </div>
+
+        <div class="sttt-status" id="status" aria-live="polite"></div>
+
+        <div class="sttt-board" id="board"></div>
+
+        <div class="sttt-rules-text">
+          <div class="section-header">
+            <h2>How to Play</h2>
+            <div class="section-divider"></div>
+          </div>
+          <ol>
+            <li>X goes first and can play anywhere.</li>
+            <li>The cell you pick sends your opponent to the matching board. Play the top-right cell of any
+              board, and your opponent has to play in the top-right board.</li>
+            <li>Get three in a row on a small board to win that square of the big board. A small board that
+              fills up with no winner counts for nobody.</li>
+            <li>Get three big squares in a row to win the game.</li>
+          </ol>
+
+          <h3>Dead Square</h3>
+          <p>A won board stays open. If you're sent there, you still have to play there, even though the
+            moves can't change who owns it. You only get to play anywhere when the board you're sent to is
+            completely full.</p>
+
+          <h3>Free Square</h3>
+          <p>A won board is closed. If you're sent to a won or full board, you can play any open cell on any
+            board that hasn't been decided yet.</p>
+
+          <h3>Playing Online</h3>
+          <p>Choose <strong>Play Online</strong>, click <strong>Host a Game</strong>, and send your friend the link
+            (or the game code). The host plays X and picks the ruleset. Your browsers connect directly to each
+            other, so keep the tab open until the game is done.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Game mode picker, shown on load and from "Change Mode" -->
+  <dialog class="sttt-modal" id="modeModal" aria-labelledby="modeTitle">
+    <h2 id="modeTitle">How do you want to play?</h2>
+
+    <div class="sttt-modal-rules">
+      <span class="sttt-modal-label">Ruleset</span>
+      <div class="sttt-rules" role="group" aria-label="Ruleset">
+        <button type="button" class="sttt-rule active" data-rule="dead">Dead Square</button>
+        <button type="button" class="sttt-rule" data-rule="free">Free Square</button>
+      </div>
+      <p>Sent to a won board? <strong>Dead Square</strong>: you still play there.
+        <strong>Free Square</strong>: play any open board instead.</p>
+    </div>
+
+    <div class="sttt-modes">
+      <button type="button" class="sttt-mode" id="localBtn">
+        <span class="sttt-mode-icon">🤝</span>
+        <strong>Pass &amp; Play</strong>
+        <span class="sttt-mode-desc">Take turns on this device.</span>
+        <span class="btn btn-primary btn-sm">Start Game</span>
+      </button>
+
+      <div class="sttt-mode">
+        <span class="sttt-mode-icon">🌐</span>
+        <strong>Play Online</strong>
+        <span class="sttt-mode-desc">Play a friend on another device.</span>
+        <button type="button" class="btn btn-navy btn-sm" id="hostBtn">Host a Game</button>
+        <div class="sttt-join">
+          <input type="text" id="joinInput" placeholder="or enter a code" aria-label="Game code" autocomplete="off">
+          <button type="button" class="btn btn-outline btn-sm" id="joinBtn">Join</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">Jace Iverson</span>
+        <div class="footer-links">
+          <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:iverson.jace@gmail.com">Email</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a
+            coffee</a>
+        </div>
+        <span>&copy;
+          <script>document.write(new Date().getFullYear())</script> Jace Iverson
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+
+    // Super Tic Tac Toe
+    (function () {
+      const LINES = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+      ];
+      const TIE = 'T';
+      const PEER_PREFIX = 'jace-sttt-';
+
+      const gameEl = document.getElementById('game');
+      const boardEl = document.getElementById('board');
+      const statusEl = document.getElementById('status');
+      const undoBtn = document.getElementById('undoBtn');
+      const newBtn = document.getElementById('newBtn');
+      const ruleBtns = document.querySelectorAll('.sttt-rule');
+      const rulesetName = document.getElementById('rulesetName');
+
+      const modal = document.getElementById('modeModal');
+      const onlinePanel = document.getElementById('onlinePanel');
+      const onlineMsg = document.getElementById('onlineMsg');
+      const joinInput = document.getElementById('joinInput');
+      const copyBtn = document.getElementById('copyBtn');
+
+      let rule = 'dead';
+      let state;
+      let history;
+
+      // Online play: null myMark means local pass-and-play
+      let peer = null;
+      let conn = null;
+      let myMark = null;
+      let shareLink = '';
+
+      function newState() {
+        return {
+          cells: Array.from({ length: 9 }, () => Array(9).fill(null)),
+          winners: Array(9).fill(null),   // 'X', 'O', TIE, or null per small board
+          turn: 'X',
+          target: null,                   // board the next player is sent to (null = first move)
+          last: null,                     // [board, cell] of the previous move
+          gameWinner: null                // 'X', 'O', TIE, or null
+        };
+      }
+
+      function lineWinner(cells) {
+        for (const [a, b, c] of LINES) {
+          if (cells[a] && cells[a] !== TIE && cells[a] === cells[b] && cells[a] === cells[c]) return cells[a];
+        }
+        return null;
+      }
+
+      const isFull = b => state.cells[b].every(Boolean);
+
+      // A board accepts moves if it has an empty cell and, under Free Square, nobody has won it yet.
+      function isOpen(b) {
+        if (isFull(b)) return false;
+        return rule === 'dead' || state.winners[b] === null;
+      }
+
+      function playableBoards() {
+        if (state.gameWinner) return [];
+        if (state.target !== null && isOpen(state.target)) return [state.target];
+        return [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(isOpen);
+      }
+
+      const myTurn = () => myMark === null || state.turn === myMark;
+
+      // Applies a move if it's legal; returns whether it was applied.
+      function play(b, c) {
+        if (!playableBoards().includes(b) || state.cells[b][c]) return false;
+
+        history.push(JSON.parse(JSON.stringify(state)));
+
+        state.cells[b][c] = state.turn;
+        state.last = [b, c];
+
+        // A small board's owner never changes once decided (matters for Dead Square)
+        if (state.winners[b] === null) {
+          const w = lineWinner(state.cells[b]);
+          if (w) state.winners[b] = w;
+          else if (isFull(b)) state.winners[b] = TIE;
+        }
+
+        state.target = c;
+        state.turn = state.turn === 'X' ? 'O' : 'X';
+
+        const big = lineWinner(state.winners);
+        if (big) state.gameWinner = big;
+        else if (playableBoards().length === 0) state.gameWinner = TIE;
+
+        render();
+        return true;
+      }
+
+      function onCellClick(b, c) {
+        if (!myTurn()) return;
+        if (play(b, c)) send({ type: 'move', b, c });
+      }
+
+      function mark(p) {
+        return `<span class="${p.toLowerCase()}">${p}</span>`;
+      }
+
+      function statusText(playable) {
+        if (state.gameWinner === TIE) return "It's a draw!";
+        if (state.gameWinner) {
+          if (myMark === null) return `${mark(state.gameWinner)} wins the game! 🎉`;
+          return state.gameWinner === myMark ? 'You win the game! 🎉' : `${mark(state.gameWinner)} wins the game. Rematch?`;
+        }
+        if (!myTurn()) return `Waiting for ${mark(state.turn)} to move…`;
+
+        const who = myMark === null ? `${mark(state.turn)}'s turn` : `Your turn (${mark(myMark)})`;
+        if (playable.length === 1) return `${who}, play in the highlighted board`;
+        if (state.target === null) return `${who}, play anywhere`;
+        return `${who}, free move! Pick any highlighted board`;
+      }
+
+      function render() {
+        const playable = playableBoards();
+        gameEl.classList.toggle('dead-mode', rule === 'dead');
+
+        boardEl.innerHTML = '';
+        for (let b = 0; b < 9; b++) {
+          const mini = document.createElement('div');
+          mini.className = 'sttt-mini' + (playable.includes(b) ? ' playable' : '');
+          const w = state.winners[b];
+          if (w) mini.dataset.winner = w === TIE ? '–' : w;
+
+          for (let c = 0; c < 9; c++) {
+            const v = state.cells[b][c];
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'sttt-cell';
+            if (v) cell.classList.add('filled', v.toLowerCase());
+            if (state.last && state.last[0] === b && state.last[1] === c) cell.classList.add('last');
+            cell.textContent = v || '';
+            cell.setAttribute('aria-label', `Board ${b + 1}, cell ${c + 1}${v ? ', ' + v : ''}`);
+            if (v || !playable.includes(b) || !myTurn()) cell.disabled = true;
+            cell.addEventListener('click', () => onCellClick(b, c));
+            mini.appendChild(cell);
+          }
+          boardEl.appendChild(mini);
+        }
+
+        statusEl.innerHTML = statusText(playable);
+
+        // No undo online
+        undoBtn.disabled = myMark !== null || history.length === 0;
+        rulesetName.textContent = rule === 'dead' ? 'Dead Square' : 'Free Square';
+        ruleBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.rule === rule));
+      }
+
+      function reset() {
+        state = newState();
+        history = [];
+        render();
+      }
+
+      // Rules are only picked in the mode modal, which always opens on a fresh board
+      ruleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          rule = btn.dataset.rule;
+          render();
+        });
+      });
+
+      newBtn.addEventListener('click', () => {
+        reset();
+        send({ type: 'reset', rule });
+      });
+
+      undoBtn.addEventListener('click', () => {
+        if (!history.length) return;
+        state = history.pop();
+        render();
+      });
+
+      // ---------- Online play ----------
+
+      function send(msg) {
+        if (conn && conn.open) conn.send(msg);
+      }
+
+      function showOnline(html, { link = false } = {}) {
+        onlinePanel.hidden = false;
+        onlineMsg.innerHTML = html;
+        copyBtn.hidden = !link;
+      }
+
+      function randomCode() {
+        const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        return code;
+      }
+
+      // Accepts a bare code or a pasted invite link
+      function parseCode(text) {
+        text = text.trim();
+        const m = text.match(/[?&]join=([a-z0-9]+)/i);
+        return (m ? m[1] : text).toLowerCase();
+      }
+
+      function peerAvailable() {
+        if (typeof Peer !== 'undefined') return true;
+        showOnline("Online play couldn't load. Check your connection or ad blocker and refresh.");
+        return false;
+      }
+
+      function hostGame() {
+        if (!peerAvailable()) return;
+        const code = randomCode();
+        showOnline('Creating game…');
+        peer = new Peer(PEER_PREFIX + code);
+        peer.on('open', () => {
+          shareLink = `${location.origin}${location.pathname}?join=${code}`;
+          showOnline(`Game code <strong>${code}</strong>. Send the link to a friend. Waiting for them to join…`, { link: true });
+        });
+        peer.on('connection', c => {
+          if (conn) { c.on('open', () => c.close()); return; }  // game is full
+          attach(c, 'X');
+        });
+        peer.on('error', onPeerError);
+      }
+
+      function joinGame(code) {
+        if (!code || !peerAvailable()) return;
+        showOnline('Connecting…');
+        peer = new Peer();
+        peer.on('open', () => attach(peer.connect(PEER_PREFIX + code, { reliable: true }), 'O'));
+        peer.on('error', onPeerError);
+      }
+
+      function attach(c, mark) {
+        conn = c;
+        c.on('open', () => {
+          myMark = mark;
+          reset();
+          if (mark === 'X') send({ type: 'reset', rule });
+          showOnline(`Connected! You are ${mark === 'X' ? '<strong>X</strong> (you go first)' : '<strong>O</strong>'}.`);
+        });
+        c.on('data', msg => {
+          if (msg.type === 'move') play(msg.b, msg.c);
+          else if (msg.type === 'reset') { rule = msg.rule === 'free' ? 'free' : 'dead'; reset(); }
+        });
+        c.on('close', () => {
+          conn = null;
+          myMark = null;
+          render();
+          showOnline('Your opponent left the game. Click <strong>Change Mode</strong> to start a new one.');
+        });
+      }
+
+      function onPeerError(err) {
+        if (err.type === 'unavailable-id') { peer.destroy(); hostGame(); return; }  // code collision, try another
+        const msg = err.type === 'peer-unavailable'
+          ? "Couldn't find that game. Double-check the code, or ask your friend for a new link."
+          : `Connection problem (${err.type}). Click <strong>Change Mode</strong> to try again.`;
+        showOnline(msg);
+      }
+
+      function leave() {
+        if (conn) conn.close();
+        if (peer) peer.destroy();
+        peer = conn = null;
+        myMark = null;
+        onlinePanel.hidden = true;
+        window.history.replaceState(null, '', location.pathname);  // drop ?join= so a refresh doesn't rejoin
+        reset();
+      }
+
+      // ---------- Mode picker ----------
+
+      function startJoin() {
+        const code = parseCode(joinInput.value);
+        if (!code) { joinInput.focus(); return; }
+        modal.close();
+        joinGame(code);
+      }
+
+      document.getElementById('modeBtn').addEventListener('click', () => {
+        leave();
+        modal.showModal();
+      });
+      document.getElementById('localBtn').addEventListener('click', () => modal.close());
+      document.getElementById('hostBtn').addEventListener('click', () => { modal.close(); hostGame(); });
+      document.getElementById('joinBtn').addEventListener('click', startJoin);
+      joinInput.addEventListener('keydown', e => { if (e.key === 'Enter') startJoin(); });
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(shareLink).then(() => {
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 1500);
+        });
+      });
+
+      reset();
+
+      // Invite links skip the picker and connect straight away
+      const inviteCode = new URLSearchParams(location.search).get('join');
+      if (inviteCode) joinGame(parseCode(inviteCode));
+      else modal.showModal();
+    })();
+  </script>
+</body>
+
+</html>

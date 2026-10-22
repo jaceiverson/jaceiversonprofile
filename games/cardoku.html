@@ -1,0 +1,2978 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cardoku — Jace Iverson</title>
+  <meta name="description"
+    content="Cardoku. I love sudoku, and wanted a way to play in a new way. Everyone has a deck of cards, so here we are.">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'UA-175301597-1');
+  </script>
+  <style>
+    /* On :root so the drag copy (attached to <body>) gets them too */
+    :root {
+      --red: #c0392b;
+      --red-50: #fbe3e0;
+    }
+
+    .cdk {
+      --card-w: 68px;
+      display: grid;
+      grid-template-columns: minmax(0, 540px) 250px;
+      gap: 2rem;
+      justify-content: center;
+      align-items: start;
+    }
+
+    /* Narrow screens: message and cards above the grid, stats below it */
+    @media (max-width: 860px) {
+      .cdk {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        max-width: 540px;
+        margin: 0 auto;
+      }
+
+      .cdk .cdk-side {
+        display: contents;
+      }
+
+      .cdk-board {
+        order: 1;
+      }
+
+      .cdk-footer {
+        order: 2;
+      }
+
+      .cdk-table {
+        justify-content: center;
+        gap: 1.5rem;
+      }
+    }
+
+    /* ---------- Grid ---------- */
+    /* minmax(0, 1fr) keeps every track equal so placed cards never resize cells */
+    .cdk-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 3px;
+      padding: 3px;
+      background: var(--navy);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      aspect-ratio: 1 / 1;
+    }
+
+    .cdk-box {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--grey-300);
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Round the four corner boxes to follow the frame's inner curve (frame radius minus its 3px padding) */
+    .cdk-box:nth-child(1) {
+      border-top-left-radius: calc(var(--radius) - 3px);
+    }
+
+    .cdk-box:nth-child(3) {
+      border-top-right-radius: calc(var(--radius) - 3px);
+    }
+
+    .cdk-box:nth-child(7) {
+      border-bottom-left-radius: calc(var(--radius) - 3px);
+    }
+
+    .cdk-box:nth-child(9) {
+      border-bottom-right-radius: calc(var(--radius) - 3px);
+    }
+
+    .cdk-cell {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 0;
+      padding: 0;
+      font: inherit;
+      color: var(--navy);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      transition: background var(--transition);
+    }
+
+    .cdk-cell.red {
+      color: var(--red);
+    }
+
+    .cdk-cell.setup-zone {
+      background: var(--warm);
+    }
+
+    .cdk-cell.legal {
+      background: var(--accent-100);
+      cursor: pointer;
+    }
+
+    .cdk-cell.removable,
+    .cdk-cell.tappable {
+      cursor: pointer;
+    }
+
+    .cdk-cell.hover-legal {
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .cdk-cell.hover-neutral {
+      box-shadow: inset 0 0 0 2px var(--navy-400);
+    }
+
+    .cdk-cell.rejected {
+      box-shadow: inset 0 0 0 2px var(--red);
+    }
+
+    .cdk-cell.hover-illegal,
+    .cdk-cell.conflict {
+      background: var(--red-50);
+      box-shadow: inset 0 0 0 2px var(--red);
+    }
+
+    /* Placed card: thin suit outline with the rank on top */
+    .cell-suit {
+      position: absolute;
+      left: 12%;
+      top: 12%;
+      width: 76%;
+      height: 76%;
+      fill: none;
+      stroke: currentColor;
+      opacity: 0.75;
+    }
+
+    .cell-suit path {
+      stroke-width: 1px;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .cell-rank {
+      position: relative;
+      font-weight: 700;
+      font-size: clamp(0.75rem, 2.6vw, 1.15rem);
+      line-height: 1;
+    }
+
+    .cdk-cell.just-placed .cell-suit,
+    .cdk-cell.just-placed .cell-rank {
+      animation: cdk-pop 0.25s ease-out;
+    }
+
+    @keyframes cdk-pop {
+      from {
+        transform: scale(1.3);
+        opacity: 0;
+      }
+    }
+
+    /* ---------- Playing cards ---------- */
+    .pc {
+      position: relative;
+      width: var(--card-w);
+      height: calc(var(--card-w) * 1.4);
+      background: var(--white);
+      border: 1px solid var(--grey-300);
+      border-radius: calc(var(--card-w) * 0.09);
+      box-shadow: 0 1px 3px rgba(20, 54, 66, 0.18);
+      color: var(--navy);
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .pc.red {
+      color: var(--red);
+    }
+
+    .pc-corner {
+      position: absolute;
+      top: 5%;
+      left: 8%;
+      font-weight: 700;
+      font-size: calc(var(--card-w) * 0.2);
+      line-height: 1.05;
+      text-align: center;
+    }
+
+    .pc-corner.pc-br {
+      top: auto;
+      left: auto;
+      bottom: 5%;
+      right: 8%;
+      transform: rotate(180deg);
+    }
+
+    .pc-pip {
+      position: absolute;
+      left: 25%;
+      top: 28%;
+      width: 50%;
+      height: 44%;
+      fill: currentColor;
+    }
+
+    .pc-joker {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 16%;
+      text-align: center;
+      font-size: calc(var(--card-w) * 0.12);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .pc-back {
+      background: repeating-linear-gradient(45deg, var(--navy) 0 5px, var(--navy-600) 5px 10px);
+      border: 3px solid var(--white);
+      box-shadow: 0 0 0 1px var(--grey-300), 0 1px 3px rgba(20, 54, 66, 0.18);
+    }
+
+    /* A card the player can pick up */
+    .cdk-card {
+      border-radius: calc(var(--card-w) * 0.09);
+      cursor: grab;
+      touch-action: none;
+      transition: transform var(--transition);
+    }
+
+    .cdk-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .cdk-card:active {
+      cursor: grabbing;
+    }
+
+    .cdk-card:focus-visible {
+      outline: 3px solid var(--navy-400);
+      outline-offset: 2px;
+    }
+
+    .cdk-card.selected {
+      transform: translateY(-8px) scale(1.04);
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .cdk-card.selected .pc {
+      box-shadow: 0 10px 20px rgba(20, 54, 66, 0.25);
+    }
+
+    .cdk-card.flip-in .pc {
+      animation: cdk-flip 0.2s ease-out;
+    }
+
+    .cdk-card.shake {
+      animation: cdk-shake 0.35s ease-in-out;
+    }
+
+    @keyframes cdk-flip {
+      from {
+        transform: scaleX(0);
+      }
+    }
+
+    @keyframes cdk-shake {
+
+      20%,
+      60% {
+        transform: translateX(-5px) rotate(-2deg);
+      }
+
+      40%,
+      80% {
+        transform: translateX(5px) rotate(2deg);
+      }
+    }
+
+    /* The card being dragged: lifted off the table with a deep shadow */
+    .cdk-ghost {
+      position: fixed;
+      z-index: 1000;
+      pointer-events: none;
+      transform-origin: 0 0;
+      cursor: grabbing;
+    }
+
+    /* The ghost itself only moves; the card inside lifts, tilts, and settles */
+    .cdk-ghost .pc {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .cdk-ghost.lifted .pc {
+      transform: scale(1.08) rotate(var(--tilt, 0deg));
+      box-shadow: 0 16px 28px rgba(20, 54, 66, 0.28), 0 4px 8px rgba(20, 54, 66, 0.18);
+    }
+
+    /* Show possible moves switch */
+    .cdk-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .cdk-toggle input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+
+    .cdk-switch {
+      position: relative;
+      flex: none;
+      width: 38px;
+      height: 22px;
+      border-radius: 11px;
+      background: var(--grey-300);
+      transition: background var(--transition);
+    }
+
+    .cdk-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--white);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: transform var(--transition);
+    }
+
+    .cdk-toggle input:checked+.cdk-switch {
+      background: var(--accent);
+    }
+
+    .cdk-toggle input:checked+.cdk-switch::after {
+      transform: translateX(16px);
+    }
+
+    .cdk-toggle input:focus-visible+.cdk-switch {
+      outline: 3px solid var(--navy-400);
+      outline-offset: 2px;
+    }
+
+    /* ---------- Side panel ---------- */
+    .cdk-side {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Brief explanation over the grid when a move is illegal */
+    .cdk-board {
+      position: relative;
+    }
+
+    .cdk-toast {
+      position: absolute;
+      left: 50%;
+      top: 12px;
+      transform: translate(-50%, -6px);
+      max-width: calc(100% - 24px);
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius);
+      background: var(--red);
+      color: var(--white);
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 5;
+    }
+
+    .cdk-toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    /* Wild reminder when hovering the card in hand */
+    .cdk-slot.has-wild:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      /* below the card, clear of the sticky navbar */
+      transform: translateX(-50%);
+      width: 190px;
+      padding: 0.45rem 0.6rem;
+      border-radius: var(--radius-sm);
+      background: var(--navy);
+      color: var(--white);
+      font-size: 0.78rem;
+      font-weight: 500;
+      line-height: 1.35;
+      text-align: center;
+      box-shadow: var(--shadow);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    body.cdk-dragging .cdk-slot.has-wild:hover::after {
+      display: none;
+    }
+
+    /* End of game summary */
+    .cdk-over {
+      text-align: center;
+      background: var(--warm);
+      border: 1px solid var(--warm-dark);
+      border-radius: var(--radius);
+      padding: 0.9rem;
+    }
+
+    .cdk-over[hidden] {
+      display: none;
+    }
+
+    .cdk-over-score {
+      display: block;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+
+    .cdk-over-note {
+      font-size: 0.85rem;
+      color: var(--grey-700);
+      margin: 0.2rem 0 0;
+    }
+
+    .cdk-achievements {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      text-align: left;
+    }
+
+    .cdk-achievement {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.6rem;
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .cdk-achievement strong {
+      display: block;
+      color: var(--navy);
+      font-size: 0.85rem;
+    }
+
+    .cdk-achievement-icon {
+      font-size: 1.1rem;
+      line-height: 1.2;
+    }
+
+    .cdk-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--grey-500);
+    }
+
+    .cdk-label b {
+      color: var(--navy);
+    }
+
+    .cdk-layouts {
+      display: flex;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 0.4rem 0 0.75rem;
+    }
+
+    .cdk-layout {
+      flex: 1;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 0.5rem;
+      border: 0;
+      background: var(--white);
+      color: var(--grey-700);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .cdk-layout+.cdk-layout {
+      border-left: 1px solid var(--grey-300);
+    }
+
+    .cdk-layout:hover {
+      background: var(--navy-50);
+    }
+
+    .cdk-layout.active {
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .cdk-tray[hidden] {
+      display: none;
+    }
+
+    .cdk-tray {
+      --card-w: 44px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      min-height: calc(44px * 1.4);
+      margin: 0.5rem 0 1rem;
+    }
+
+    .cdk-table {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .cdk-pile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .cdk-slot,
+    .cdk-deck {
+      position: relative;
+      width: var(--card-w);
+      height: calc(var(--card-w) * 1.4);
+      border-radius: calc(var(--card-w) * 0.09);
+      transition: box-shadow var(--transition);
+    }
+
+    .cdk-slot::before,
+    .cdk-deck.empty::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px dashed var(--grey-300);
+      border-radius: inherit;
+    }
+
+    .cdk-deck .pc {
+      box-shadow: 2px 2px 0 var(--white), 3px 3px 0 var(--grey-300), 5px 5px 0 var(--white), 6px 6px 0 var(--grey-300);
+    }
+
+    .cdk-deck.shuffling .pc {
+      animation: cdk-shuffle 0.6s ease-in-out;
+    }
+
+    @keyframes cdk-shuffle {
+      20% {
+        transform: translateX(-8px) rotate(-6deg);
+      }
+
+      40% {
+        transform: translateX(8px) rotate(6deg);
+      }
+
+      60% {
+        transform: translateX(-6px) rotate(-4deg);
+      }
+
+      80% {
+        transform: translateX(6px) rotate(4deg);
+      }
+    }
+
+    .cdk-discard {
+      cursor: pointer;
+    }
+
+    .cdk-discard .pc {
+      opacity: 0.5;
+    }
+
+    .cdk-discard.legal {
+      box-shadow: 0 0 0 3px var(--accent-100);
+    }
+
+    .cdk-discard.hover {
+      box-shadow: 0 0 0 3px var(--accent);
+    }
+
+    .cdk-discard.suggest {
+      animation: cdk-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes cdk-pulse {
+      50% {
+        box-shadow: 0 0 0 4px var(--warm-darker);
+      }
+    }
+
+    .cdk-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .cdk-btn-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .cdk-btn-row .btn {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .cdk-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      text-align: center;
+      background: var(--grey-50);
+      border-radius: var(--radius);
+      padding: 0.6rem 0.25rem;
+    }
+
+    .cdk-stats b {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--navy);
+    }
+
+    .cdk-stats span {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--grey-500);
+    }
+
+    .cdk-stats .cdk-score b {
+      color: var(--accent);
+    }
+
+    /* Completed rows / columns / boxes and what they scored */
+    .cdk-breakdown {
+      font-size: 0.85rem;
+      border: 1px solid var(--grey-100);
+      border-radius: var(--radius);
+      padding: 0.6rem 0.75rem;
+    }
+
+    .cdk-breakdown p {
+      color: var(--grey-500);
+      margin: 0;
+    }
+
+    .cdk-breakdown ul {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .cdk-breakdown li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .cdk-breakdown li span:first-child {
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    .cdk-breakdown li small {
+      display: block;
+      font-weight: 500;
+      color: var(--warm-darker);
+    }
+
+    .cdk-breakdown li span:last-child {
+      font-weight: 700;
+      color: var(--navy);
+      white-space: nowrap;
+    }
+
+    .cdk-cell.complete-flash {
+      animation: cdk-glow 1s ease-out;
+    }
+
+    @keyframes cdk-glow {
+      25% {
+        background: #f6e7b0;
+      }
+    }
+
+    .cdk-wide {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .cdk .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Site .btn-outline is built for dark backgrounds; invert it on this light page */
+    .cdk .btn-outline {
+      color: var(--navy);
+      border-color: var(--navy-100);
+      background: var(--white);
+    }
+
+    .cdk .btn-outline:hover:not(:disabled) {
+      color: var(--navy);
+      border-color: var(--navy);
+      background: var(--navy-50);
+    }
+
+    /* ---------- Previous games ---------- */
+    .cdk-history {
+      max-width: 820px;
+      margin: 3rem auto 0;
+    }
+
+    .cdk-history-empty {
+      color: var(--grey-500);
+    }
+
+    .cdk-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .cdk-game {
+      border: 1px solid var(--grey-100);
+      border-radius: var(--radius);
+      background: var(--white);
+    }
+
+    .cdk-game summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 1rem;
+      padding: 0.65rem 0.9rem;
+      cursor: pointer;
+      list-style: none;
+      font-size: 0.9rem;
+    }
+
+    .cdk-game summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .cdk-game summary::after {
+      content: '▸';
+      margin-left: auto;
+      color: var(--grey-500);
+      transition: transform var(--transition);
+    }
+
+    .cdk-game[open] summary::after {
+      transform: rotate(90deg);
+    }
+
+    .cdk-game-score {
+      font-weight: 700;
+      color: var(--navy);
+      min-width: 3.5rem;
+    }
+
+    .cdk-game-meta {
+      color: var(--grey-500);
+    }
+
+    .cdk-game-badges {
+      color: var(--warm-darker);
+      font-weight: 600;
+    }
+
+    .cdk-game-body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      padding: 0 0.9rem 0.9rem;
+      font-size: 0.85rem;
+    }
+
+    .cdk-game-body h4 {
+      color: var(--navy);
+      font-size: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+
+    /* Read-only mini board for a past game */
+    .cdk-mini {
+      display: grid;
+      grid-template-columns: repeat(9, 22px);
+      grid-auto-rows: 22px;
+      gap: 1px;
+      background: var(--grey-300);
+      border: 2px solid var(--navy);
+      width: max-content;
+    }
+
+    .cdk-mini span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--white);
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .cdk-mini span.red {
+      color: var(--red);
+    }
+
+    /* Box edges drawn into the 1px gap */
+    .cdk-mini .br {
+      box-shadow: 1px 0 0 var(--navy);
+    }
+
+    .cdk-mini .bb {
+      box-shadow: 0 1px 0 var(--navy);
+    }
+
+    .cdk-mini .br.bb {
+      box-shadow: 1px 0 0 var(--navy), 0 1px 0 var(--navy), 1px 1px 0 var(--navy);
+    }
+
+    .cdk-game-discards {
+      max-width: 340px;
+      line-height: 1.6;
+    }
+
+    .cdk-game-discards .red {
+      color: var(--red);
+    }
+
+    /* Hint at one achievement the player hasn't unlocked yet */
+    .cdk-over-teaser {
+      margin: 0.75rem 0 0;
+      padding-top: 0.6rem;
+      border-top: 1px dashed var(--warm-dark);
+      font-size: 0.82rem;
+      color: var(--grey-700);
+    }
+
+    .cdk-over-teaser strong {
+      color: var(--navy);
+    }
+
+    .cdk-storage-warning {
+      max-width: 820px;
+      margin: 0 auto 1.25rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      background: var(--red-50);
+      border: 1px solid var(--red);
+      color: var(--grey-800);
+      font-size: 0.9rem;
+    }
+
+    .cdk-storage-warning[hidden] {
+      display: none;
+    }
+
+    /* Completionist boxes checked for the first time this game */
+    .cdk-over-checks:empty {
+      display: none;
+    }
+
+    .cdk-over-checks {
+      margin-top: 0.75rem;
+      text-align: left;
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.6rem;
+    }
+
+    .cdk-over-checks ul {
+      margin-top: 0.3rem;
+      font-size: 0.8rem;
+      color: var(--navy);
+    }
+
+    .cdk-over-checks li {
+      padding: 0.1rem 0;
+    }
+
+    /* ---------- Feedback dialog ---------- */
+    .cdk-feedback-btn {
+      margin-top: 0.75rem;
+    }
+
+    .cdk-feedback {
+      width: min(460px, calc(100% - 32px));
+      margin: auto;
+      border: 0;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-lg);
+      color: var(--grey-700);
+    }
+
+    .cdk-feedback::backdrop {
+      background: rgba(20, 54, 66, 0.6);
+    }
+
+    .cdk-feedback h2 {
+      color: var(--navy);
+      font-size: 1.3rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .cdk-feedback-note {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+      margin-bottom: 0.75rem;
+    }
+
+    .cdk-feedback img {
+      display: block;
+      width: 100%;
+      max-height: 40vh;
+      object-fit: contain;
+      border: 1px solid var(--grey-100);
+      border-radius: var(--radius);
+      margin-bottom: 0.9rem;
+    }
+
+    .cdk-feedback textarea {
+      display: block;
+      width: 100%;
+      margin: 0.35rem 0 0.5rem;
+      padding: 0.5rem 0.6rem;
+      font: inherit;
+      font-size: 0.9rem;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius-sm);
+      resize: vertical;
+    }
+
+    .cdk-feedback-status {
+      min-height: 1.3em;
+      font-size: 0.85rem;
+      color: var(--navy);
+      margin-bottom: 0.5rem;
+    }
+
+    .cdk-feedback .btn-outline {
+      color: var(--navy);
+      border-color: var(--navy-100);
+      background: var(--white);
+    }
+
+    .cdk-feedback .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ---------- Completionist checklist ---------- */
+    .cdk-completionist {
+      max-width: 820px;
+      margin: 3rem auto 0;
+    }
+
+    /* ---------- Collapsible sections below the board ---------- */
+    .cdk-section {
+      margin-top: 2.25rem;
+    }
+
+    .cdk-section>summary {
+      position: relative;
+      display: block;
+      list-style: none;
+      cursor: pointer;
+      padding-right: 2.5rem;
+      margin-bottom: 0;
+    }
+
+    .cdk-section>summary::-webkit-details-marker {
+      display: none;
+    }
+
+    /* Arrow on the right that turns when the section opens */
+    .cdk-section>summary::after {
+      content: '';
+      position: absolute;
+      right: 0.5rem;
+      top: 0.7rem;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-right: 2px solid var(--navy-400);
+      border-bottom: 2px solid var(--navy-400);
+      transform: rotate(-45deg);
+      transition: transform var(--transition);
+    }
+
+    .cdk-section[open]>summary::after {
+      transform: rotate(45deg);
+    }
+
+    .cdk-section[open]>summary {
+      margin-bottom: 1.5rem;
+    }
+
+    .cdk-section>summary:hover h2 {
+      color: var(--navy-400);
+    }
+
+    .cdk-section>summary:focus-visible {
+      outline: 3px solid var(--navy-400);
+      outline-offset: 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* The table is wider than a phone, so it scrolls inside its box rather than the page */
+    .cdk-comp-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius);
+    }
+
+    /* Fixed layout + a colgroup keeps all 15 checkbox columns the same width */
+    .cdk-comp {
+      border-collapse: collapse;
+      table-layout: fixed;
+      width: 100%;
+      min-width: 720px;
+      font-size: 0.72rem;
+      text-align: center;
+    }
+
+    .cdk-comp col.cdk-comp-index-col {
+      width: 2rem;
+    }
+
+    .cdk-comp thead tr:last-child th {
+      font-size: 0.62rem;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .cdk-comp th,
+    .cdk-comp td {
+      padding: 0.35rem 0.25rem;
+      border-bottom: 1px solid var(--grey-100);
+    }
+
+    .cdk-comp thead th {
+      color: var(--navy);
+      background: var(--grey-50);
+      font-weight: 600;
+    }
+
+    .cdk-comp thead tr:first-child th {
+      background: var(--navy-50);
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .cdk-comp tbody tr:nth-child(even) td {
+      background: var(--grey-50);
+    }
+
+    .cdk-comp .cdk-comp-index {
+      color: var(--grey-500);
+      font-weight: 600;
+    }
+
+    .cdk-comp .group-start {
+      border-left: 2px solid var(--navy);
+    }
+
+    .cdk-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--grey-300);
+      border-radius: 3px;
+      background: var(--white);
+      color: var(--white);
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .cdk-check.on {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ---------- Achievements (locked until earned) ---------- */
+    .cdk-trophies {
+      max-width: 820px;
+      margin: 3rem auto 0;
+    }
+
+    .cdk-trophy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+      gap: 0.75rem;
+    }
+
+    .cdk-trophy {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      padding: 0.8rem 0.9rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--warm-dark);
+      background: var(--warm);
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .cdk-trophy-icon {
+      font-size: 1.5rem;
+      line-height: 1.1;
+    }
+
+    .cdk-trophy strong {
+      display: block;
+      color: var(--navy);
+      font-size: 0.95rem;
+    }
+
+    .cdk-trophy small {
+      display: block;
+      margin-top: 0.3rem;
+      color: var(--warm-darker);
+      font-weight: 600;
+    }
+
+    .cdk-trophy.locked {
+      background: var(--grey-50);
+      border: 1px dashed var(--grey-300);
+      color: var(--grey-500);
+    }
+
+    .cdk-trophy.locked strong {
+      color: var(--grey-500);
+      letter-spacing: 0.1em;
+    }
+
+    .cdk-trophy.locked.revealed strong {
+      color: var(--grey-700);
+      letter-spacing: normal;
+    }
+
+    .cdk-trophy-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--navy);
+      font-size: 1.05rem;
+      margin: 1.75rem 0 0.75rem;
+    }
+
+    .cdk-trophy-group:first-child {
+      margin-top: 0.5rem;
+    }
+
+    .cdk-trophy-group span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--grey-700);
+      background: var(--grey-100);
+      border-radius: 999px;
+      padding: 0.1rem 0.55rem;
+    }
+
+    .cdk-trophy-empty {
+      color: var(--grey-500);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .cdk-trophy.locked .cdk-trophy-icon {
+      filter: grayscale(1);
+      opacity: 0.6;
+    }
+
+    /* Optional flavor line under an achievement's name */
+    .cdk-subtitle {
+      display: block;
+      font-style: italic;
+      color: var(--warm-darker);
+      margin-bottom: 0.15rem;
+    }
+
+    /* Checklist boxes that can't be earned (Flush/Royal in rows and boxes 7–9) */
+    .cdk-comp-na {
+      color: var(--grey-300);
+    }
+
+    .cdk-new {
+      display: inline-block;
+      margin-left: 0.35rem;
+      padding: 0 0.4rem;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--white);
+      font-size: 0.65rem;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+
+    /* ---------- Rules ---------- */
+    .cdk-rules {
+      max-width: 820px;
+      margin: 3rem auto 0;
+    }
+
+    .cdk-rules h3 {
+      color: var(--navy);
+      margin: 1.25rem 0 0.4rem;
+    }
+
+    .cdk-rules ol,
+    .cdk-rules ul {
+      padding-left: 1.25rem;
+      list-style: revert;
+    }
+
+    .cdk-rules li {
+      margin-bottom: 0.35rem;
+    }
+
+    .cdk-table-scores {
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .cdk-table-scores th,
+    .cdk-table-scores td {
+      padding: 0.35rem 1.1rem;
+      border-bottom: 1px solid var(--grey-100);
+    }
+
+    .cdk-table-scores th {
+      color: var(--navy);
+    }
+
+    .cdk-table-scores td:first-child {
+      color: var(--grey-500);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+        <a href="/" class="navbar-brand">Jace Iverson</a>
+        <button class="navbar-toggle" id="navToggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="navbar-nav" id="navMenu">
+          <li><a href="/" class="navbar-link">Home</a></li>
+          <li><a href="/projects" class="navbar-link active">Projects</a></li>
+          <li><a href="/resume" class="navbar-link">Resume</a></li>
+          <li><a href="/links" class="navbar-link">Links</a></li>
+          <li><a href="mailto:iverson.jace@gmail.com" class="navbar-link navbar-cta">Email Me</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page header photo: inline background-image so url() is resolved from this HTML file (not css/style.css). -->
+  <div class="page-header">
+    <div class="page-header-media" style="background-image: url('../img/snowbasin-images/haze.jpeg');"
+      role="presentation" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/projects">Projects</a> › <a href="/games/">Games</a></nav>
+      <h1>Cardoku - beta testing</h1>
+      <p>A deck of cards & sudoku rules (with wilds). Place cards on the grid to try to get the high score. Try to
+        unlock all the achievements.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <p class="cdk-storage-warning" id="storageWarning" hidden>
+        ⚠️ Your browser is blocking this site from saving data, so your game, Previous Games, and achievements
+        won't be kept. Allow cookies / site data for this site to fix it (in Brave: click the lion icon in the
+        address bar, or check Settings → Shields → Cookies).
+      </p>
+
+      <div class="cdk" id="cardoku">
+
+        <div class="cdk-board">
+          <div class="cdk-grid" id="grid" aria-label="Cardoku grid"></div>
+          <div class="cdk-toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+
+        <aside class="cdk-side">
+          <div class="cdk-over" id="overPanel" hidden>
+            <span class="cdk-label">Final score</span>
+            <span class="cdk-over-score" id="finalScore">0</span>
+            <p class="cdk-over-note" id="finalNote"></p>
+            <div class="cdk-achievements" id="earned"></div>
+            <div class="cdk-over-checks" id="newChecks"></div>
+            <p class="cdk-over-teaser" id="teaser"></p>
+            <button type="button" class="btn btn-outline btn-sm cdk-wide cdk-feedback-btn" id="feedbackBtn">Share game
+              feedback</button>
+          </div>
+
+          <div id="setupPanel">
+            <span class="cdk-label">Starting layout</span>
+            <div class="cdk-layouts" role="group" aria-label="Starting layout">
+              <button type="button" class="cdk-layout" data-layout="default">Default</button>
+              <button type="button" class="cdk-layout" data-layout="random">Random</button>
+              <button type="button" class="cdk-layout" data-layout="custom">Custom</button>
+            </div>
+            <div class="cdk-tray" id="tray"></div>
+            <button type="button" class="btn btn-primary btn-sm cdk-wide" id="dealBtn">Shuffle &amp; Deal</button>
+          </div>
+
+          <div id="playPanel" hidden>
+            <div class="cdk-table">
+              <div class="cdk-pile">
+                <div class="cdk-deck" id="deck"></div>
+                <span class="cdk-label">Deck <b id="deckCount">0</b></span>
+              </div>
+              <div class="cdk-pile">
+                <div class="cdk-slot" id="slot" data-tip="Reminder: 10, J, Q, K and Jokers are wild."></div>
+                <span class="cdk-label">Your card</span>
+              </div>
+              <div class="cdk-pile">
+                <div class="cdk-slot cdk-discard" id="discardSlot" role="button" tabindex="0" aria-label="Discard pile">
+                </div>
+                <span class="cdk-label">Discard <b id="discardCount">0</b></span>
+              </div>
+            </div>
+            <div class="cdk-btn-row">
+              <button type="button" class="btn btn-outline btn-sm" id="discardBtn">Discard</button>
+              <button type="button" class="btn btn-outline btn-sm" id="undoBtn">Undo</button>
+            </div>
+          </div>
+
+          <div class="cdk-footer">
+            <label class="cdk-toggle">
+              <input type="checkbox" id="showMoves">
+              <span class="cdk-switch" aria-hidden="true"></span>
+              Show possible moves
+            </label>
+            <div class="cdk-stats">
+              <div class="cdk-score"><b id="statScore">0</b><span>Score</span></div>
+              <div><b id="statPlaced">0</b><span>Placed</span></div>
+              <div><b id="statDiscarded">0</b><span>Discards</span></div>
+              <div><b id="statBest">–</b><span>Best</span></div>
+            </div>
+            <div class="cdk-breakdown" id="breakdown" aria-live="polite"></div>
+            <button type="button" class="btn btn-outline btn-sm cdk-wide" id="newBtn">New Game</button>
+          </div>
+        </aside>
+      </div>
+
+      <details class="cdk-history cdk-section" data-section="history">
+        <summary class="section-header">
+          <h2>Previous Games</h2>
+          <div class="section-divider"></div>
+          <p class="text-muted">Saved in this browser only. Tap a game to see its final board.</p>
+        </summary>
+        <div id="history"></div>
+      </details>
+
+      <details class="cdk-rules cdk-section" data-section="rules">
+        <summary class="section-header">
+          <h2>How to Play</h2>
+          <div class="section-divider"></div>
+          <p class="text-muted">Setup, the cards, scoring, and bonuses.</p>
+        </summary>
+
+        <h3>Setup</h3>
+        <p>The Ace through 9 of spades start in the bottom three boxes of the grid, three cards per box and three
+          per row.</p>
+        <ul>
+          <li><strong>Default</strong> lines them up in a staircase: A-2-3, 4-5-6, 7-8-9.</li>
+          <li><strong>Random</strong> uses the same squares but shuffles which spade goes where.</li>
+          <li><strong>Custom</strong> lets you drag them anywhere in the bottom three boxes. Limit to 3 cards per row
+            and box (you can stack 3 in a column)</li>
+        </ul>
+        <p>Until you deal, you can tap a placed spade to pick it back up. When you're happy, hit
+          <strong>Shuffle &amp; Deal</strong>.
+        </p>
+
+        <h3>Playing</h3>
+        <ol>
+          <li>The rest of the deck (45 cards, jokers included) is shuffled and you draw one card at a time.</li>
+          <li>Every card you play has to adhere to sudoku rules (1 digit per row, column, and box) and touch another
+            card orthogonally: directly above, below, left, or right</li>
+          <li>Drag the card onto an open square, or just tap the square you want. With <strong>Show possible
+              moves</strong> on, legal squares light up green.</li>
+          <li>If you can't (or don't want to) place it, discard it.</li>
+          <li><strong>Undo</strong> takes back your last placement or discard, all the way back to the deal.</li>
+          <li>The game ends when the deck runs out.</li>
+        </ol>
+
+        <h3>The Cards</h3>
+        <ul>
+          <li><strong>Ace–9</strong> count as 1–9 and follow normal sudoku rules.</li>
+          <li><strong>10, J, Q, K</strong> are wilds. They don't block numbers, but two wilds of the same suit
+            or the same rank (two Kings, for example) can't share a row, column, or box.</li>
+          <li><strong>Jokers</strong> can go anywhere, as long as they don't share a row, column, or box with
+            the other joker.</li>
+        </ul>
+
+        <h3>Scoring</h3>
+        <p>Points come from completing a full row, column, or box (all 9 squares filled). The top of the board
+          is hardest to reach, so it's worth the most. The outside columns get a bonus.</p>
+        <table class="cdk-table-scores">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Row</th>
+              <th>Column</th>
+              <th>Box</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>27</td>
+              <td>27</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>27</td>
+              <td>18</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>27</td>
+              <td>18</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>18</td>
+              <td>18</td>
+              <td>18</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>18</td>
+              <td>18</td>
+              <td>18</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>18</td>
+              <td>18</td>
+              <td>18</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>9</td>
+              <td>18</td>
+              <td>9</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>9</td>
+              <td>18</td>
+              <td>9</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>9</td>
+              <td>27</td>
+              <td>9</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Rows are numbered top to bottom, columns left to right, and boxes left to right, top to bottom. Just like
+          normal sudoku.</p>
+
+        <h3>Bonus Multipliers</h3>
+        <p>A completed row, column, or box can earn addative bonus multipliers.</p>
+        <ul>
+          <li><strong>Clean ×2</strong>: no wilds or jokers.</li>
+          <li><strong>Flush ×2</strong>: all 9 cards are the same suit (wilds included, jokers break it).</li>
+          <li><strong>Straight ×3</strong>: Ace through 9 in order, in either direction. Rows read left to
+            right, columns top to bottom, and boxes from top left to bottom right. A Straight is always Clean
+            too, so it's worth at least ×5.</li>
+          <li><strong>Royal ×2</strong>: a Straight that's also a Flush. Stacks with everything above, for ×9.
+          </li>
+        </ul>
+
+        <h3>Discards</h3>
+        <p>Every discarded card costs 9 points, so your score can go negative. Choose your scratches wisely.</p>
+
+        <p class="text-muted" id="shareNote" hidden>When you finish a game, the final board, discards, score, and
+          achievements are shared anonymously with Jace. No personal information is sent.</p>
+      </details>
+
+      <details class="cdk-trophies cdk-section" data-section="achievements">
+        <summary class="section-header">
+          <h2>Achievements</h2>
+          <div class="section-divider"></div>
+          <p class="text-muted" id="trophyCount"></p>
+        </summary>
+        <div id="trophies"></div>
+      </details>
+
+      <details class="cdk-completionist cdk-section" data-section="completionist">
+        <summary class="section-header">
+          <h2>Completionist</h2>
+          <div class="section-divider"></div>
+          <p class="text-muted" id="compCount"></p>
+        </summary>
+        <div class="cdk-comp-wrap">
+          <table class="cdk-comp" id="compTable"></table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- Game feedback: a picture of the final board plus the game's data, emailed via the results script -->
+  <dialog class="cdk-feedback" id="feedbackDialog" aria-labelledby="feedbackTitle">
+    <h2 id="feedbackTitle">Share game feedback</h2>
+    <p class="cdk-feedback-note">Sends this board, your game data, and your note to Jace.</p>
+    <img id="feedbackImage" alt="Your final board">
+    <label for="feedbackMessage" class="cdk-label">Anything to add? (optional)</label>
+    <textarea id="feedbackMessage" rows="4" maxlength="2000"
+      placeholder="A rule that felt off, a bug, an idea…"></textarea>
+    <p class="cdk-feedback-status" id="feedbackStatus" aria-live="polite"></p>
+    <div class="cdk-btn-row">
+      <button type="button" class="btn btn-outline btn-sm" id="feedbackCancel">Cancel</button>
+      <button type="button" class="btn btn-primary btn-sm" id="feedbackSend">Send</button>
+    </div>
+  </dialog>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">Jace Iverson</span>
+        <div class="footer-links">
+          <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:iverson.jace@gmail.com">Email</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a
+            coffee</a>
+        </div>
+        <span>&copy;
+          <script>document.write(new Date().getFullYear())</script> Jace Iverson
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+
+    // Cardoku
+    (function () {
+      const SUITS = {
+        S: { name: 'spades', sym: '♠', color: 'black', path: 'M12 2.5C10 6 4.5 9 4.5 13.6c0 2.5 2 4.4 4.3 4.4 1.3 0 2.4-.5 3-1.4-.2 1.9-1 3.4-2.3 4.4h5c-1.3-1-2.1-2.5-2.3-4.4.6.9 1.7 1.4 3 1.4 2.3 0 4.3-1.9 4.3-4.4C19.5 9 14 6 12 2.5z' },
+        H: { name: 'hearts', sym: '♥', color: 'red', path: 'M12 20.5S3.5 15 3.5 9.2C3.5 6.3 5.6 4.3 8.2 4.3c1.6 0 3 .9 3.8 2.2.8-1.3 2.2-2.2 3.8-2.2 2.6 0 4.7 2 4.7 4.9 0 5.8-8.5 11.3-8.5 11.3z' },
+        D: { name: 'diamonds', sym: '♦', color: 'red', path: 'M12 2.5l7 9.5-7 9.5-7-9.5z' },
+        C: { name: 'clubs', sym: '♣', color: 'black', path: 'M7.84 8.63A4.4 4.4 0 1 1 16.16 8.63A4.4 4.4 0 1 1 12.89 15.2Q13.2 19 15.5 21H8.5Q10.8 19 11.11 15.2A4.4 4.4 0 1 1 7.84 8.63Z' }
+      };
+      const STAR = 'M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z';
+      const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+      const NUMBER_RANKS = RANKS.slice(0, 9);
+      const RANK_NAMES = { A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' };
+      const SETUP_BOXES = [6, 7, 8];  // bottom row of boxes
+      const LAYOUT_CELLS = [54, 55, 56, 66, 67, 68, 78, 79, 80];  // staircase: A-2-3, 4-5-6, 7-8-9
+      const DECK_SIZE = 45;
+      const BEST_KEY = 'cardoku-best-score';
+      const SHOW_MOVES_KEY = 'cardoku-show-moves';
+      const HISTORY_KEY = 'cardoku-history';
+      const UNLOCKED_KEY = 'cardoku-achievements';  // older format: { id: date } (read once, then ACHIEVEMENT_STATE_KEY)
+      const COMPLETIONIST_KEY = 'cardoku-completionist';  // ['r0:completed', 'b4:clean', ...]
+      const REVEALED_KEY = 'cardoku-revealed';  // older format: teased ids (read once, then ACHIEVEMENT_STATE_KEY)
+      const ACHIEVEMENT_STATE_KEY = 'cardoku-achievement-state';  // { id: { unlocked, titleVisible } }
+      const CURRENT_KEY = 'cardoku-current';    // the game in progress, so a refresh picks up where you left off
+      const OPEN_SECTIONS_KEY = 'cardoku-open-sections';  // which sections below the board are expanded
+      const FINISHED_KEY = 'cardoku-finished';  // { count, lastId }: lifetime finished games in this browser
+      const HISTORY_LIMIT = 50;
+      const DISCARD_PENALTY = 9;
+      const BREAK_POINTS = 180;  // score needed for the "break ___" achievements
+      const TRASH_POINTS = 100;  // score needed for the Taking Out the Trash achievements
+
+      // Finished games are POSTed here (a Google Apps Script web app). Leave empty to send nothing.
+      const RESULTS_URL = 'https://script.google.com/macros/s/AKfycbzoZjsnUscCSk9Fo58W5tdfh_X9Wbb4FmtHICKGiBQhoyxA3b2ucKMMkN-CCo_EM_GzyA/exec';
+      const RULES_VERSION = '0.1';  // bump when scoring or rules change, so results can be compared fairly
+
+      // Names and descriptions could later live in a JSON file; the checks below are keyed by id
+      const ACHIEVEMENTS = [
+        { id: 'perfect', icon: '🎯', name: 'Perfect Score', desc: 'Finish with exactly 81 points.' },
+        { id: 'no-foundation', icon: '🏗️', name: 'No Foundation Needed', desc: `Score ${BREAK_POINTS}+ without completing any of the bottom 3 rows.` },
+        { id: 'different-life', icon: '🃏', name: 'In a Different Life', desc: 'Surround an Ace with a King, Queen, Jack, and 10 (above, below, left, and right).' },
+        { id: 'wild-to-7', icon: '7️⃣', name: 'Wild to 7', desc: 'Complete a row, column, or box reading Joker, A, K, Q, J, 10, 9, 8, 7 (either direction).' },
+        { id: 'positive-diagonal', icon: '↗️', name: 'Positive Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from bottom left to top right.` },
+        { id: 'negative-diagonal', icon: '↘️', name: 'Negative Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from top left to bottom right.` },
+        { id: 'x-marks', icon: '❌', name: 'X Marks the Spot', desc: `Score ${BREAK_POINTS}+ and fill both diagonals.` },
+        { id: 'diagonal-purest', icon: '💎', name: 'Positive Diagonal Purest', desc: 'Fill the positive diagonal with only number cards (A–9).' },
+        { id: 'diagonal-royalty', icon: '👑', name: 'Positive Diagonal Royalty', desc: 'Fill the positive diagonal A through 9, bottom left to top right.' },
+        { id: 'neg-diagonal-purest', icon: '💎', name: 'Negative Diagonal Purest', desc: 'Fill the negative diagonal with only number cards (A–9).' },
+        { id: 'neg-diagonal-royalty', icon: '👑', name: 'Negative Diagonal Royalty', desc: 'Fill the negative diagonal A through 9, top left to bottom right.' },
+        { id: 'matrix', icon: '🟩', name: 'The Matrix', desc: 'Fill both diagonals with no wilds, each holding A–9 exactly once.' },
+        { id: 'hole-in-heart', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
+        { id: 'purist', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
+        { id: 'king-of-world', icon: '🌍', name: 'King of the World', desc: 'Complete Row 1 as a Royal. Where else would we be?' },
+        // id kept from when this was named Resource Manager, so earlier unlocks still count
+        { id: 'resource-manager', icon: '💼', name: 'Resource CEO', desc: 'Every card on the board is part of a completed row, column, or box.' },
+        { id: 'no-discards', icon: '♻️', name: 'Resource Manager', desc: 'Finish a game without discarding a single card.' },
+        { id: 'trash-1', icon: '🗑️', name: 'Taking Out the Trash I', desc: `Discard 5 or more cards and still score ${TRASH_POINTS}+.` },
+        { id: 'trash-2', icon: '🚛', name: 'Taking Out the Trash II', desc: `Discard 10 or more cards and still score ${TRASH_POINTS}+.` },
+        { id: 'clean-3-corner', icon: '3️⃣', name: 'Clean 3 in the Corner', desc: 'Complete box 3 Clean with a 3 in the top right corner.' },
+        { id: 'the-block', icon: '🧱', name: 'The Block', desc: 'Complete rows 4–9 without placing any cards in rows 1–3.' },
+        { id: 'picture-frame', icon: '🖼️', name: 'Picture Frame', desc: 'Fill every square around the outside edge of the board.' },
+        { id: 'first-game', icon: '🐣', name: "Beginner's Skill", desc: 'Finish your first game.' },
+        { id: 'sudoku-secret', icon: '🤫', name: 'Sudoku Secret', desc: 'Finish 45 games.' },
+        { id: 'zero', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
+        { id: 'zero-with-discards', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' }
+      ];
+
+      // Checklist boxes that can never be filled: rows 7–9 and boxes 7–9 start with three spades,
+      // which rules out a Flush or Royal there (the only other spades are wilds, at most one per row/box)
+      const compPossible = (prefix, n, column) => !(prefix !== 'c' && n >= 6 && (column === 'flush' || column === 'royal'));
+
+      // Completionist achievements: a bonus earned in every row / column / box, counted across all games
+      const COMP_ACHIEVEMENT_GROUPS = [
+        { prefix: 'r', one: 'row', many: 'rows', icon: '↔️', columns: ['completed', 'clean', 'flush', 'straight'] },
+        { prefix: 'c', one: 'column', many: 'columns', icon: '↕️', columns: ['completed', 'clean', 'flush', 'straight', 'royal'] },
+        { prefix: 'b', one: 'box', many: 'boxes', icon: '🔳', columns: ['completed', 'clean', 'flush', 'straight'] }
+      ];
+      const capitalize = w => w[0].toUpperCase() + w.slice(1);
+      COMP_ACHIEVEMENT_GROUPS.forEach(g => g.columns.forEach(column => {
+        const limited = !compPossible(g.prefix, 8, column);
+        ACHIEVEMENTS.push({
+          id: `comp-${g.prefix}-${column}`,
+          icon: g.icon,
+          name: `Completionist: ${column === 'completed' ? '' : capitalize(column) + ' '}${capitalize(g.many)}`,
+          desc: column === 'completed'
+            ? `Complete every ${g.one} at least once, across all your games.`
+            : `Get a ${capitalize(column)} in every ${g.one}${limited ? ' 1–6 (7–9 start with spades, so they can\'t)' : ''} at least once, across all your games.`
+        });
+      }));
+      ACHIEVEMENTS.push({
+        id: 'completionist-complete',
+        icon: '🏅',
+        name: "Completionist's Completion",
+        subtitle: "Wow, you are thorough, aren't you?",
+        desc: 'Check every box in the Completionist checklist.'
+      });
+      const BONUSES = { clean: 2, flush: 2, straight: 3, royal: 2 };
+
+      // Row, column, and box neighbors of each cell
+      const PEERS = Array.from({ length: 81 }, (_, i) => {
+        const r = Math.floor(i / 9), c = i % 9, br = r - r % 3, bc = c - c % 3;
+        const peers = new Set();
+        for (let k = 0; k < 9; k++) {
+          peers.add(r * 9 + k);
+          peers.add(k * 9 + c);
+          peers.add((br + Math.floor(k / 3)) * 9 + bc + k % 3);
+        }
+        peers.delete(i);
+        return [...peers];
+      });
+      const boxOf = i => Math.floor(i / 27) * 3 + Math.floor((i % 9) / 3);
+
+      // Orthogonally adjacent cells (cards must be played touching one of these)
+      const NEIGHBORS = Array.from({ length: 81 }, (_, i) => {
+        const r = Math.floor(i / 9), c = i % 9;
+        return [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]
+          .filter(([nr, nc]) => nr >= 0 && nr < 9 && nc >= 0 && nc < 9)
+          .map(([nr, nc]) => nr * 9 + nc);
+      });
+
+      // Every scoring element, with its cells in reading order and its base points
+      const ELEMENTS = [];
+      for (let n = 0; n < 9; n++) {
+        const third = [27, 18, 9][Math.floor(n / 3)];
+        ELEMENTS.push({ key: 'r' + n, name: `Row ${n + 1}`, base: third, cells: [...Array(9)].map((_, k) => n * 9 + k) });
+        ELEMENTS.push({ key: 'c' + n, name: `Column ${n + 1}`, base: n === 0 || n === 8 ? 27 : 18, cells: [...Array(9)].map((_, k) => k * 9 + n) });
+        const br = Math.floor(n / 3) * 3, bc = (n % 3) * 3;
+        ELEMENTS.push({ key: 'b' + n, name: `Box ${n + 1}`, base: third, cells: [...Array(9)].map((_, k) => (br + Math.floor(k / 3)) * 9 + bc + k % 3) });
+      }
+
+      const kind = card => card.rank === 'JOKER' ? 'joker' : NUMBER_RANKS.includes(card.rank) ? 'num' : 'wild';
+      const value = card => card.rank === 'A' ? 1 : Number(card.rank);
+      const colorOf = card => card.suit ? SUITS[card.suit].color : card.color;
+      const cardName = card => card.rank === 'JOKER'
+        ? `${card.color} Joker`
+        : `${RANK_NAMES[card.rank] || card.rank} of ${SUITS[card.suit].name}`;
+
+      const makeCard = (rank, suit) => ({ rank, suit });
+      const setupSpades = () => NUMBER_RANKS.map(r => makeCard(r, 'S'));
+
+      function shuffle(cards) {
+        for (let i = cards.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+        return cards;
+      }
+
+      function buildDeck() {
+        const deck = [];
+        for (const suit of Object.keys(SUITS)) {
+          for (const rank of RANKS) {
+            if (suit === 'S' && NUMBER_RANKS.includes(rank)) continue;  // already on the board
+            deck.push(makeCard(rank, suit));
+          }
+        }
+        deck.push({ rank: 'JOKER', suit: null, color: 'red' }, { rank: 'JOKER', suit: null, color: 'black' });
+        return shuffle(deck);
+      }
+
+      // ---------- Card markup ----------
+
+      const pathFor = card => card.suit ? SUITS[card.suit].path : STAR;
+
+      function faceHTML(card) {
+        const joker = card.rank === 'JOKER';
+        const corner = joker ? '★' : `${card.rank}<br>${SUITS[card.suit].sym}`;
+        return `<div class="pc ${colorOf(card)}" aria-hidden="true">
+          <span class="pc-corner">${corner}</span>
+          <svg class="pc-pip" viewBox="0 0 24 24"><path d="${pathFor(card)}"/></svg>
+          ${joker ? '<span class="pc-joker">JOKER</span>' : ''}
+          <span class="pc-corner pc-br">${corner}</span>
+        </div>`;
+      }
+
+      const BACK_HTML = '<div class="pc pc-back" aria-hidden="true"></div>';
+
+      // Placed cards show sudoku digits, so an Ace reads as 1 on the grid
+      const GRID_LABELS = { A: '1', JOKER: 'JK' };
+
+      function cellHTML(card) {
+        return `<svg class="cell-suit" viewBox="0 0 24 24" aria-hidden="true"><path d="${pathFor(card)}"/></svg>
+          <span class="cell-rank">${GRID_LABELS[card.rank] || card.rank}</span>`;
+      }
+
+      // ---------- DOM ----------
+
+      const $ = id => document.getElementById(id);
+      const gridEl = $('grid'), trayEl = $('tray'), deckEl = $('deck'), slotEl = $('slot'), discardEl = $('discardSlot');
+      const toastEl = $('toast'), dealBtn = $('dealBtn'), discardBtn = $('discardBtn'), newBtn = $('newBtn'), undoBtn = $('undoBtn');
+      const layoutBtns = document.querySelectorAll('.cdk-layout');
+      const cellEls = [];
+
+      for (let b = 0; b < 9; b++) {
+        const box = document.createElement('div');
+        box.className = 'cdk-box';
+        for (let k = 0; k < 9; k++) {
+          const i = (Math.floor(b / 3) * 3 + Math.floor(k / 3)) * 9 + (b % 3) * 3 + k % 3;
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'cdk-cell';
+          cell.dataset.cell = i;
+          cell.addEventListener('click', () => onCellClick(i));
+          cellEls[i] = cell;
+          box.appendChild(cell);
+        }
+        gridEl.appendChild(box);
+      }
+
+      // ---------- State ----------
+
+      let phase;        // 'setup' | 'play' | 'over'
+      let grid;         // 81 cells, each a card or null
+      let tray;         // spades left to place during setup
+      let deck;
+      let active;       // the drawn card waiting to be placed
+      let discards;
+      let placed;
+      let discarded;
+      let busy = false; // true while a card is animating
+      let selected = null;
+      let lastPlaced = null;
+      let toastTimer = null;
+      let newBest = false;
+      let gameId = null;       // identifies a game in the saved history and in sent results
+      let earned = [];         // achievement ids from the last finished game
+      let newlyUnlocked = [];  // the subset of `earned` this browser had never unlocked before
+      let teaser = null;       // a random still-locked achievement shown at game over
+      let newChecks = [];      // Completionist boxes this game checked for the first time
+      let drawingCard = null;  // the card mid-flight from the deck, so a save never loses it
+      let layout = 'default';  // 'default' | 'random' | 'custom'
+      let history = [];        // snapshots taken before each placement/discard, for Undo
+      let completed = new Set();  // keys of elements already complete, to spot new ones
+      let flashCells = new Set();
+      let best = null;         // best final score in this browser (scores can be negative)
+      let showMoves = true;
+      try {
+        const savedBest = localStorage.getItem(BEST_KEY);
+        if (savedBest !== null && !isNaN(savedBest)) best = Number(savedBest);
+        showMoves = localStorage.getItem(SHOW_MOVES_KEY) !== 'off';
+      } catch (e) { /* storage blocked */ }
+
+      // ---------- Rules ----------
+
+      function conflicts(card, i) {
+        const k = kind(card);
+        return PEERS[i].filter(j => {
+          const other = grid[j];
+          if (!other || kind(other) !== k) return false;
+          if (k === 'num') return value(other) === value(card);
+          if (k === 'wild') return other.suit === card.suit || other.rank === card.rank;
+          return true;  // two jokers
+        });
+      }
+
+      function boxCounts() {
+        const counts = Array(9).fill(0);
+        grid.forEach((card, i) => { if (card) counts[boxOf(i)]++; });
+        return counts;
+      }
+
+      function rowCounts() {
+        const counts = Array(9).fill(0);
+        grid.forEach((card, i) => { if (card) counts[Math.floor(i / 9)]++; });
+        return counts;
+      }
+
+      // Setup: spades go in the bottom three boxes, at most three per box and three per row
+      function setupFull(i) {
+        if (boxCounts()[boxOf(i)] >= 3) return 'That box already has three spades.';
+        if (rowCounts()[Math.floor(i / 9)] >= 3) return 'That row already has three spades.';
+        return null;
+      }
+
+      // Cell indexes (plus 'discard' during play) where this card may go
+      function legalTargets(card) {
+        const targets = new Set();
+        if (phase === 'setup') {
+          grid.forEach((cell, i) => {
+            if (!cell && SETUP_BOXES.includes(boxOf(i)) && !setupFull(i)) targets.add(i);
+          });
+          return targets;
+        }
+        grid.forEach((cell, i) => {
+          if (!cell && touching(i) && conflicts(card, i).length === 0) targets.add(i);
+        });
+        targets.add('discard');
+        return targets;
+      }
+
+      const touching = i => NEIGHBORS[i].some(j => grid[j]);
+
+      function whyIllegal(card, i) {
+        if (grid[i]) return 'That square is already taken.';
+        if (phase === 'setup') {
+          return SETUP_BOXES.includes(boxOf(i)) ? setupFull(i) : 'Spades go in the bottom three boxes.';
+        }
+        if (!touching(i)) return 'Cards have to touch another card (above, below, left, or right).';
+        const k = kind(card);
+        if (k === 'num') return `Only one ${value(card) === 1 ? 'Ace' : value(card)} per row, column, and box.`;
+        if (k === 'wild') {
+          // Same rank takes priority in the message, e.g. "Only one King per row, column, and box."
+          const sameRank = conflicts(card, i).some(j => grid[j].rank === card.rank);
+          return sameRank
+            ? `Only one ${RANK_NAMES[card.rank] || card.rank} per row, column, and box.`
+            : `Only one ${SUITS[card.suit].name.slice(0, -1)} wild per row, column, and box.`;
+        }
+        return "Jokers can't share a row, column, or box.";
+      }
+
+      // ---------- Scoring ----------
+
+      // Bonuses a completed element earns, or null if it isn't complete yet
+      function elementBonuses(el) {
+        const cards = el.cells.map(i => grid[i]);
+        if (cards.some(c => !c)) return null;
+        const clean = cards.every(c => kind(c) === 'num');
+        const flush = cards.every(c => c.suit && c.suit === cards[0].suit);
+        const values = clean ? cards.map(value).join() : '';
+        const straight = values === '1,2,3,4,5,6,7,8,9' || values === '9,8,7,6,5,4,3,2,1';
+        const royal = straight && flush;
+        return Object.keys(BONUSES).filter(b => ({ clean, flush, straight, royal })[b]);
+      }
+
+      function scoreBoard() {
+        const items = [];
+        for (const el of ELEMENTS) {
+          const bonuses = elementBonuses(el);
+          if (!bonuses) continue;
+          const mult = bonuses.length ? bonuses.reduce((sum, b) => sum + BONUSES[b], 0) : 1;
+          items.push({ key: el.key, name: el.name, cells: el.cells, base: el.base, bonuses, mult, points: el.base * mult });
+        }
+        const penalty = discarded * DISCARD_PENALTY;
+        return { items, penalty, total: items.reduce((sum, it) => sum + it.points, 0) - penalty };
+      }
+
+      const fmt = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
+      const titleCase = s => s[0].toUpperCase() + s.slice(1);
+      const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+      function breakdownHTML({ items, penalty }) {
+        if (!items.length && !penalty) return '<p>Complete a row, column, or box to score.</p>';
+        const lines = [...items].sort((a, b) => b.points - a.points).map(it => `<li>
+            <span>${it.name}${it.bonuses.length ? `<small>${it.bonuses.map(titleCase).join(' + ')} ×${fmt(it.mult)}</small>` : ''}</span>
+            <span>${it.base}${it.mult !== 1 ? ` × ${fmt(it.mult)} = ${fmt(it.points)}` : ''}</span>
+          </li>`);
+        if (penalty) {
+          lines.push(`<li><span>Discards</span><span>−${DISCARD_PENALTY} × ${discarded} = −${penalty}</span></li>`);
+        }
+        return '<ul>' + lines.join('') + '</ul>';
+      }
+
+      // ---------- Achievements ----------
+
+      const POS_DIAGONAL = [...Array(9)].map((_, k) => (8 - k) * 9 + k);  // bottom left → top right
+      const NEG_DIAGONAL = [...Array(9)].map((_, k) => k * 9 + k);        // top left → bottom right
+      const BORDER = [...Array(81).keys()].filter(i => i < 9 || i >= 72 || i % 9 === 0 || i % 9 === 8);
+      const WILD_TO_7 = ['JOKER', 'A', 'K', 'Q', 'J', '10', '9', '8', '7'];
+
+      const isFull = cells => cells.every(i => grid[i]);
+      const isEmpty = cells => cells.every(i => !grid[i]);
+      const allNumbers = cells => cells.every(i => grid[i] && kind(grid[i]) === 'num');
+      const cellsOf = key => ELEMENTS.find(el => el.key === key).cells;
+
+      const ACHIEVEMENT_CHECKS = {
+        'perfect': s => s.total === 81,
+        'no-foundation': s => s.total >= BREAK_POINTS && !['r6', 'r7', 'r8'].some(k => s.done.has(k)),
+        'different-life': () => grid.some((card, i) => card && card.rank === 'A' && NEIGHBORS[i].length === 4 &&
+          NEIGHBORS[i].map(j => grid[j] && grid[j].rank).sort().join() === '10,J,K,Q'),
+        'wild-to-7': s => s.items.some(it => {
+          const ranks = it.cells.map(i => grid[i].rank).join();
+          return ranks === WILD_TO_7.join() || ranks === [...WILD_TO_7].reverse().join();
+        }),
+        'positive-diagonal': s => s.total >= BREAK_POINTS && isFull(POS_DIAGONAL),
+        'negative-diagonal': s => s.total >= BREAK_POINTS && isFull(NEG_DIAGONAL),
+        'x-marks': s => s.total >= BREAK_POINTS && isFull(POS_DIAGONAL) && isFull(NEG_DIAGONAL),
+        'diagonal-purest': () => allNumbers(POS_DIAGONAL),
+        'diagonal-royalty': () => allNumbers(POS_DIAGONAL) && POS_DIAGONAL.map(i => value(grid[i])).join() === '1,2,3,4,5,6,7,8,9',
+        'neg-diagonal-purest': () => allNumbers(NEG_DIAGONAL),
+        'neg-diagonal-royalty': () => allNumbers(NEG_DIAGONAL) && NEG_DIAGONAL.map(i => value(grid[i])).join() === '1,2,3,4,5,6,7,8,9',
+        'matrix': () => [POS_DIAGONAL, NEG_DIAGONAL].every(d =>
+          allNumbers(d) && d.map(i => value(grid[i])).sort((a, b) => a - b).join() === '1,2,3,4,5,6,7,8,9'),
+        'hole-in-heart': s => s.total >= BREAK_POINTS && isEmpty(cellsOf('b4')) &&
+          ['b0', 'b1', 'b2', 'b3', 'b5', 'b6', 'b7', 'b8'].every(k => !isEmpty(cellsOf(k))),
+        'purist': s => grid.every(card => !card || kind(card) === 'num') && s.total > 0,
+        'king-of-world': s => s.items.some(it => it.key === 'r0' && it.bonuses.includes('royal')),
+        'resource-manager': s => grid.every((card, i) => !card || s.items.some(it => it.cells.includes(i))),
+        'no-discards': () => discarded === 0,
+        'trash-1': s => discarded >= 5 && s.total >= TRASH_POINTS,
+        'trash-2': s => discarded >= 10 && s.total >= TRASH_POINTS,
+        'clean-3-corner': s => s.items.some(it => it.key === 'b2' && it.bonuses.includes('clean')) && value(grid[8]) === 3,
+        'the-block': s => ['r3', 'r4', 'r5', 'r6', 'r7', 'r8'].every(k => s.done.has(k)) &&
+          ['r0', 'r1', 'r2'].every(k => isEmpty(cellsOf(k))),
+        'picture-frame': () => isFull(BORDER),
+        'first-game': () => gamesFinished() >= 1,
+        'sudoku-secret': () => gamesFinished() >= 45,
+        'zero': s => s.total === 0,
+        'zero-with-discards': s => s.total === 0 && discarded >= 1
+      };
+
+      // True once every possible box in one checklist column (e.g. every row's Clean) is checked
+      function compColumnDone(prefix, column) {
+        const checked = loadCompletionist();
+        return [...Array(9).keys()].filter(n => compPossible(prefix, n, column)).every(n => checked.has(`${prefix}${n}:${column}`));
+      }
+
+      COMP_ACHIEVEMENT_GROUPS.forEach(g => g.columns.forEach(column => {
+        ACHIEVEMENT_CHECKS[`comp-${g.prefix}-${column}`] = () => compColumnDone(g.prefix, column);
+      }));
+      ACHIEVEMENT_CHECKS['completionist-complete'] = () =>
+        ['r', 'c', 'b'].every(prefix => ['completed', 'clean', 'flush', 'straight', 'royal'].every(col => compColumnDone(prefix, col)));
+
+      function checkAchievements() {
+        const score = scoreBoard();
+        const s = { ...score, done: new Set(score.items.map(it => it.key)) };
+        return ACHIEVEMENTS.filter(a => ACHIEVEMENT_CHECKS[a.id](s)).map(a => a.id);
+      }
+
+      const subtitleHTML = a => a.subtitle ? `<em class="cdk-subtitle">${a.subtitle}</em>` : '';
+
+      function achievementHTML(id) {
+        const a = ACHIEVEMENTS.find(x => x.id === id);
+        const isNew = newlyUnlocked.includes(id) ? '<span class="cdk-new">New!</span>' : '';
+        return `<div class="cdk-achievement"><span class="cdk-achievement-icon">${a.icon}</span>
+          <span><strong>${a.name}${isNew}</strong>${subtitleHTML(a)}${a.desc}</span></div>`;
+      }
+
+      // Every achievement's saved state: { id: { unlocked: ISO date or null, titleVisible: true/false } }.
+      // titleVisible is what decides whether the bottom-of-page tile shows the name or "???".
+      // Older versions kept unlocks and teased names under two separate keys; those fold in here.
+      function loadAchievementState() {
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(ACHIEVEMENT_STATE_KEY)); } catch (e) { /* fall through */ }
+        if (!saved || typeof saved !== 'object') {
+          saved = {};
+          try {
+            const oldUnlocked = JSON.parse(localStorage.getItem(UNLOCKED_KEY) || '{}') || {};
+            const oldRevealed = JSON.parse(localStorage.getItem(REVEALED_KEY) || '[]');
+            Object.keys(oldUnlocked).forEach(id => { saved[id] = { unlocked: oldUnlocked[id], titleVisible: true }; });
+            if (Array.isArray(oldRevealed)) oldRevealed.forEach(id => { saved[id] = saved[id] || { unlocked: null, titleVisible: true }; });
+          } catch (e) { /* nothing to migrate */ }
+        }
+        const state = {};
+        ACHIEVEMENTS.forEach(a => {
+          const s = saved[a.id] || {};
+          state[a.id] = { unlocked: s.unlocked || null, titleVisible: !!(s.titleVisible || s.unlocked) };
+        });
+        return state;
+      }
+
+      function saveAchievementState(state) {
+        try { localStorage.setItem(ACHIEVEMENT_STATE_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
+      }
+
+      // { id: ISO date } for unlocked achievements only
+      function loadUnlocked() {
+        const state = loadAchievementState();
+        return Object.fromEntries(Object.keys(state).filter(id => state[id].unlocked).map(id => [id, state[id].unlocked]));
+      }
+
+      // Unlocks the given ids (an unlock always makes the title visible); returns the ones that are new
+      function unlock(ids) {
+        const state = loadAchievementState();
+        const fresh = ids.filter(id => !state[id].unlocked);
+        fresh.forEach(id => { state[id] = { unlocked: new Date().toISOString(), titleVisible: true }; });
+        saveAchievementState(state);
+        return fresh;
+      }
+
+      // A teased achievement: its name becomes visible at the bottom, its description stays hidden
+      function reveal(id) {
+        const state = loadAchievementState();
+        state[id].titleVisible = true;
+        saveAchievementState(state);
+      }
+
+      // ---------- Completionist ----------
+
+      const COMP_COLUMNS = ['completed', 'clean', 'flush', 'straight', 'royal'];
+      const COMP_GROUPS = [['r', 'Row'], ['c', 'Column'], ['b', 'Box']];
+
+      function loadCompletionist() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(COMPLETIONIST_KEY) || '[]');
+          return new Set(Array.isArray(saved) ? saved : []);
+        } catch (e) {
+          return new Set();
+        }
+      }
+
+      // Checks off every completed element (and each bonus it earned) from a finished game
+      // Returns the checks this game added for the first time, e.g. ['r6:completed', 'b8:clean']
+      function recordCompletionist(items) {
+        const checked = loadCompletionist();
+        const fresh = [];
+        items.forEach(it => {
+          [`${it.key}:completed`, ...it.bonuses.map(b => `${it.key}:${b}`)].forEach(key => {
+            if (!checked.has(key)) { checked.add(key); fresh.push(key); }
+          });
+        });
+        try { localStorage.setItem(COMPLETIONIST_KEY, JSON.stringify([...checked])); } catch (e) { /* storage blocked */ }
+        return fresh;
+      }
+
+      // 'r6:clean' → 'Row 7 · Clean'
+      function checkLabel(key) {
+        const [element, column] = key.split(':');
+        const group = { r: 'Row', c: 'Column', b: 'Box' }[element[0]];
+        return `${group} ${Number(element.slice(1)) + 1} · ${titleCase(column)}`;
+      }
+
+      function renderCompletionist() {
+        const checked = loadCompletionist();
+        const possible = COMP_GROUPS.flatMap(([prefix]) => [...Array(9).keys()].flatMap(n =>
+          COMP_COLUMNS.filter(col => compPossible(prefix, n, col)).map(col => `${prefix}${n}:${col}`)));
+        $('compCount').textContent = `${possible.filter(k => checked.has(k)).length} of ${possible.length} checked off across all your games.`;
+        const box = on => `<span class="cdk-check${on ? ' on' : ''}" aria-label="${on ? 'done' : 'not yet'}">${on ? '✓' : ''}</span>`;
+        // Impossible boxes (Flush/Royal for rows and boxes 7–9) are left blank
+        const cellFor = (prefix, n, col) => compPossible(prefix, n, col)
+          ? box(checked.has(`${prefix}${n}:${col}`))
+          : '<span class="cdk-comp-na" title="Not possible: this one starts with three spades">–</span>';
+        $('compTable').innerHTML = `
+          <colgroup><col class="cdk-comp-index-col">${'<col>'.repeat(COMP_GROUPS.length * COMP_COLUMNS.length)}</colgroup>
+          <thead>
+            <tr><th rowspan="2">#</th>${COMP_GROUPS.map(([, label]) => `<th colspan="5" class="group-start">${label}</th>`).join('')}</tr>
+            <tr>${COMP_GROUPS.map(() => COMP_COLUMNS.map((col, k) => `<th${k === 0 ? ' class="group-start"' : ''}>${titleCase(col)}</th>`).join('')).join('')}</tr>
+          </thead>
+          <tbody>
+            ${[...Array(9)].map((_, n) => `<tr><td class="cdk-comp-index">${n + 1}</td>${COMP_GROUPS.map(([prefix]) =>
+          COMP_COLUMNS.map((col, k) => `<td${k === 0 ? ' class="group-start"' : ''}>${cellFor(prefix, n, col)}</td>`).join('')).join('')}</tr>`).join('')}
+          </tbody>`;
+      }
+
+      // Bottom-of-page list: earned achievements are revealed, the rest stay a mystery
+      // Lifetime finished games. Previous Games only keeps 50, so this is counted separately;
+      // it starts from the saved history for players who finished games before the counter existed.
+      function loadFinished() {
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(FINISHED_KEY)); } catch (e) { /* fall through */ }
+        const count = saved && Number(saved.count) >= 0 ? Number(saved.count) : 0;
+        return { count: Math.max(count, loadPastGames().length), lastId: saved ? saved.lastId : null };
+      }
+
+      const gamesFinished = () => loadFinished().count;
+
+      // Undoing after game over and finishing again is the same game, so it only counts once
+      function countFinishedGame(id) {
+        const finished = loadFinished();
+        if (finished.lastId === id) return;
+        try { localStorage.setItem(FINISHED_KEY, JSON.stringify({ count: finished.count + 1, lastId: id })); } catch (e) { /* storage blocked */ }
+      }
+
+      function renderTrophies() {
+        const state = loadAchievementState();
+        const count = ACHIEVEMENTS.filter(a => state[a.id].unlocked).length;
+        $('trophyCount').textContent = `${count} of ${ACHIEVEMENTS.length} unlocked. Complete games to unlock titles of unknown achievements.`;
+        const tile = a => {
+          const { unlocked, titleVisible } = state[a.id];
+          if (!unlocked) {
+            return `<div class="cdk-trophy locked${titleVisible ? ' revealed' : ''}" data-id="${a.id}"><span class="cdk-trophy-icon">🔒</span>
+              <span><strong>${titleVisible ? a.name : '???'}</strong>Locked</span></div>`;
+          }
+          const date = new Date(unlocked).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+          return `<div class="cdk-trophy" data-id="${a.id}"><span class="cdk-trophy-icon">${a.icon}</span>
+            <span><strong>${a.name}</strong>${subtitleHTML(a)}${a.desc}<small>Unlocked ${date}</small></span></div>`;
+        };
+        const groups = [
+          ['Completed', ACHIEVEMENTS.filter(a => state[a.id].unlocked), 'Nothing yet.'],
+          ['Teased', ACHIEVEMENTS.filter(a => !state[a.id].unlocked && state[a.id].titleVisible), 'Each game over hints at one you haven\'t found.'],
+          ['Unknown', ACHIEVEMENTS.filter(a => !state[a.id].titleVisible), 'You\'ve seen them all.']
+        ];
+        $('trophies').innerHTML = groups.map(([title, list, empty]) => `
+          <h3 class="cdk-trophy-group">${title} <span>${list.length}</span></h3>
+          ${list.length ? `<div class="cdk-trophy-grid">${list.map(tile).join('')}</div>` : `<p class="cdk-trophy-empty">${empty}</p>`}
+        `).join('');
+      }
+
+      // ---------- Rendering ----------
+
+      // Brief explanation over the grid, e.g. why a move was illegal
+      function toast(text) {
+        toastEl.textContent = text;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+      }
+
+      function makeCardEl(card, src) {
+        const el = document.createElement('div');
+        el.className = 'cdk-card';
+        el.tabIndex = 0;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', cardName(card));
+        el.innerHTML = faceHTML(card);
+        el.addEventListener('pointerdown', e => onCardPointerDown(e, src));
+        el.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelection(src); }
+        });
+        return el;
+      }
+
+      function render({ celebrate = false } = {}) {
+        const score = scoreBoard();
+        const fresh = score.items.filter(it => !completed.has(it.key));
+        completed = new Set(score.items.map(it => it.key));
+        if (celebrate && fresh.length) {
+          fresh.forEach(it => it.cells.forEach(i => flashCells.add(i)));
+          setTimeout(() => {
+            flashCells.clear();
+            cellEls.forEach(el => el.classList.remove('complete-flash'));
+          }, 1000);
+        }
+
+        grid.forEach((card, i) => {
+          const el = cellEls[i];
+          let cls = 'cdk-cell';
+          if (phase === 'setup' && SETUP_BOXES.includes(boxOf(i))) cls += ' setup-zone';
+          if (card) cls += ` filled ${colorOf(card)}`;
+          if (card && phase === 'setup') cls += ' removable';
+          if (i === lastPlaced) cls += ' just-placed';
+          if (flashCells.has(i)) cls += ' complete-flash';
+          if (!card && ((phase === 'play' && active) || (phase === 'setup' && tray.length))) cls += ' tappable';
+          el.className = cls;
+          el.innerHTML = card ? cellHTML(card) : '';
+          el.setAttribute('aria-label', `Row ${Math.floor(i / 9) + 1}, column ${i % 9 + 1}: ${card ? cardName(card) : 'empty'}`);
+        });
+        lastPlaced = null;
+
+        $('setupPanel').hidden = phase !== 'setup';
+        $('playPanel').hidden = phase === 'setup';
+
+        layoutBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.layout === layout));
+        trayEl.innerHTML = '';
+        tray.forEach((card, index) => trayEl.appendChild(makeCardEl(card, { kind: 'tray', index })));
+        trayEl.hidden = tray.length === 0;
+        dealBtn.disabled = tray.length > 0;
+
+        deckEl.innerHTML = deck.length ? BACK_HTML : '';
+        deckEl.classList.toggle('empty', deck.length === 0);
+        $('deckCount').textContent = deck.length;
+
+        slotEl.innerHTML = '';
+        if (active) slotEl.appendChild(makeCardEl(active, { kind: 'active' }));
+        slotEl.classList.toggle('has-wild', !!active && kind(active) !== 'num');  // wild reminder on 10–K and Jokers only
+
+        const top = discards[discards.length - 1];
+        discardEl.innerHTML = top ? faceHTML(top) : '';
+        $('discardCount').textContent = discards.length;
+        discardEl.classList.toggle('suggest', showMoves && !!active && !busy && legalTargets(active).size === 1);
+        discardBtn.disabled = !active || busy;
+        undoBtn.disabled = !history.length || busy;
+
+        $('statScore').textContent = fmt(score.total);
+        $('statPlaced').textContent = placed;
+        $('statDiscarded').textContent = discarded;
+        $('statBest').textContent = best === null ? '–' : fmt(best);
+        $('breakdown').innerHTML = breakdownHTML(score);
+        newBtn.classList.toggle('btn-primary', phase === 'over');
+        newBtn.classList.toggle('btn-outline', phase !== 'over');
+
+        $('overPanel').hidden = phase !== 'over';
+        if (phase === 'over') {
+          $('finalScore').textContent = fmt(score.total);
+          $('finalNote').textContent = newBest ? 'New best! 🎉' : `Your best is ${fmt(best)}.`;
+          $('earned').innerHTML = earned.length
+            ? earned.map(achievementHTML).join('')
+            : '<p class="cdk-over-note">No achievements this time.</p>';
+          $('teaser').innerHTML = teaser
+            ? `Still out there: <strong>${teaser.name}</strong>`
+            : 'You\'ve unlocked every achievement. 🏆';
+          $('newChecks').innerHTML = newChecks.length
+            ? `<span class="cdk-label">New Completionist checks</span><ul>${newChecks.map(k => `<li>✓ ${checkLabel(k)}</li>`).join('')}</ul>`
+            : '';
+        }
+
+        saveCurrent();
+      }
+
+      // ---------- Game in progress (survives a refresh) ----------
+
+      function saveCurrent() {
+        const state = {
+          v: 1, phase, layout, grid, tray, deck, discards, placed, discarded, history, gameId,
+          active: active || drawingCard,  // a card mid-draw counts as drawn
+          newBest, earned, newlyUnlocked, newChecks, teaser: teaser && teaser.id
+        };
+        try { localStorage.setItem(CURRENT_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
+      }
+
+      // Restores the saved game; returns false (start fresh) if there's nothing usable
+      function restoreCurrent() {
+        let s;
+        try { s = JSON.parse(localStorage.getItem(CURRENT_KEY)); } catch (e) { return false; }
+        const isCard = c => !!c && (c.rank === 'JOKER' || (RANKS.includes(c.rank) && !!SUITS[c.suit]));
+        const isCards = list => Array.isArray(list) && list.every(isCard);
+        const ok = s && s.v === 1 && ['setup', 'play', 'over'].includes(s.phase) &&
+          Array.isArray(s.grid) && s.grid.length === 81 && s.grid.every(c => c === null || isCard(c)) &&
+          isCards(s.tray) && isCards(s.deck) && isCards(s.discards) && (s.active === null || isCard(s.active)) &&
+          Array.isArray(s.history) && s.history.every(h => h && Array.isArray(h.grid) && h.grid.length === 81);
+        if (!ok) return false;
+
+        ({ phase, grid, tray, deck, active, discards, history, gameId } = s);
+        placed = Number(s.placed) || 0;
+        discarded = Number(s.discarded) || 0;
+        layout = ['default', 'random', 'custom'].includes(s.layout) ? s.layout : 'default';
+        newBest = !!s.newBest;
+        earned = ACHIEVEMENTS.map(a => a.id).filter(id => (s.earned || []).includes(id));
+        newlyUnlocked = (s.newlyUnlocked || []).filter(id => earned.includes(id));
+        newChecks = Array.isArray(s.newChecks) ? s.newChecks.filter(k => /^[rcb][0-8]:(completed|clean|flush|straight|royal)$/.test(k)) : [];
+        teaser = ACHIEVEMENTS.find(a => a.id === s.teaser) || null;
+        if (phase === 'over' && teaser) reveal(teaser.id);  // keep the bottom tile in step with the panel
+        completed = new Set(scoreBoard().items.map(it => it.key));  // don't replay completion glows
+        render();
+        // Refreshed mid-shuffle or mid-draw: deal the next card
+        if (phase === 'play' && !active && deck.length) drawCard();
+        return true;
+      }
+
+      // ---------- Highlighting ----------
+
+      function showTargets(targets) {
+        if (!showMoves) return;
+        targets.forEach(t => {
+          if (t === 'discard') discardEl.classList.add('legal');
+          else cellEls[t].classList.add('legal');
+        });
+      }
+
+      function clearTargets() {
+        cellEls.forEach(el => el.classList.remove('legal'));
+        discardEl.classList.remove('legal');
+      }
+
+      function paintHover(target, card, targets) {
+        cellEls.forEach(el => el.classList.remove('hover-legal', 'hover-illegal', 'hover-neutral', 'conflict'));
+        discardEl.classList.remove('hover');
+        if (target === null) return;
+        if (!showMoves) {
+          // No hints: just show where the card would land
+          if (target === 'discard') discardEl.classList.add('hover');
+          else cellEls[target].classList.add('hover-neutral');
+        } else if (target === 'discard') {
+          if (targets.has('discard')) discardEl.classList.add('hover');
+        } else if (targets.has(target)) {
+          cellEls[target].classList.add('hover-legal');
+        } else {
+          cellEls[target].classList.add('hover-illegal');
+          if (phase === 'play' && !grid[target]) conflicts(card, target).forEach(j => cellEls[j].classList.add('conflict'));
+        }
+      }
+
+      // Outlines the square in red, fills the cards blocking it red, and says why
+      function rejectDrop(card, i) {
+        toast(whyIllegal(card, i));
+        const bad = phase === 'play' && !grid[i] && touching(i) ? conflicts(card, i) : [];
+        cellEls[i].classList.add('rejected');
+        bad.forEach(j => cellEls[j].classList.add('conflict'));
+        setTimeout(() => {
+          cellEls[i].classList.remove('rejected');
+          bad.forEach(j => cellEls[j].classList.remove('conflict'));
+        }, 1600);
+      }
+
+      // ---------- Moving cards ----------
+
+      const sourceCard = src => src.kind === 'tray' ? tray[src.index] : active;
+      const sourceEl = src => src.kind === 'tray' ? trayEl.children[src.index] : slotEl.firstElementChild;
+      const rectFor = target => (target === 'discard' ? discardEl : cellEls[target]).getBoundingClientRect();
+
+      function targetAt(x, y) {
+        const el = document.elementFromPoint(x, y);
+        if (!el) return null;
+        const cell = el.closest('[data-cell]');
+        if (cell) return Number(cell.dataset.cell);
+        if (el.closest('#discardSlot') && phase === 'play') return 'discard';
+        return null;
+      }
+
+      // A floating copy of a card, positioned over `rect`, moved with transforms
+      function makeGhost(html, rect) {
+        const ghost = document.createElement('div');
+        ghost.className = 'cdk-ghost';
+        Object.assign(ghost.style, { left: rect.left + 'px', top: rect.top + 'px' });
+        ghost.style.setProperty('--card-w', rect.width + 'px');
+        ghost.innerHTML = html;
+        document.body.appendChild(ghost);
+        return ghost;
+      }
+
+      // Easings with a little overshoot, so cards snap into place and spring back
+      const SNAP = 'cubic-bezier(0.25, 1.35, 0.45, 1)';
+      const SPRING = 'cubic-bezier(0.3, 1.25, 0.5, 1)';
+
+      // Slides a ghost (created at `from`) so it sits centered and scaled inside `to`
+      function flyGhost(ghost, from, to, duration = 180, easing = 'ease-out') {
+        const scale = Math.min(to.width / from.width, to.height / from.height);
+        const x = to.left + (to.width - from.width * scale) / 2 - from.left;
+        const y = to.top + (to.height - from.height * scale) / 2 - from.top;
+        return ghost.animate(
+          [{ transform: ghost.style.transform || 'none' }, { transform: `translate(${x}px, ${y}px) scale(${scale})` }],
+          { duration, easing, fill: 'forwards' }
+        ).finished;
+      }
+
+      function onCardPointerDown(e, src) {
+        if (busy || phase === 'over' || e.button > 0) return;
+        const card = sourceCard(src);
+        if (!card) return;
+        e.preventDefault();
+
+        const el = e.currentTarget;
+        const from = el.getBoundingClientRect();
+        const startX = e.clientX, startY = e.clientY;
+        let ghost = null, targets = null, hover = null, lastX = startX, settle = null;
+
+        const move = ev => {
+          if (!ghost) {
+            if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
+            clearSelection();
+            targets = legalTargets(card);
+            showTargets(targets);
+            ghost = makeGhost(faceHTML(card), from);
+            // Lift and tilt around the point where the card was grabbed
+            ghost.firstElementChild.style.transformOrigin = `${startX - from.left}px ${startY - from.top}px`;
+            requestAnimationFrame(() => ghost.classList.add('lifted'));
+            el.style.visibility = 'hidden';
+            document.body.classList.add('cdk-dragging');
+          }
+          ghost.style.transform = `translate(${ev.clientX - startX}px, ${ev.clientY - startY}px)`;
+
+          // Lean into the direction of travel, then straighten out when the pointer rests
+          const tilt = Math.max(-12, Math.min(12, (ev.clientX - lastX) * 1.5));
+          lastX = ev.clientX;
+          ghost.style.setProperty('--tilt', tilt + 'deg');
+          clearTimeout(settle);
+          settle = setTimeout(() => ghost.style.setProperty('--tilt', '0deg'), 90);
+
+          hover = targetAt(ev.clientX, ev.clientY);
+          paintHover(hover, card, targets);
+        };
+
+        const up = ev => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', up);
+          if (!ghost) { toggleSelection(src); return; }
+
+          clearTimeout(settle);
+          document.body.classList.remove('cdk-dragging');
+          paintHover(null);
+          clearTargets();
+          busy = true;
+          ghost.classList.remove('lifted');  // card settles back down as it flies
+          const target = ev.type === 'pointerup' ? hover : null;
+          if (target !== null && targets.has(target)) {
+            flyGhost(ghost, from, rectFor(target), 220, SNAP).then(() => { ghost.remove(); commit(src, target); });
+          } else {
+            if (typeof target === 'number') rejectDrop(card, target);
+            flyGhost(ghost, from, from, 300, SPRING).then(() => {
+              ghost.remove();
+              el.style.visibility = '';
+              busy = false;
+              if (typeof target === 'number') {
+                el.classList.add('shake');
+                el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+              }
+            });
+          }
+        };
+
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
+      }
+
+      // Tap a card to select it, then tap a square (or the discard pile)
+      function toggleSelection(src) {
+        if (busy || phase === 'over') return;
+        const same = selected && selected.src.kind === src.kind && selected.src.index === src.index;
+        clearSelection();
+        if (same) return;
+        selected = { src, targets: legalTargets(sourceCard(src)) };
+        sourceEl(src).classList.add('selected');
+        showTargets(selected.targets);
+      }
+
+      function clearSelection() {
+        if (!selected) return;
+        const el = sourceEl(selected.src);
+        if (el) el.classList.remove('selected');
+        clearTargets();
+        selected = null;
+      }
+
+      // Animates a card from where it sits to `target`, then commits the move
+      function send(src, target) {
+        const el = sourceEl(src);
+        const from = el.getBoundingClientRect();
+        clearSelection();
+        busy = true;
+        const ghost = makeGhost(faceHTML(sourceCard(src)), from);
+        el.style.visibility = 'hidden';
+        flyGhost(ghost, from, rectFor(target), 240).then(() => { ghost.remove(); commit(src, target); });
+      }
+
+      function onCellClick(i) {
+        if (busy) return;
+        if (selected) {
+          if (selected.targets.has(i)) {
+            send(selected.src, i);
+          } else {
+            rejectDrop(sourceCard(selected.src), i);
+            const el = sourceEl(selected.src);
+            el.classList.add('shake');
+            el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+          }
+          return;
+        }
+        // During setup, tapping a placed spade puts it back in the tray
+        if (phase === 'setup' && grid[i]) {
+          tray.push(grid[i]);
+          tray.sort((a, b) => value(a) - value(b));
+          grid[i] = null;
+          layout = 'custom';
+          render();
+          return;
+        }
+        // Tapping an empty square sends the card in hand (or the next spade in setup) straight there
+        const src = phase === 'play' && active ? { kind: 'active' }
+          : phase === 'setup' && tray.length ? { kind: 'tray', index: 0 } : null;
+        if (!src || grid[i]) return;
+        if (legalTargets(sourceCard(src)).has(i)) {
+          send(src, i);
+        } else {
+          rejectDrop(sourceCard(src), i);
+          const el = sourceEl(src);
+          el.classList.add('shake');
+          el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+        }
+      }
+
+      function discardActive() {
+        if (busy || !active || phase !== 'play') return;
+        send({ kind: 'active' }, 'discard');
+      }
+
+      function commit(src, target) {
+        busy = false;
+        const card = sourceCard(src);
+
+        if (src.kind === 'tray') {
+          tray.splice(src.index, 1);
+          grid[target] = card;
+          lastPlaced = target;
+          layout = 'custom';
+          render();
+          return;
+        }
+
+        // The deck snapshot still holds the next card, so Undo puts it back on top
+        history.push({ grid: grid.slice(), active, deck: deck.slice(), discards: discards.slice(), placed, discarded });
+        active = null;
+        if (target === 'discard') {
+          discards.push(card);
+          discarded++;
+        } else {
+          grid[target] = card;
+          lastPlaced = target;
+          placed++;
+        }
+        render({ celebrate: true });
+        if (deck.length) drawCard();
+        else endGame();
+      }
+
+      function undo() {
+        if (busy || !history.length) return;
+        clearSelection();
+        ({ grid, active, deck, discards, placed, discarded } = history.pop());
+        phase = 'play';
+        newBest = false;
+        earned = [];
+        newChecks = [];
+        render();
+      }
+
+      function drawCard() {
+        busy = true;
+        const card = deck.pop();
+        drawingCard = card;
+        render();
+
+        const from = deckEl.getBoundingClientRect();
+        const to = slotEl.getBoundingClientRect();
+        const ghost = makeGhost(BACK_HTML, from);
+        const x = to.left - from.left, y = to.top - from.top;
+        ghost.animate([
+          { transform: 'translate(0, 0) rotate(0deg) scaleX(1)' },
+          { transform: `translate(${x * 0.55}px, ${y - 18}px) rotate(-6deg) scaleX(1)`, offset: 0.6 },
+          { transform: `translate(${x}px, ${y}px) rotate(0deg) scaleX(0)` }
+        ], { duration: 420, easing: 'ease-in-out', fill: 'forwards' }).finished.then(() => {
+          ghost.remove();
+          active = card;
+          drawingCard = null;
+          busy = false;
+          render();
+          slotEl.firstElementChild.classList.add('flip-in');
+        });
+      }
+
+      function deal() {
+        if (busy || tray.length) return;
+        phase = 'play';
+        deck = buildDeck();
+        history = [];
+        gameId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        busy = true;
+        render();
+        deckEl.classList.add('shuffling');
+        setTimeout(() => {
+          deckEl.classList.remove('shuffling');
+          drawCard();
+        }, 600);
+      }
+
+      function endGame() {
+        phase = 'over';
+        const score = scoreBoard();
+        countFinishedGame(gameId);  // before the checks, so Beginner's Skill counts this game
+        newChecks = recordCompletionist(score.items);  // before the checks, so this game counts toward Completionist ones
+        earned = checkAchievements();
+        newlyUnlocked = unlock(earned);
+        const unlocked = loadUnlocked();
+        const locked = ACHIEVEMENTS.filter(a => !unlocked[a.id]);
+        teaser = locked.length ? locked[Math.floor(Math.random() * locked.length)] : null;
+        if (teaser) reveal(teaser.id);
+        newBest = best === null || score.total > best;
+        if (newBest) {
+          best = score.total;
+          try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) { /* storage blocked */ }
+        }
+        const record = {
+          id: gameId,
+          date: new Date().toISOString(),
+          score: score.total,
+          lines: score.items.length,
+          placed,
+          discarded,
+          layout,
+          achievements: earned,
+          rules: RULES_VERSION,
+          board: grid.map(card => card ? cardCode(card) : null),
+          discards: discards.map(cardCode)
+        };
+        saveGame(record);
+        sendResult(record, score);
+        render();
+        renderPastGames();
+        renderCompletionist();
+        renderTrophies();
+      }
+
+      // ---------- Saved games and results ----------
+
+      // Compact card ids for storage: 'AS', '10H', 'JKR' (red joker)
+      const cardCode = card => card.rank === 'JOKER' ? (card.color === 'red' ? 'JKR' : 'JKB') : card.rank + card.suit;
+      const codeColor = code => /^JKR$|[HD]$/.test(code) ? 'red' : 'black';
+      const codeLabel = code => code.startsWith('JK') ? 'JK' : code.slice(0, -1) + SUITS[code.slice(-1)].sym;
+
+      function loadPastGames() {
+        try {
+          const games = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+          return Array.isArray(games) ? games : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      // Replaces the same game if it was finished, undone, and finished again
+      function saveGame(record) {
+        const games = loadPastGames().filter(g => g.id !== record.id);
+        games.unshift(record);
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(games.slice(0, HISTORY_LIMIT))); } catch (e) { /* storage blocked */ }
+      }
+
+      // Everything about a finished game, as sent to the Sheet and attached to feedback emails
+      function gamePayload(record, score) {
+        const rows = [...Array(9)].map((_, r) =>
+          record.board.slice(r * 9, r * 9 + 9).map(code => (code || '.').padStart(3)).join(' '));
+        return {
+          ...record,
+          rules: record.rules || RULES_VERSION,
+          source: location.hostname || 'local file',
+          linesScore: score.total + score.penalty,
+          discardPenalty: score.penalty,
+          achievementNames: record.achievements.map(id => (ACHIEVEMENTS.find(a => a.id === id) || { name: id }).name),
+          completed: score.items.map(it => `${it.name}: ${it.base} x ${it.mult} = ${it.points}${it.bonuses.length ? ` (${it.bonuses.join(', ')})` : ''}`),
+          boardRows: rows
+        };
+      }
+
+      // text/plain keeps this a "simple" request, which Apps Script accepts without a CORS preflight.
+      // keepalive lets a result finish sending if the page closes, but browsers cap it at 64 KB,
+      // so feedback (which carries the board picture) is sent without it.
+      function postToScript(body, { keepalive = false } = {}) {
+        return fetch(RESULTS_URL, { method: 'POST', mode: 'no-cors', keepalive, body: JSON.stringify(body) });
+      }
+
+      function sendResult(record, score) {
+        if (!RESULTS_URL) return;
+        postToScript(gamePayload(record, score), { keepalive: true })
+          .catch(() => { /* never interrupt the game over a failed send */ });
+      }
+
+      // ---------- Feedback ----------
+
+      // Draws the final board (plus score and discards) onto a canvas, for the feedback email
+      function boardImage(record) {
+        const cell = 44, pad = 20, head = 56, foot = 40;
+        const size = cell * 9;
+        const canvas = document.createElement('canvas');
+        const scale = 2;  // crisp on retina screens and in email
+        canvas.width = (size + pad * 2) * scale;
+        canvas.height = (size + pad * 2 + head + foot) * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        const font = (weight, px) => `${weight} ${px}px Inter, "Helvetica Neue", Arial, sans-serif`;
+        const red = '#c0392b', navy = '#143642';
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size + pad * 2, size + pad * 2 + head + foot);
+        ctx.fillStyle = navy;
+        ctx.font = font(700, 20);
+        ctx.fillText(`Cardoku · ${fmt(record.score)} pts`, pad, pad + 20);
+        ctx.font = font(500, 12);
+        ctx.fillStyle = '#555c6d';
+        ctx.fillText(`${new Date(record.date).toLocaleString()} · rules v${record.rules || RULES_VERSION} · ${plural(record.lines, 'line')} · ${plural(record.discarded, 'discard')}`, pad, pad + 40);
+
+        const top = pad + head;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        record.board.forEach((code, i) => {
+          const x = pad + (i % 9) * cell, y = top + Math.floor(i / 9) * cell;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(x, y, cell, cell);
+          if (!code) return;
+          ctx.fillStyle = codeColor(code) === 'red' ? red : navy;
+          ctx.font = font(700, 15);
+          ctx.fillText(code.startsWith('JK') ? 'JK' : (code[0] === 'A' ? '1' : code.slice(0, -1)), x + cell / 2, y + cell / 2 - 6);
+          ctx.font = font(500, 13);
+          ctx.fillText(code.startsWith('JK') ? '★' : SUITS[code.slice(-1)].sym, x + cell / 2, y + cell / 2 + 11);
+        });
+        // Thin cell lines, thick box lines
+        for (let k = 0; k <= 9; k++) {
+          ctx.strokeStyle = k % 3 === 0 ? navy : '#c4c8d2';
+          ctx.lineWidth = k % 3 === 0 ? 2.5 : 1;
+          ctx.beginPath(); ctx.moveTo(pad + k * cell, top); ctx.lineTo(pad + k * cell, top + size); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(pad, top + k * cell); ctx.lineTo(pad + size, top + k * cell); ctx.stroke();
+        }
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = navy;
+        ctx.font = font(600, 12);
+        ctx.fillText('Discards:', pad, top + size + 24);
+        ctx.font = font(500, 12);
+        let x = pad + 64;
+        (record.discards.length ? record.discards : ['none']).forEach(code => {
+          const label = code === 'none' ? 'none' : codeLabel(code);
+          ctx.fillStyle = code !== 'none' && codeColor(code) === 'red' ? red : navy;
+          if (x + ctx.measureText(label).width > size + pad) return;  // keep it on one line
+          ctx.fillText(label, x, top + size + 24);
+          x += ctx.measureText(label).width + 8;
+        });
+        return canvas.toDataURL('image/png');
+      }
+
+      // The finished game's saved record (works after a refresh too, via Previous Games)
+      const finishedRecord = () => loadPastGames().find(g => g.id === gameId) || null;
+
+      function openFeedback() {
+        const record = finishedRecord();
+        if (!record) return;
+        $('feedbackImage').src = boardImage(record);
+        $('feedbackMessage').value = '';
+        $('feedbackStatus').textContent = '';
+        $('feedbackSend').disabled = false;
+        $('feedbackDialog').showModal();
+      }
+
+      function sendFeedback() {
+        const record = finishedRecord();
+        if (!record || !RESULTS_URL) return;
+        $('feedbackSend').disabled = true;
+        $('feedbackStatus').textContent = 'Sending…';
+        postToScript({
+          type: 'feedback',
+          message: $('feedbackMessage').value.slice(0, 2000),
+          image: $('feedbackImage').src,
+          game: gamePayload(record, scoreBoard())
+        }).then(() => {
+          $('feedbackStatus').textContent = 'Sent. Thanks for the feedback!';
+          setTimeout(() => $('feedbackDialog').close(), 1400);
+        }).catch(() => {
+          $('feedbackStatus').textContent = "Couldn't send. Check your connection and try again.";
+          $('feedbackSend').disabled = false;
+        });
+      }
+
+      function miniBoardHTML(board) {
+        return '<div class="cdk-mini" aria-hidden="true">' + board.map((code, i) => {
+          const r = Math.floor(i / 9), c = i % 9;
+          const cls = [code ? codeColor(code) : '', c % 3 === 2 && c < 8 ? 'br' : '', r % 3 === 2 && r < 8 ? 'bb' : ''].join(' ');
+          return `<span class="${cls}">${code ? codeLabel(code) : ''}</span>`;
+        }).join('') + '</div>';
+      }
+
+      function renderPastGames() {
+        const games = loadPastGames();
+        const el = $('history');
+        if (!games.length) {
+          el.innerHTML = '<p class="cdk-history-empty">No finished games yet. Your results will show up here.</p>';
+          return;
+        }
+        el.innerHTML = '<div class="cdk-history-list">' + games.map(g => {
+          const date = new Date(g.date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+          const names = g.achievements.map(id => (ACHIEVEMENTS.find(a => a.id === id) || { name: id }).name);
+          return `<details class="cdk-game">
+            <summary>
+              <span class="cdk-game-score">${fmt(g.score)} pts</span>
+              <span class="cdk-game-meta">${date} · ${plural(g.lines, 'line')} · ${plural(g.discarded, 'discard')}</span>
+              ${names.length ? `<span class="cdk-game-badges">🏆 ${names.length}</span>` : ''}
+            </summary>
+            <div class="cdk-game-body">
+              ${miniBoardHTML(g.board)}
+              <div class="cdk-game-discards">
+                <h4>Discards (${g.discards.length})</h4>
+                <p>${g.discards.map(code => `<span class="${codeColor(code)}">${codeLabel(code)}</span>`).join(' ') || 'None'}</p>
+                ${names.length ? `<h4>Achievements</h4><p>${names.join(', ')}</p>` : ''}
+              </div>
+            </div>
+          </details>`;
+        }).join('') + '</div>';
+      }
+
+      // Lays the spades out for setup: the staircase, the staircase shuffled, or all in the tray
+      function applyLayout(choice) {
+        clearSelection();
+        layout = choice;
+        grid = Array(81).fill(null);
+        tray = setupSpades();
+        if (choice !== 'custom') {
+          const spades = choice === 'random' ? shuffle(tray) : tray;
+          LAYOUT_CELLS.forEach((cell, k) => { grid[cell] = spades[k]; });
+          tray = [];
+        }
+        render();
+      }
+
+      function newGame() {
+        phase = 'setup';
+        deck = [];
+        active = null;
+        discards = [];
+        placed = 0;
+        discarded = 0;
+        history = [];
+        newBest = false;
+        earned = [];
+        newChecks = [];
+        applyLayout(layout);
+      }
+
+      // Mid-game, New Game needs a second click so a stray tap doesn't wipe the board
+      let confirmTimer = null;
+      newBtn.addEventListener('click', () => {
+        if (busy) return;
+        if (phase === 'play' && !confirmTimer) {
+          newBtn.textContent = 'Click again to restart';
+          confirmTimer = setTimeout(() => { confirmTimer = null; newBtn.textContent = 'New Game'; }, 3000);
+          return;
+        }
+        clearTimeout(confirmTimer);
+        confirmTimer = null;
+        newBtn.textContent = 'New Game';
+        newGame();
+      });
+
+      dealBtn.addEventListener('click', deal);
+      discardBtn.addEventListener('click', discardActive);
+      undoBtn.addEventListener('click', undo);
+
+      const showMovesInput = $('showMoves');
+      showMovesInput.checked = showMoves;
+      showMovesInput.addEventListener('change', () => {
+        showMoves = showMovesInput.checked;
+        try { localStorage.setItem(SHOW_MOVES_KEY, showMoves ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
+        clearSelection();
+        render();
+      });
+      layoutBtns.forEach(btn => btn.addEventListener('click', () => {
+        if (!busy && phase === 'setup') applyLayout(btn.dataset.layout);
+      }));
+      discardEl.addEventListener('click', () => {
+        if (selected && selected.targets.has('discard')) send(selected.src, 'discard');
+        else discardActive();
+      });
+      discardEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); discardActive(); }
+      });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') clearSelection(); });
+
+      $('shareNote').hidden = !RESULTS_URL;
+      $('feedbackBtn').hidden = !RESULTS_URL;
+
+      // Sections below the board start collapsed and remember what you left open
+      const sections = document.querySelectorAll('.cdk-section');
+      let openSections = [];
+      try { openSections = JSON.parse(localStorage.getItem(OPEN_SECTIONS_KEY) || '[]'); } catch (e) { /* start collapsed */ }
+      sections.forEach(el => {
+        el.open = Array.isArray(openSections) && openSections.includes(el.dataset.section);
+        el.addEventListener('toggle', () => {
+          const open = [...sections].filter(s => s.open).map(s => s.dataset.section);
+          try { localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(open)); } catch (e) { /* storage blocked */ }
+        });
+      });
+      $('feedbackBtn').addEventListener('click', openFeedback);
+      $('feedbackSend').addEventListener('click', sendFeedback);
+      $('feedbackCancel').addEventListener('click', () => $('feedbackDialog').close());
+      renderPastGames();
+      // Private windows or "block all cookies" settings make storage throw; say so instead of failing silently
+      try {
+        localStorage.setItem('cardoku-storage-check', '1');
+        localStorage.removeItem('cardoku-storage-check');
+      } catch (e) {
+        $('storageWarning').hidden = false;
+      }
+
+      if (!restoreCurrent()) newGame();
+      renderCompletionist();
+      renderTrophies();
+    })();
+  </script>
+</body>
+
+</html>

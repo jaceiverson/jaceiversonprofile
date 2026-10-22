@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Games — Jace Iverson</title>
+  <meta name="description" content="Browser games built by Jace Iverson. No installs, no accounts, just play.">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'UA-175301597-1');
+  </script>
+</head>
+
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+        <a href="/" class="navbar-brand">Jace Iverson</a>
+        <button class="navbar-toggle" id="navToggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="navbar-nav" id="navMenu">
+          <li><a href="/" class="navbar-link">Home</a></li>
+          <li><a href="/projects" class="navbar-link active">Projects</a></li>
+          <li><a href="/resume" class="navbar-link">Resume</a></li>
+          <li><a href="/links" class="navbar-link">Links</a></li>
+          <li><a href="mailto:iverson.jace@gmail.com" class="navbar-link navbar-cta">Email Me</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page header photo: inline background-image so url() is resolved from this HTML file (not css/style.css). -->
+  <div class="page-header">
+    <div class="page-header-media" style="background-image: url('../img/snowbasin-images/tron.jpeg');"
+      role="presentation" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/projects">Projects</a> › Games</nav>
+      <h1>Games</h1>
+      <p>Little browser games I've built for fun. No installs, no accounts, just play.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <div class="grid-3">
+
+        <!-- Game: Super Tic Tac Toe -->
+        <div class="card">
+          <div class="card-icon">❌</div>
+          <h3>Super Tic Tac Toe</h3>
+          <p>
+            Tic tac toe, but nine boards deep. Win a small board to claim that square, and win three
+            squares in a row to take the game. Pass and play, or host a game and play a friend online.
+          </p>
+          <div class="card-tags">
+            <span class="tag">2 Players</span>
+            <span class="tag tag-accent">Online</span>
+          </div>
+          <a href="super-tic-tac-toe" class="btn btn-navy btn-sm">Play Now</a>
+        </div>
+
+        <!-- Game: Cardoku -->
+        <div class="card">
+          <div class="card-icon">🃏</div>
+          <h3>Cardoku</h3>
+          <p>
+            Sudoku with a deck of cards. Draw a card and place it on the grid without breaking sudoku rules.
+            Face cards are wild, jokers are wilder, and the deck never lets you fill every square.
+          </p>
+          <div class="card-tags">
+            <span class="tag">Solo</span>
+            <span class="tag tag-accent">Puzzle</span>
+          </div>
+          <a href="cardoku" class="btn btn-navy btn-sm">Play Now</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">Jace Iverson</span>
+        <div class="footer-links">
+          <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:iverson.jace@gmail.com">Email</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a
+            coffee</a>
+        </div>
+        <span>&copy;
+          <script>document.write(new Date().getFullYear())</script> Jace Iverson
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+  </script>
+</body>
+
+</html>
