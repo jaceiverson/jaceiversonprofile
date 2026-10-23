@@ -284,7 +284,7 @@
         <summary class="section-header">
           <h2>Previous Games</h2>
           <div class="section-divider"></div>
-          <p class="text-muted">Saved in this browser only. Tap a game to see its final board.</p>
+          <p class="text-muted">Summary of your games played. Tap a game to see its final board.</p>
         </summary>
         <div id="history"></div>
       </details>
@@ -1092,12 +1092,17 @@
           total: all.reduce((n, s) => n + s.total, 0),
           max: Math.max(...all.map(s => s.max))
         } : null]);
-        return `<table class="cdk-table-scores cdk-stats">
-          <thead><tr><th>Start</th><th>Games</th><th>Best</th><th>Average</th></tr></thead>
-          <tbody>${rows.map(([name, s]) => s && s.count > 0
-            ? `<tr><td>${name}</td><td>${s.count}</td><td>${fmt(s.max)}</td><td>${fmt(Math.round(s.total / s.count * 10) / 10)}</td></tr>`
-            : `<tr><td>${name}</td><td>0</td><td>–</td><td>–</td></tr>`).join('')}</tbody>
-        </table>`;
+        return '<div class="cdk-history-stats">' + rows.map(([name, s]) => {
+          const played = s && s.count > 0;
+          return `<div class="cdk-history-stat${name === 'Total' ? ' is-total' : ''}">
+            <span class="cdk-history-stat-name">${name}</span>
+            <b>${played ? fmt(s.max) : '–'}</b>
+            <span class="cdk-history-stat-label">Best</span>
+            <span class="cdk-history-stat-meta">${played
+              ? `Avg ${fmt(Math.round(s.total / s.count * 10) / 10)} · ${plural(s.count, 'game')}`
+              : 'No games yet'}</span>
+          </div>`;
+        }).join('') + '</div>';
       }
 
       function renderTrophies() {
