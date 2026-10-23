@@ -1863,11 +1863,14 @@
         ctx.textAlign = 'left';
       }
 
-      // What a shared game shows off: the gameplay achievements it met, new or not. Milestones
-      // (games finished, Completionist) build up across games, so they say nothing about this one.
-      const sharedAchievements = record => record.achievements
-        .map(id => ACHIEVEMENTS.find(a => a.id === id))
-        .filter(a => a && a.type === 'gameplay');
+      // What a shared game shows off: the same achievements as the results dialog, new ones first
+      // (milestones included), then gameplay ones already unlocked in earlier games
+      function sharedAchievements(record) {
+        const fresh = record.id === gameId ? newlyUnlocked : [];
+        const shown = id => fresh.includes(id) || (ACHIEVEMENTS.find(a => a.id === id) || {}).type === 'gameplay';
+        const ids = [...record.achievements.filter(id => fresh.includes(id)), ...record.achievements.filter(id => !fresh.includes(id))];
+        return ids.filter(shown).map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean);
+      }
 
       // One finished game for friends: score, start, board, and the achievements it earned
       function gameShareImage(record) {
