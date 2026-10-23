@@ -1732,6 +1732,7 @@
           discarded,
           layout,
           achievements: earned,
+          undoUsed,  // decides gold vs grey achievement pills in Previous Games
           rules: RULES_VERSION,
           board: grid.map(card => card ? cardCode(card) : null),
           discards: discards.map(cardCode)
@@ -2308,20 +2309,26 @@
         }
         el.innerHTML = statsHTML() + '<div class="cdk-history-list">' + games.map(g => {
           const date = new Date(g.date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-          const names = g.achievements.map(id => (ACHIEVEMENTS.find(a => a.id === id) || { name: id }).name);
+          const earnedHere = g.achievements.map(id => ACHIEVEMENTS.find(a => a.id === id) || { id, name: id, icon: '' });
+          // Same pills as the share image: gold for gameplay ones earned without Undo, grey otherwise.
+          // Games saved before undoUsed was recorded show grey.
+          const pills = earnedHere.map(a => {
+            const gold = g.undoUsed === false && canUpgrade(a);
+            return `<span class="cdk-pill${gold ? ' gold' : ''}"${gold ? ' title="Earned without Undo"' : ''}>${a.icon ? a.icon + ' ' : ''}${a.name}</span>`;
+          }).join('');
           return `<details class="cdk-game">
             <summary>
               <span class="cdk-game-score">${fmt(g.score)} pts</span>
               <span class="cdk-game-layout">${titleCase(g.layout || 'default')}</span>
               <span class="cdk-game-meta">${date} · ${plural(g.lines, 'line')} · ${plural(g.discarded, 'discard')}</span>
-              ${names.length ? `<span class="cdk-game-badges">🏆 ${names.length}</span>` : ''}
+              ${earnedHere.length ? `<span class="cdk-game-badges">🏆 ${earnedHere.length}</span>` : ''}
             </summary>
             <div class="cdk-game-body">
               ${miniBoardHTML(g.board)}
               <div class="cdk-game-discards">
                 <h4>Discards (${g.discards.length})</h4>
                 <p>${g.discards.map(code => `<span class="${codeColor(code)}">${codeLabel(code)}</span>`).join(' ') || 'None'}</p>
-                ${names.length ? `<h4>Achievements</h4><p>${names.join(', ')}</p>` : ''}
+                ${earnedHere.length ? `<h4>Achievements</h4><div class="cdk-pills">${pills}</div>` : ''}
                 ${RESULTS_URL ? `<button type="button" class="btn btn-outline btn-sm cdk-resend" data-id="${g.id}">Send again</button>` : ''}
               </div>
             </div>

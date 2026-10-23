@@ -907,6 +907,30 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   margin-bottom: 0.35rem;
 }
 
+/* Achievement pills in a past game: gold if earned without Undo, grey otherwise (like the share image) */
+.cdk-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.cdk-pill {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid #d6d9df;
+  border-radius: 999px;
+  background: #eceef1;
+  color: var(--navy);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cdk-pill.gold {
+  border-color: var(--warm-darker);
+  background: #f6ecc9;
+}
+
 /* Read-only mini board for a past game */
 .cdk-mini {
   display: grid;
