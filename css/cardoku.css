@@ -1212,6 +1212,43 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   margin-top: 0;
 }
 
+/* Achievements earned again (not new): collapsed under one line */
+.cdk-repeats {
+  margin-top: 0.6rem;
+}
+
+.cdk-repeats>summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--navy-400);
+}
+
+.cdk-repeats>summary::-webkit-details-marker {
+  display: none;
+}
+
+.cdk-repeats>summary::before {
+  content: '▸';
+  transition: transform var(--transition);
+}
+
+.cdk-repeats[open]>summary::before {
+  transform: rotate(90deg);
+}
+
+.cdk-repeats>summary:hover {
+  color: var(--navy);
+}
+
+.cdk-repeats .cdk-achievements {
+  margin-top: 0.5rem;
+}
+
 .cdk-results .cdk-achievement {
   background: var(--warm);
   border: 1px solid var(--warm-dark);

@@ -358,7 +358,7 @@
       <p class="cdk-over-note" id="finalNote"></p>
     </div>
     <h3>Achievements</h3>
-    <div class="cdk-achievements" id="earned"></div>
+    <div class="cdk-earned" id="earned"></div>
     <p class="cdk-over-teaser" id="teaser"></p>
     <h3>Completionist <span class="cdk-comp-pct" id="resultsCompPct"></span></h3>
     <p class="cdk-results-comp-note" id="resultsCompCount"></p>
@@ -435,6 +435,9 @@
       // Names and descriptions could later live in a JSON file; the checks below are keyed by id
       const ACHIEVEMENTS = [
         { id: 'perfect', icon: '🎯', name: 'Perfect Score', desc: 'Finish with exactly 81 points.' },
+        { id: 'break-100', icon: '💯', name: 'Break 100', desc: 'Score 100 or more.' },
+        { id: 'break-200', icon: '🚀', name: 'Break 200', desc: 'Score 200 or more.' },
+        { id: 'break-300', icon: '🌋', name: 'Break 300', desc: 'Score 300 or more.' },
         { id: 'no-foundation', icon: '🏗️', name: 'No Foundation Needed', desc: `Score ${BREAK_POINTS}+ without completing any of the bottom 3 rows.` },
         { id: 'different-life', icon: '🃏', name: 'In a Different Life', desc: 'Surround an Ace with a King, Queen, Jack, and 10 (above, below, left, and right).' },
         { id: 'wild-to-7', icon: '7️⃣', name: 'Wild to 7', desc: 'Complete a row, column, or box reading Joker, A, K, Q, J, 10, 9, 8, 7 (either direction).' },
@@ -449,6 +452,7 @@
         { id: 'hole-in-heart', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
         { id: 'purist', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
         { id: 'king-of-world', icon: '🌍', name: 'King of the World', desc: 'Complete Row 1 as a Royal. Where else would we be?' },
+        { id: 'royalty', icon: '🤴', name: 'Royalty', desc: 'Score a Royal: a row, column, or box that is a Straight and a Flush.' },
         // id kept from when this was named Resource Manager, so earlier unlocks still count
         { id: 'resource-manager', icon: '💼', name: 'Resource CEO', desc: 'Every card on the board is part of a completed row, column, or box.' },
         { id: 'no-discards', icon: '♻️', name: 'Resource Manager', desc: 'Finish a game without discarding a single card.' },
@@ -457,11 +461,16 @@
         { id: 'clean-3-corner', icon: '3️⃣', name: 'Clean 3 in the Corner', desc: 'Complete box 3 Clean with a 3 in the top right corner.' },
         { id: 'the-block', icon: '🧱', name: 'The Block', desc: 'Complete rows 4–9 without placing any cards in rows 1–3.' },
         { id: 'picture-frame', icon: '🖼️', name: 'Picture Frame', desc: 'Fill every square around the outside edge of the board.' },
+        { id: 'four-corners', icon: '⏹️', name: 'Four Corners', desc: 'Finish with a card in all four corners of the board.' },
+        { id: 'kingdom-court-corners', icon: '🏰', name: 'Kingdom Court Corners', desc: 'Finish with a King, Queen, Jack, and Joker in the four corners (any order, any suits).' },
         { id: 'first-game', icon: '🐣', name: "Beginner's Skill", desc: 'Finish your first game.' },
+        { id: 'games-9', icon: '9️⃣', name: 'Full House', desc: 'Finish 9 games.' },
         { id: 'sudoku-secret', icon: '🤫', name: 'Sudoku Secret', desc: 'Finish 45 games.' },
+        { id: 'games-100', icon: '🏟️', name: 'Centurion', desc: 'Finish 100 games.' },
         { id: 'random-layout', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
         { id: 'custom-layout', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
         { id: 'zero', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
+        { id: 'in-the-red', icon: '📉', name: 'In the Red', subtitle: "How'd we get here?", desc: 'Finish with a negative score.' },
         { id: 'zero-with-discards', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' },
         { id: 'hard-mode', icon: '🥵', name: 'Hard Mode', desc: 'Finish a game without Show possible moves and without pressing Undo.' },
         { id: 'expert-mode', icon: '🧠', name: 'Expert Mode', desc: 'Finish a Default layout game without Show possible moves and without pressing Undo, and score over 200.' }
@@ -759,6 +768,7 @@
       const POS_DIAGONAL = [...Array(9)].map((_, k) => (8 - k) * 9 + k);  // bottom left → top right
       const NEG_DIAGONAL = [...Array(9)].map((_, k) => k * 9 + k);        // top left → bottom right
       const BORDER = [...Array(81).keys()].filter(i => i < 9 || i >= 72 || i % 9 === 0 || i % 9 === 8);
+      const CORNERS = [0, 8, 72, 80];
       const WILD_TO_7 = ['JOKER', 'A', 'K', 'Q', 'J', '10', '9', '8', '7'];
 
       const isFull = cells => cells.every(i => grid[i]);
@@ -768,6 +778,9 @@
 
       const ACHIEVEMENT_CHECKS = {
         'perfect': s => s.total === 81,
+        'break-100': s => s.total >= 100,
+        'break-200': s => s.total >= 200,
+        'break-300': s => s.total >= 300,
         'no-foundation': s => s.total >= BREAK_POINTS && !['r6', 'r7', 'r8'].some(k => s.done.has(k)),
         'different-life': () => grid.some((card, i) => card && card.rank === 'A' && NEIGHBORS[i].length === 4 &&
           NEIGHBORS[i].map(j => grid[j] && grid[j].rank).sort().join() === '10,J,K,Q'),
@@ -788,6 +801,7 @@
           ['b0', 'b1', 'b2', 'b3', 'b5', 'b6', 'b7', 'b8'].every(k => !isEmpty(cellsOf(k))),
         'purist': s => grid.every(card => !card || kind(card) === 'num') && s.total > 0,
         'king-of-world': s => s.items.some(it => it.key === 'r0' && it.bonuses.includes('royal')),
+        'royalty': s => s.items.some(it => it.bonuses.includes('royal')),
         'resource-manager': s => grid.every((card, i) => !card || s.items.some(it => it.cells.includes(i))),
         'no-discards': () => discarded === 0,
         'trash-1': s => discarded >= 5 && s.total >= TRASH_POINTS,
@@ -796,12 +810,17 @@
         'the-block': s => ['r3', 'r4', 'r5', 'r6', 'r7', 'r8'].every(k => s.done.has(k)) &&
           ['r0', 'r1', 'r2'].every(k => isEmpty(cellsOf(k))),
         'picture-frame': () => isFull(BORDER),
+        'four-corners': () => isFull(CORNERS),
+        'kingdom-court-corners': () => isFull(CORNERS) && ['K', 'Q', 'J', 'JOKER'].every(r => CORNERS.some(i => grid[i].rank === r)),
         'first-game': () => gamesFinished() >= 1,
+        'games-9': () => gamesFinished() >= 9,
         'sudoku-secret': () => gamesFinished() >= 45,
+        'games-100': () => gamesFinished() >= 100,
         // Rearranging any spades during setup turns the layout into 'custom'
         'random-layout': () => layout === 'random',
         'custom-layout': () => layout === 'custom',
         'zero': s => s.total === 0,
+        'in-the-red': s => s.total < 0,
         'zero-with-discards': s => s.total === 0 && discarded >= 1,
         'hard-mode': () => !assisted && !undoUsed,
         'expert-mode': s => !assisted && !undoUsed && layout === 'default' && s.total > 200
@@ -1126,11 +1145,17 @@
         if (phase === 'over') {
           $('finalScore').textContent = fmt(score.total);
           $('finalNote').textContent = newBest ? 'New best! 🎉' : `Your best is ${fmt(best)}.`;
-          // First-time unlocks lead, then ones earned in earlier games
-          const ordered = [...earned.filter(id => newlyUnlocked.includes(id)), ...earned.filter(id => !newlyUnlocked.includes(id))];
-          $('earned').innerHTML = ordered.length
-            ? ordered.map(achievementHTML).join('')
-            : '<p class="cdk-over-note">No achievements this time.</p>';
+          // First-time unlocks up front; ones already unlocked in earlier games are tucked away
+          const fresh = earned.filter(id => newlyUnlocked.includes(id));
+          const repeats = earned.filter(id => !newlyUnlocked.includes(id));
+          $('earned').innerHTML =
+            (fresh.length
+              ? `<div class="cdk-achievements">${fresh.map(achievementHTML).join('')}</div>`
+              : '<p class="cdk-over-note">No new achievements this time.</p>') +
+            (repeats.length
+              ? `<details class="cdk-repeats"><summary>Achievements you already got, but met the requirements again (${repeats.length})</summary>
+                  <div class="cdk-achievements">${repeats.map(achievementHTML).join('')}</div></details>`
+              : '');
           $('teaser').innerHTML = teaser
             ? `🔒 An achievement you haven't unlocked yet: <strong>${teaser.name}</strong><small>Now listed under Teased in Achievements. How to get it is up to you.</small>`
             : 'You\'ve unlocked every achievement. 🏆';
