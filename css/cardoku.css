@@ -1421,6 +1421,32 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   width: min(460px, calc(100% - 32px));
 }
 
+/* Share Your Progress: below the sections, outside the collapsibles */
+.cdk-progress-btn:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  width: min(320px, 100%);
+  margin: 2.5rem auto 0;
+}
+
+/* Achievement picker for the report card */
+.cdk-share select {
+  display: block;
+  width: 100%;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--navy);
+}
+
+.cdk-share img {
+  max-height: 55vh;
+}
+
 .cdk-feedback .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
