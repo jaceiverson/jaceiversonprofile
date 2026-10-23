@@ -482,8 +482,8 @@
         { id: 'hole-in-heart', type: 'gameplay', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
         { id: 'purist', type: 'gameplay', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
         { id: 'king-of-world', type: 'gameplay', icon: '🌍', name: 'King of the World', desc: 'Complete a Royal Row 1. Where else would they be?' },
-        { id: 'wild-side', type: 'gameplay', icon: '🐯', name: 'Wild Side', desc: 'Complete a row, column, or box with 5 wilds in it (Jokers count).' },
-        { id: 'royalty', type: 'gameplay', icon: '🤴', name: 'Royalty', desc: 'Score a Royal: a row, column, or box that is a Straight and a Flush.' },
+        { id: 'wild-side', type: 'gameplay', icon: '🐯', name: 'Wild Side', desc: 'Complete a row, column, or box with 5 wilds in it.' },
+        { id: 'royalty', type: 'gameplay', icon: '🤴', name: 'Royalty', desc: 'Score a Royal.' },
         // id kept from when this was named Resource Manager, so earlier unlocks still count
         { id: 'resource-manager', type: 'gameplay', icon: '💼', name: 'Resource CEO', desc: 'Every card on the board is part of a completed row, column, or box.' },
         { id: 'no-discards', type: 'gameplay', icon: '♻️', name: 'Resource Manager', desc: 'Finish a game without discarding a single card.' },
@@ -498,10 +498,10 @@
         { id: 'games-9', type: 'milestone', icon: '9️⃣', name: 'Full House', desc: 'Finish 9 games.' },
         { id: 'sudoku-secret', type: 'milestone', icon: '🤫', name: 'Sudoku Secret', desc: 'Finish 45 games.' },
         { id: 'games-100', type: 'milestone', icon: '🏟️', name: 'Centurion', desc: 'Finish 100 games.' },
-        { id: 'random-layout', type: 'gameplay', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
-        { id: 'custom-layout', type: 'gameplay', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
+        { id: 'random-layout', type: 'milestone', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
+        { id: 'custom-layout', type: 'milestone', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
         { id: 'zero', type: 'gameplay', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
-        { id: 'in-the-red', type: 'gameplay', icon: '📉', name: 'In the Red', subtitle: "How'd we get here?", desc: 'Finish with a negative score.' },
+        { id: 'in-the-red', type: 'gameplay', icon: '📉', name: 'In the Red', subtitle: "How'd we get here?", subtitleAfter: true, desc: 'Finish with a negative score.' },
         { id: 'zero-with-discards', type: 'gameplay', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' },
         { id: 'hard-mode', type: 'gameplay', icon: '🥵', name: 'Hard Mode', desc: 'Finish a game without Show possible moves, Show placement restrictions, or pressing Undo.' },
         { id: 'expert-mode', type: 'gameplay', icon: '🧠', name: 'Expert Mode', desc: 'Finish a Default layout game without Show possible moves, Show placement restrictions, or pressing Undo, and score over 200.' }
@@ -513,9 +513,9 @@
 
       // Completionist achievements: a bonus earned in every row / column / box, counted across all games
       const COMP_ACHIEVEMENT_GROUPS = [
-        { prefix: 'r', one: 'row', many: 'rows', icon: '↔️', columns: ['completed', 'clean', 'flush', 'straight'] },
+        { prefix: 'r', one: 'row', many: 'rows', icon: '↔️', columns: ['completed', 'clean', 'flush', 'straight', 'royal'] },
         { prefix: 'c', one: 'column', many: 'columns', icon: '↕️', columns: ['completed', 'clean', 'flush', 'straight', 'royal'] },
-        { prefix: 'b', one: 'box', many: 'boxes', icon: '🔳', columns: ['completed', 'clean', 'flush', 'straight'] }
+        { prefix: 'b', one: 'box', many: 'boxes', icon: '🔳', columns: ['completed', 'clean', 'flush', 'straight', 'royal'] }
       ];
       const capitalize = w => w[0].toUpperCase() + w.slice(1);
       COMP_ACHIEVEMENT_GROUPS.forEach(g => g.columns.forEach(column => {
@@ -884,13 +884,15 @@
         return ACHIEVEMENTS.filter(a => ACHIEVEMENT_CHECKS[a.id](s)).map(a => a.id);
       }
 
-      const subtitleHTML = a => a.subtitle ? `<em class="cdk-subtitle">${a.subtitle}</em>` : '';
+      const subtitleHTML = (a, after = false) => a.subtitle ? `<em class="cdk-subtitle${after ? ' after' : ''}">${a.subtitle}</em>` : '';
+      // Description with its subtitle, which goes first unless the achievement sets subtitleAfter
+      const descHTML = a => a.subtitleAfter ? a.desc + subtitleHTML(a, true) : subtitleHTML(a) + a.desc;
 
       function achievementHTML(id) {
         const a = ACHIEVEMENTS.find(x => x.id === id);
         const isNew = newlyUnlocked.includes(id) ? '<span class="cdk-new">New!</span>' : '';
         return `<div class="cdk-achievement"><span class="cdk-achievement-icon">${a.icon}</span>
-          <span><strong>${a.name}${isNew}</strong>${subtitleHTML(a)}${a.desc}</span></div>`;
+          <span><strong>${a.name}${isNew}</strong>${descHTML(a)}</span></div>`;
       }
 
       // Every achievement's saved state: { id: { unlocked: ISO date or null, titleVisible: true/false } }.
@@ -1139,7 +1141,7 @@
           }
           const date = new Date(unlocked).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
           return `<div class="cdk-trophy" data-id="${a.id}"><span class="cdk-trophy-icon">${a.icon}</span>
-            <span><strong>${a.name}</strong>${subtitleHTML(a)}${a.desc}<small>Unlocked ${date}</small></span></div>`;
+            <span><strong>${a.name}</strong>${descHTML(a)}<small>Unlocked ${date}</small></span></div>`;
         };
         const groups = [
           ['Completed', ACHIEVEMENTS.filter(a => state[a.id].unlocked), 'Nothing yet.'],

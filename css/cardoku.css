@@ -1799,6 +1799,10 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   margin-bottom: 0.15rem;
 }
 
+.cdk-subtitle.after {
+  margin: 0.15rem 0 0;
+}
+
 /* Checklist boxes that can't be earned (Flush/Royal in rows and boxes 7–9) */
 .cdk-comp-na {
   color: var(--grey-300);
