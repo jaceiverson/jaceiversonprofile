@@ -694,6 +694,12 @@
       padding: 0.6rem 0.75rem;
     }
 
+    .cdk-share-note {
+      max-width: 820px;
+      margin: 3rem auto 0;
+      font-size: 0.85rem;
+    }
+
     .cdk-breakdown:empty {
       display: none;
     }
@@ -1844,27 +1850,26 @@
         <summary class="section-header">
           <h2>How to Play</h2>
           <div class="section-divider"></div>
-          <p class="text-muted">Setup, the cards, scoring, and bonuses.</p>
+          <p class="text-muted">Setup, cards, scoring, bonuses</p>
         </summary>
 
         <h3>Setup</h3>
         <p>The Ace through 9 of spades start in the bottom three boxes of the grid, three cards per box and three
-          per row.</p>
+          per row. You can use 1 of 3 starting positions:</p>
         <ul>
           <li><strong>Default</strong> lines them up in a staircase: A-2-3, 4-5-6, 7-8-9.</li>
           <li><strong>Random</strong> uses the same squares but shuffles which spade goes where.</li>
           <li><strong>Custom</strong> lets you drag them anywhere in the bottom three boxes. Limit to 3 cards per row
             and box (you can stack 3 in a column)</li>
         </ul>
-        <p>Until you deal, you can tap a placed spade to pick it back up. When you're happy, hit
-          <strong>Shuffle &amp; Deal</strong>.
-        </p>
+        <p>When you're happy, hit <strong>Shuffle &amp; Deal</strong>.</p>
 
         <h3>Playing</h3>
         <ol>
           <li>The rest of the deck (45 cards, jokers included) is shuffled and you draw one card at a time.</li>
-          <li>Every card you play has to adhere to sudoku rules (1 digit per row, column, and box) and touch another
-            card orthogonally: directly above, below, left, or right</li>
+          <li>Every card you play has to adhere to sudoku rules (1 digit per row, column, and box) and be placed
+            orthogonally next to another card: directly above, below, left, or right. Wild cards still need to be played
+            orthogonally.</li>
           <li>Drag the card onto an open square, or just tap the square you want. With <strong>Show possible
               moves</strong> on, legal squares light up green.</li>
           <li>If you can't (or don't want to) place it, discard it.</li>
@@ -1875,18 +1880,16 @@
         <h3>The Cards</h3>
         <ul>
           <li><strong>Ace–9</strong> count as 1–9 and follow normal sudoku rules.</li>
-          <li><strong>10, J, Q, K</strong> are wilds. They don't block numbers, but two wilds of the same suit
-            or the same rank (two Kings, for example) can't share a row, column, or box.</li>
-          <li><strong>Jokers</strong> can go anywhere, as long as they don't share a row, column, or box with
-            the other joker.</li>
+          <li><strong>10, J, Q, K, Jokers</strong> are wilds. Wild sudoku rules apply only to wilds. Meaning they don't
+            block numbers, but two wilds of the same suit or the same rank (two Kings, for example) can't share a row,
+            column, or box.</li>
         </ul>
 
         <h3>Scoring</h3>
         <p>Points come from completing a full row, column, or box (all 9 squares filled). The top of the board
-          is hardest to reach, so it's worth the most. The outside columns get a bonus.
-          <button type="button" class="cdk-link" style="display: inline; margin: 0" data-open-guide>See it on the
-            board.</button>
-        </p>
+          is hardest to reach, so it's worth the most. The outside columns get a bonus.</p>
+        <p>Rows are numbered top to bottom, columns left to right, and boxes left to right, top to bottom. Just like
+          normal sudoku.</p>
         <table class="cdk-table-scores">
           <thead>
             <tr>
@@ -1953,11 +1956,11 @@
             </tr>
           </tbody>
         </table>
-        <p>Rows are numbered top to bottom, columns left to right, and boxes left to right, top to bottom. Just like
-          normal sudoku.</p>
+        <button type="button" class="cdk-link" style="display: inline; margin: 0" data-open-guide>See it on the
+          board</button>
 
         <h3>Bonus Multipliers</h3>
-        <p>A completed row, column, or box can earn addative bonus multipliers.</p>
+        <p>A completed row, column, or box can earn additive bonus multipliers:</p>
         <ul>
           <li><strong>Clean ×2</strong>: no wilds or jokers.</li>
           <li><strong>Flush ×2</strong>: all 9 cards are the same suit (wilds included, jokers break it).</li>
@@ -1970,9 +1973,6 @@
 
         <h3>Discards</h3>
         <p>Every discarded card costs 9 points, so your score can go negative. Choose your scratches wisely.</p>
-
-        <p class="text-muted" id="shareNote" hidden>When you finish a game, the final board, discards, score, and
-          achievements are shared anonymously with Jace. No personal information is sent.</p>
       </details>
       <details class="cdk-trophies cdk-section" data-section="achievements">
         <summary class="section-header">
@@ -2000,6 +2000,9 @@
         </summary>
         <div id="history"></div>
       </details>
+
+      <p class="text-muted cdk-share-note" id="shareNote" hidden>When you finish a game, the final board state is shared
+        anonymously with Jace. No personal information is sent.</p>
     </div>
   </section>
 
@@ -2022,7 +2025,7 @@
   <dialog class="cdk-modal cdk-guide" id="guideDialog" aria-labelledby="guideTitle">
     <button type="button" class="cdk-modal-x" id="guideX" aria-label="Close">×</button>
     <h2 id="guideTitle" tabindex="-1" autofocus>Welcome to Cardoku</h2>
-    <p class="cdk-modal-note">its Sudoku with playing cards.</p>
+    <p class="cdk-modal-note">Sudoku with playing cards.</p>
     <div class="cdk-guide-tips">
       <h3 class="cdk-guide-heading">How to Play?</h3>
       <p>Fill all 9 squares of a row, column, or box (r/c/b) to score
@@ -2047,10 +2050,10 @@
         <li><strong>Clean</strong>(2x): no wilds</li>
         <li><strong>Flush</strong>(2x): a single suit</li>
         <li><strong>Straight</strong>(3x): 1–9 in order</li>
-        <li><strong>Royal</strong>(2x): everything together</li>
+        <li><strong>Royal</strong>(2x): 1-9 in order and suited</li>
       </ul>
-      <p>Bonuses are multipliers that can stack. This means a royal r/c/b gets its default value multiplied by 9. Big
-        score incoming if you can pull that off.</p>
+      <p>Bonuses are multipliers that can stack. This means <strong>a Royal r/c/b gets its default value
+          multiplied by 9</strong>. Big score incoming if you can pull that off.</p>
       <h3 class="cdk-guide-heading">Discarding cards</h3>
       <p>Sometimes you can't play a card (no legal moves), or you don't want to (interesting strategy). Each card
         you discard is <strong>-9 points</strong>.</p>
@@ -2176,7 +2179,9 @@
         { id: 'random-layout', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
         { id: 'custom-layout', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
         { id: 'zero', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
-        { id: 'zero-with-discards', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' }
+        { id: 'zero-with-discards', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' },
+        { id: 'hard-mode', icon: '🥵', name: 'Hard Mode', desc: 'Finish a game without Show possible moves and without pressing Undo.' },
+        { id: 'expert-mode', icon: '🧠', name: 'Expert Mode', desc: 'Finish a Default layout game without Show possible moves and without pressing Undo, and score over 200.' }
       ];
 
       // Checklist boxes that can never be filled: rows 7–9 and boxes 7–9 start with three spades,
@@ -2341,6 +2346,8 @@
       let newlyUnlocked = [];  // the subset of `earned` this browser had never unlocked before
       let teaser = null;       // a random still-locked achievement shown at game over
       let newChecks = [];      // Completionist boxes this game checked for the first time
+      let assisted = false;    // Show possible moves was on at some point after the deal (Hard / Expert Mode)
+      let undoUsed = false;    // Undo was pressed this game (Hard / Expert Mode)
       let drawingCard = null;  // the card mid-flight from the deck, so a save never loses it
       let layout = 'default';  // 'default' | 'random' | 'custom'
       let history = [];        // snapshots taken before each placement/discard, for Undo
@@ -2512,7 +2519,9 @@
         'random-layout': () => layout === 'random',
         'custom-layout': () => layout === 'custom',
         'zero': s => s.total === 0,
-        'zero-with-discards': s => s.total === 0 && discarded >= 1
+        'zero-with-discards': s => s.total === 0 && discarded >= 1,
+        'hard-mode': () => !assisted && !undoUsed,
+        'expert-mode': s => !assisted && !undoUsed && layout === 'default' && s.total > 200
       };
 
       // True once every possible box in one checklist column (e.g. every row's Clean) is checked
@@ -2735,7 +2744,7 @@
         };
         const groups = [
           ['Completed', ACHIEVEMENTS.filter(a => state[a.id].unlocked), 'Nothing yet.'],
-          ['Teased', ACHIEVEMENTS.filter(a => !state[a.id].unlocked && state[a.id].titleVisible), 'Each game over hints at one you haven\'t found.'],
+          ['Teased', ACHIEVEMENTS.filter(a => !state[a.id].unlocked && state[a.id].titleVisible), 'Each completed game hints at one you haven\'t found.'],
           ['Unknown', ACHIEVEMENTS.filter(a => !state[a.id].titleVisible), 'You\'ve seen them all.']
         ];
         $('trophies').innerHTML = groups.map(([title, list, empty]) => `
@@ -2861,7 +2870,7 @@
         const state = {
           v: 1, phase, layout, grid, tray, deck, discards, placed, discarded, history, gameId,
           active: active || drawingCard,  // a card mid-draw counts as drawn
-          newBest, earned, newlyUnlocked, newChecks, teaser: teaser && teaser.id
+          newBest, earned, newlyUnlocked, newChecks, teaser: teaser && teaser.id, assisted, undoUsed
         };
         try { localStorage.setItem(CURRENT_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
       }
@@ -2887,6 +2896,9 @@
         newlyUnlocked = (s.newlyUnlocked || []).filter(id => earned.includes(id));
         newChecks = Array.isArray(s.newChecks) ? s.newChecks.filter(k => /^[rcb][0-8]:(completed|clean|flush|straight|royal)$/.test(k)) : [];
         teaser = ACHIEVEMENTS.find(a => a.id === s.teaser) || null;
+        // Games saved before these were tracked can't prove they went unassisted
+        assisted = s.assisted !== false;
+        undoUsed = s.undoUsed !== false;
         if (phase === 'over' && teaser) reveal(teaser.id);  // keep the bottom tile in step with the panel
         completed = new Set(scoreBoard().items.map(it => it.key));  // don't replay completion glows
         render();
@@ -3165,6 +3177,7 @@
         clearSelection();
         ({ grid, active, deck, discards, placed, discarded } = history.pop());
         phase = 'play';
+        undoUsed = true;
         newBest = false;
         earned = [];
         newChecks = [];
@@ -3201,6 +3214,8 @@
         deck = buildDeck();
         history = [];
         gameId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        assisted = showMoves;
+        undoUsed = false;
         busy = true;
         render();
         deckEl.classList.add('shuffling');
@@ -3511,6 +3526,7 @@
       showMovesInput.checked = showMoves;
       showMovesInput.addEventListener('change', () => {
         showMoves = showMovesInput.checked;
+        if (showMoves && phase === 'play') assisted = true;
         try { localStorage.setItem(SHOW_MOVES_KEY, showMoves ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
         clearSelection();
         render();
