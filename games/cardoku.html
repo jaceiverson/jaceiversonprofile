@@ -458,7 +458,7 @@
 
       // Finished games are POSTed here (a Google Apps Script web app). Leave empty to send nothing.
       const RESULTS_URL = 'https://script.google.com/macros/s/AKfycbzoZjsnUscCSk9Fo58W5tdfh_X9Wbb4FmtHICKGiBQhoyxA3b2ucKMMkN-CCo_EM_GzyA/exec';
-      const SHARE_URL = 'https://jaceiverson.com/games/cardoku.html';  // linked in shared games and report cards
+      const SHARE_URL = 'https://jaceiverson.com/games/cardoku';  // linked in shared games and report cards
       const RULES_VERSION = '0.1';  // bump when scoring or rules change, so results can be compared fairly
 
       // Names and descriptions could later live in a JSON file; the checks below are keyed by id.
@@ -2108,7 +2108,7 @@
         if (!record) return;
         const names = achievementNames(record.achievements).map(a => a.name);
         const text = `I scored ${fmt(record.score)} in Cardoku (${titleCase(record.layout || 'default')} start)` +
-          (names.length ? ` and unlocked ${names.join(', ')}` : '') + `. Can you beat it? ${SHARE_URL}`;
+          (names.length ? ` and unlocked ${names.join(', ')}` : '') + `. Can you beat it? Play at ${SHARE_URL}`;
         openShare('Share game', gameShareImage(record), `cardoku-${fmt(record.score)}.png`, text);
       }
 
@@ -2121,7 +2121,7 @@
         sharing.image = reportCardImage(highlight);
         sharing.text = `My Cardoku report card: best score ${bests.length ? fmt(Math.max(...bests)) : '–'}, ` +
           `${count} of ${ACHIEVEMENTS.length} achievements, ${compStats(loadCompletionist()).pct}% Completionist` +
-          (highlight ? `, featuring ${highlight.icon} ${highlight.name}` : '') + `. ${SHARE_URL}`;
+          (highlight ? `, featuring ${highlight.icon} ${highlight.name}` : '') + `. Play at ${SHARE_URL}`;
         $('shareImage').src = sharing.image;
       }
 
