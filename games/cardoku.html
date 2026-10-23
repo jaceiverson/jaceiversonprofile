@@ -69,7 +69,6 @@
 
         <div class="cdk-board">
           <div class="cdk-grid" id="grid" aria-label="Cardoku grid"></div>
-          <div class="cdk-toast" id="toast" role="status" aria-live="polite"></div>
         </div>
 
         <aside class="cdk-side">
@@ -77,6 +76,7 @@
             results</button>
 
           <div id="setupPanel">
+            <div class="cdk-toast" id="toast" role="status" aria-live="polite"></div>
             <span class="cdk-label">Starting layout</span>
             <div class="cdk-layouts" role="group" aria-label="Starting layout">
               <button type="button" class="cdk-layout" data-layout="default">Default</button>
@@ -429,6 +429,7 @@
       const CURRENT_KEY = 'cardoku-current';    // the game in progress, so a refresh picks up where you left off
       const OPEN_SECTIONS_KEY = 'cardoku-open-sections';  // which sections below the board are expanded
       const FINISHED_KEY = 'cardoku-finished';  // { count, lastId }: lifetime finished games in this browser
+      const STATS_KEY = 'cardoku-stats';  // { layouts: { default: { count, total, max } }, last: { id, score, layout } }
       const WELCOMED_KEY = 'cardoku-welcomed';  // set once the board guide has been seen
       const HISTORY_LIMIT = 50;
       const DISCARD_PENALTY = 9;
@@ -460,6 +461,7 @@
         { id: 'hole-in-heart', type: 'gameplay', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
         { id: 'purist', type: 'gameplay', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
         { id: 'king-of-world', type: 'gameplay', icon: '🌍', name: 'King of the World', desc: 'Complete Row 1 as a Royal. Where else would we be?' },
+        { id: 'wild-side', type: 'gameplay', icon: '🐯', name: 'Wild Side', desc: 'Complete a row, column, or box with 5 wilds in it (Jokers count).' },
         { id: 'royalty', type: 'gameplay', icon: '🤴', name: 'Royalty', desc: 'Score a Royal: a row, column, or box that is a Straight and a Flush.' },
         // id kept from when this was named Resource Manager, so earlier unlocks still count
         { id: 'resource-manager', type: 'gameplay', icon: '💼', name: 'Resource CEO', desc: 'Every card on the board is part of a completed row, column, or box.' },
@@ -816,6 +818,8 @@
           ['b0', 'b1', 'b2', 'b3', 'b5', 'b6', 'b7', 'b8'].every(k => !isEmpty(cellsOf(k))),
         'purist': s => grid.every(card => !card || kind(card) === 'num') && s.total > 0,
         'king-of-world': s => s.items.some(it => it.key === 'r0' && it.bonuses.includes('royal')),
+        // 5 is the most a line can hold: one wild per suit, plus a Joker
+        'wild-side': s => s.items.some(it => it.cells.filter(i => kind(grid[i]) !== 'num').length >= 5),
         'royalty': s => s.items.some(it => it.bonuses.includes('royal')),
         'resource-manager': s => grid.every((card, i) => !card || s.items.some(it => it.cells.includes(i))),
         'no-discards': () => discarded === 0,
@@ -1044,6 +1048,58 @@
         try { localStorage.setItem(FINISHED_KEY, JSON.stringify({ count: finished.count + 1, lastId: id })); } catch (e) { /* storage blocked */ }
       }
 
+      // Lifetime score stats per starting layout. Like the finished counter, this outlives the 50 saved
+      // games, and players from before it existed start from their saved history.
+      function loadStats() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STATS_KEY));
+          if (saved && saved.layouts) return saved;
+        } catch (e) { /* fall through */ }
+        const stats = { layouts: {}, last: null };
+        const games = loadPastGames();
+        games.slice().reverse().forEach(g => addToStats(stats, g));
+        return stats;
+      }
+
+      function addToStats(stats, record) {
+        const layoutName = record.layout || 'default';
+        const s = stats.layouts[layoutName] || (stats.layouts[layoutName] = { count: 0, total: 0, max: null });
+        s.count++;
+        s.total += record.score;
+        s.max = s.max === null ? record.score : Math.max(s.max, record.score);
+        stats.last = { id: record.id, score: record.score, layout: layoutName };
+      }
+
+      // Finishing again after an undo replaces that game's score instead of counting a new game.
+      // Max stays put, the same as the best score does.
+      function recordStats(record) {
+        const stats = loadStats();
+        const last = stats.last;
+        if (last && last.id === record.id && stats.layouts[last.layout]) {
+          stats.layouts[last.layout].count--;
+          stats.layouts[last.layout].total -= last.score;
+        }
+        addToStats(stats, record);
+        try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* storage blocked */ }
+      }
+
+      function statsHTML() {
+        const stats = loadStats();
+        const rows = ['default', 'random', 'custom'].map(name => [titleCase(name), stats.layouts[name]]);
+        const all = Object.values(stats.layouts).filter(s => s.count > 0);
+        rows.push(['Total', all.length ? {
+          count: all.reduce((n, s) => n + s.count, 0),
+          total: all.reduce((n, s) => n + s.total, 0),
+          max: Math.max(...all.map(s => s.max))
+        } : null]);
+        return `<table class="cdk-table-scores cdk-stats">
+          <thead><tr><th>Start</th><th>Games</th><th>Best</th><th>Average</th></tr></thead>
+          <tbody>${rows.map(([name, s]) => s && s.count > 0
+            ? `<tr><td>${name}</td><td>${s.count}</td><td>${fmt(s.max)}</td><td>${fmt(Math.round(s.total / s.count * 10) / 10)}</td></tr>`
+            : `<tr><td>${name}</td><td>0</td><td>–</td><td>–</td></tr>`).join('')}</tbody>
+        </table>`;
+      }
+
       function renderTrophies() {
         const state = loadAchievementState();
         const count = ACHIEVEMENTS.filter(a => state[a.id].unlocked).length;
@@ -1073,7 +1129,9 @@
       // ---------- Rendering ----------
 
       // Brief explanation over the grid, e.g. why a move was illegal
+      // Shown over the cards (or the setup tray) so it never hides the grid
       function toast(text) {
+        (phase === 'setup' ? $('setupPanel') : document.querySelector('.cdk-table')).append(toastEl);
         toastEl.textContent = text;
         toastEl.classList.add('show');
         clearTimeout(toastTimer);
@@ -1596,6 +1654,7 @@
           board: grid.map(card => card ? cardCode(card) : null),
           discards: discards.map(cardCode)
         };
+        recordStats(record);
         saveGame(record);
         sendResult(record, score);
         render();
@@ -1794,7 +1853,7 @@
           el.innerHTML = '<p class="cdk-history-empty">No finished games yet. Your results will show up here.</p>';
           return;
         }
-        el.innerHTML = '<div class="cdk-history-list">' + games.map(g => {
+        el.innerHTML = statsHTML() + '<div class="cdk-history-list">' + games.map(g => {
           const date = new Date(g.date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
           const names = g.achievements.map(id => (ACHIEVEMENTS.find(a => a.id === id) || { name: id }).name);
           return `<details class="cdk-game">

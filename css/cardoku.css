@@ -382,16 +382,19 @@
   gap: 1rem;
 }
 
-/* Brief explanation over the grid when a move is illegal */
-.cdk-board {
+/* Brief explanation over the cards (or setup tray) when a move is illegal */
+.cdk-board,
+#setupPanel,
+.cdk-table {
   position: relative;
 }
 
 .cdk-toast {
   position: absolute;
   left: 50%;
-  top: 12px;
-  transform: translate(-50%, -6px);
+  top: 50%;
+  transform: translate(-50%, calc(-50% - 6px));
+  width: max-content;
   max-width: calc(100% - 24px);
   padding: 0.5rem 0.9rem;
   border-radius: var(--radius);
@@ -409,7 +412,7 @@
 
 .cdk-toast.show {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translate(-50%, -50%);
 }
 
 /* Wild reminder when hovering the card in hand */
@@ -762,6 +765,17 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   max-width: 820px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Lifetime Games / Best / Average per starting layout, above the list */
+.cdk-stats {
+  margin: 0 0 1rem;
+}
+
+.cdk-stats tbody tr:last-child td {
+  font-weight: 700;
+  color: var(--navy);
+  border-bottom: none;
 }
 
 .cdk-history-empty {
