@@ -454,19 +454,7 @@
       display: none;
     }
 
-    /* End of game summary */
-    .cdk-over {
-      text-align: center;
-      background: var(--warm);
-      border: 1px solid var(--warm-dark);
-      border-radius: var(--radius);
-      padding: 0.9rem;
-    }
-
-    .cdk-over[hidden] {
-      display: none;
-    }
-
+    /* End of game summary (in the results dialog) */
     .cdk-over-score {
       display: block;
       font-size: 2rem;
@@ -706,6 +694,10 @@
       padding: 0.6rem 0.75rem;
     }
 
+    .cdk-breakdown:empty {
+      display: none;
+    }
+
     .cdk-breakdown p {
       color: var(--grey-500);
       margin: 0;
@@ -778,7 +770,8 @@
     /* ---------- Previous games ---------- */
     .cdk-history {
       max-width: 820px;
-      margin: 3rem auto 0;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .cdk-history-empty {
@@ -895,6 +888,21 @@
       line-height: 1.6;
     }
 
+    .cdk-resend {
+      margin-top: 0.75rem;
+    }
+
+    .cdk-game .btn-outline {
+      color: var(--navy);
+      border-color: var(--navy-100);
+      background: var(--white);
+    }
+
+    .cdk-game .btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
     .cdk-game-discards .red {
       color: var(--red);
     }
@@ -912,6 +920,12 @@
       color: var(--navy);
     }
 
+    .cdk-over-teaser small {
+      display: block;
+      margin-top: 0.15rem;
+      color: var(--grey-500);
+    }
+
     .cdk-storage-warning {
       max-width: 820px;
       margin: 0 auto 1.25rem;
@@ -927,36 +941,11 @@
       display: none;
     }
 
-    /* Completionist boxes checked for the first time this game */
-    .cdk-over-checks:empty {
-      display: none;
-    }
-
-    .cdk-over-checks {
-      margin-top: 0.75rem;
-      text-align: left;
-      background: var(--white);
-      border-radius: var(--radius-sm);
-      padding: 0.5rem 0.6rem;
-    }
-
-    .cdk-over-checks ul {
-      margin-top: 0.3rem;
-      font-size: 0.8rem;
-      color: var(--navy);
-    }
-
-    .cdk-over-checks li {
-      padding: 0.1rem 0;
-    }
-
-    /* ---------- Feedback dialog ---------- */
-    .cdk-feedback-btn {
-      margin-top: 0.75rem;
-    }
-
-    .cdk-feedback {
+    /* ---------- Dialogs (feedback, board guide, results) ---------- */
+    .cdk-feedback,
+    .cdk-modal {
       width: min(460px, calc(100% - 32px));
+      max-height: calc(100dvh - 32px);
       margin: auto;
       border: 0;
       border-radius: var(--radius-lg);
@@ -965,14 +954,326 @@
       color: var(--grey-700);
     }
 
-    .cdk-feedback::backdrop {
+    .cdk-feedback::backdrop,
+    .cdk-modal::backdrop {
       background: rgba(20, 54, 66, 0.6);
     }
 
-    .cdk-feedback h2 {
+    .cdk-feedback h2,
+    .cdk-modal h2 {
       color: var(--navy);
       font-size: 1.3rem;
       margin-bottom: 0.25rem;
+    }
+
+    /* Dialogs open focused on their top, not scrolled down to the first button */
+    .cdk-modal [autofocus]:focus {
+      outline: none;
+    }
+
+    /* Close (×) in a dialog's top right corner */
+    .cdk-modal-x {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: var(--grey-500);
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .cdk-modal-x:hover {
+      background: var(--grey-100);
+      color: var(--navy);
+    }
+
+    .cdk-modal-x:focus-visible {
+      outline: 2px solid var(--navy-400);
+    }
+
+    .cdk-modal h3 {
+      color: var(--navy);
+      font-size: 1rem;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .cdk-modal-note {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+      margin-bottom: 1rem;
+    }
+
+    .cdk-modal .btn-row,
+    .cdk-modal .cdk-btn-row {
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .cdk-modal .btn-outline {
+      color: var(--navy);
+      border-color: var(--navy-100);
+      background: var(--white);
+    }
+
+    /* Small text-style button that opens the board guide */
+    .cdk-link {
+      display: block;
+      margin: 0.6rem auto 0;
+      padding: 0.2rem;
+      border: 0;
+      background: none;
+      font: inherit;
+      font-size: 0.82rem;
+      color: var(--navy-400);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .cdk-link:hover {
+      color: var(--navy);
+    }
+
+    /* Board guide: rows, columns, and boxes labeled with what each is worth */
+    .cdk-guide {
+      width: min(540px, calc(100% - 32px));
+    }
+
+    .cdk-guide-board {
+      display: grid;
+      grid-template-columns: 2.1rem repeat(9, minmax(0, 1fr));
+      grid-template-rows: 2.1rem repeat(9, auto);
+      gap: 2px;
+      font-size: 0.7rem;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .cdk-guide-head {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    .cdk-guide-head small {
+      font-weight: 500;
+      font-size: 0.62rem;
+      opacity: 0.8;
+    }
+
+    .cdk-guide-box {
+      grid-row: span 3;
+      grid-column: span 3;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      outline: 2px solid var(--navy);
+      outline-offset: -1px;
+    }
+
+    .cdk-guide-box>span {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .cdk-guide-box b {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--navy);
+      font-size: 0.78rem;
+    }
+
+    .cdk-guide-box b small {
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    .cdk-guide .t27 {
+      background: var(--warm-dark);
+    }
+
+    .cdk-guide .t18 {
+      background: var(--navy-100);
+    }
+
+    .cdk-guide .t9 {
+      background: var(--grey-100);
+    }
+
+    .cdk-guide-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1rem;
+      justify-content: center;
+      margin: 0.6rem 0 0;
+      font-size: 0.78rem;
+      color: var(--grey-700);
+    }
+
+    .cdk-guide-legend span::before {
+      content: '';
+      display: inline-block;
+      width: 0.75rem;
+      height: 0.75rem;
+      margin-right: 0.3rem;
+      vertical-align: -1px;
+      border-radius: 2px;
+    }
+
+    .cdk-guide-legend .t27::before {
+      background: var(--warm-dark);
+    }
+
+    .cdk-guide-legend .t18::before {
+      background: var(--navy-100);
+    }
+
+    .cdk-guide-legend .t9::before {
+      background: var(--grey-100);
+    }
+
+    .cdk-guide-legend span {
+      background: none !important;
+    }
+
+    .cdk-guide-tips {
+      margin: 1rem 0 0;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .cdk-guide-tips p+p,
+    .cdk-guide-tips ul+p {
+      margin-top: 0.6rem;
+    }
+
+    .cdk-modal .cdk-guide-heading {
+      margin: 1rem 0 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--navy-400);
+    }
+
+    .cdk-modal .cdk-guide-tips .cdk-guide-heading:first-child {
+      margin-top: 0;
+    }
+
+    .cdk-guide-tips .cdk-guide-questions {
+      margin-top: 1.5rem;
+    }
+
+    .cdk-guide-tips ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1.1rem;
+      list-style: disc;
+    }
+
+    .cdk-guide-tips li+li {
+      margin-top: 0.15rem;
+    }
+
+    .cdk-guide-tips strong {
+      color: var(--navy);
+    }
+
+    /* Results: score, achievements, and the Completionist checklist after a game */
+    .cdk-results {
+      width: min(860px, calc(100% - 32px));
+    }
+
+    .cdk-results-head {
+      text-align: center;
+      background: var(--warm);
+      border: 1px solid var(--warm-dark);
+      border-radius: var(--radius);
+      padding: 0.9rem;
+    }
+
+    .cdk-results .cdk-achievements {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+      margin-top: 0;
+    }
+
+    .cdk-results .cdk-achievement {
+      background: var(--warm);
+      border: 1px solid var(--warm-dark);
+    }
+
+    .cdk-results .cdk-over-teaser {
+      border-top-color: var(--grey-100);
+    }
+
+    .cdk-results-comp-note {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+      margin-bottom: 0.5rem;
+    }
+
+    .cdk-results-comp-note b {
+      color: var(--warm-darker);
+    }
+
+    /* Completionist boxes checked for the first time this game */
+    .cdk-comp td.fresh {
+      background: var(--warm) !important;
+    }
+
+    .cdk-check.on.fresh {
+      background: var(--warm-darker);
+      border-color: var(--warm-darker);
+      box-shadow: 0 0 0 3px var(--warm-dark);
+      animation: cdk-check-pop 0.5s ease-out both;
+    }
+
+    @keyframes cdk-check-pop {
+      0% {
+        transform: scale(0.4);
+      }
+
+      70% {
+        transform: scale(1.25);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cdk-check.on.fresh {
+        animation: none;
+      }
+    }
+
+    .cdk-results-btn {
+      margin-bottom: 0.75rem;
+    }
+
+    .cdk-results-btn[hidden],
+    .cdk-modal [hidden] {
+      display: none;
     }
 
     .cdk-feedback-note {
@@ -1016,6 +1317,10 @@
       background: var(--white);
     }
 
+    .cdk-feedback {
+      width: min(460px, calc(100% - 32px));
+    }
+
     .cdk-feedback .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -1024,7 +1329,8 @@
     /* ---------- Completionist checklist ---------- */
     .cdk-completionist {
       max-width: 820px;
-      margin: 3rem auto 0;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* ---------- Collapsible sections below the board ---------- */
@@ -1067,6 +1373,11 @@
       margin-bottom: 1.5rem;
     }
 
+    /* Closed sections show just the title; the grey line under it appears once opened */
+    .cdk-section:not([open])>summary .text-muted {
+      display: none;
+    }
+
     .cdk-section>summary:hover h2 {
       color: var(--navy-400);
     }
@@ -1077,25 +1388,127 @@
       border-radius: var(--radius-sm);
     }
 
-    /* The table is wider than a phone, so it scrolls inside its box rather than the page */
+    /* Row, Column, and Box tables sit side by side; on phones, tabs show one at a time */
     .cdk-comp-wrap {
-      overflow-x: auto;
       border: 1px solid var(--grey-300);
       border-radius: var(--radius);
+      overflow: hidden;
     }
 
-    /* Fixed layout + a colgroup keeps all 15 checkbox columns the same width */
+    .cdk-comp-groups {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cdk-comp-group+.cdk-comp-group {
+      border-left: 2px solid var(--navy);
+    }
+
+    .cdk-comp-tabs {
+      display: none;
+      border-bottom: 1px solid var(--grey-300);
+      background: var(--grey-50);
+    }
+
+    .cdk-comp-tab {
+      flex: 1;
+      padding: 0.55rem 0.25rem;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: none;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--grey-500);
+      cursor: pointer;
+    }
+
+    .cdk-comp-tab small {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    .cdk-comp-tab.active {
+      color: var(--navy);
+      border-bottom-color: var(--accent);
+      background: var(--white);
+    }
+
+    .cdk-comp-tab .fresh-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-left: 0.25rem;
+      border-radius: 50%;
+      background: var(--warm-darker);
+      vertical-align: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .cdk-comp-tabs {
+        display: flex;
+      }
+
+      .cdk-comp-groups {
+        grid-template-columns: 1fr;
+      }
+
+      .cdk-comp-group:not(.active) {
+        display: none;
+      }
+
+      .cdk-comp-group+.cdk-comp-group {
+        border-left: 0;
+      }
+
+      .cdk-comp thead tr:first-child {
+        display: none;
+        /* the tab already names the group */
+      }
+
+      .cdk-comp {
+        font-size: 0.8rem;
+      }
+
+      .cdk-comp thead tr:last-child th {
+        font-size: 0.72rem;
+      }
+
+      .cdk-comp th,
+      .cdk-comp td {
+        padding: 0.45rem 0.25rem;
+      }
+    }
+
+    /* Fixed layout + a colgroup keeps the checkbox columns the same width */
     .cdk-comp {
       border-collapse: collapse;
       table-layout: fixed;
       width: 100%;
-      min-width: 720px;
       font-size: 0.72rem;
       text-align: center;
     }
 
+    .cdk-comp-pct {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0.05rem 0.5rem;
+      border-radius: 999px;
+      background: var(--accent-100);
+      color: var(--accent-hover);
+      font-size: 0.8rem;
+      font-weight: 700;
+      vertical-align: 2px;
+    }
+
     .cdk-comp col.cdk-comp-index-col {
-      width: 2rem;
+      width: 1.6rem;
+    }
+
+    /* "Completed" is the longest header */
+    .cdk-comp col.cdk-comp-done-col {
+      width: 24%;
     }
 
     .cdk-comp thead tr:last-child th {
@@ -1116,6 +1529,14 @@
       font-weight: 600;
     }
 
+    .cdk-comp thead tr:first-child th small {
+      margin-left: 0.35rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--grey-500);
+    }
+
     .cdk-comp thead tr:first-child th {
       background: var(--navy-50);
       font-size: 0.8rem;
@@ -1130,10 +1551,6 @@
     .cdk-comp .cdk-comp-index {
       color: var(--grey-500);
       font-weight: 600;
-    }
-
-    .cdk-comp .group-start {
-      border-left: 2px solid var(--navy);
     }
 
     .cdk-check {
@@ -1159,7 +1576,8 @@
     /* ---------- Achievements (locked until earned) ---------- */
     .cdk-trophies {
       max-width: 820px;
-      margin: 3rem auto 0;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .cdk-trophy-grid {
@@ -1273,7 +1691,8 @@
     }
 
     /* ---------- Rules ---------- */
-    .cdk-rules {
+    /* First section below the board: a bit more room above it than between sections */
+    .cdk-section.cdk-rules {
       max-width: 820px;
       margin: 3rem auto 0;
     }
@@ -1366,16 +1785,8 @@
         </div>
 
         <aside class="cdk-side">
-          <div class="cdk-over" id="overPanel" hidden>
-            <span class="cdk-label">Final score</span>
-            <span class="cdk-over-score" id="finalScore">0</span>
-            <p class="cdk-over-note" id="finalNote"></p>
-            <div class="cdk-achievements" id="earned"></div>
-            <div class="cdk-over-checks" id="newChecks"></div>
-            <p class="cdk-over-teaser" id="teaser"></p>
-            <button type="button" class="btn btn-outline btn-sm cdk-wide cdk-feedback-btn" id="feedbackBtn">Share game
-              feedback</button>
-          </div>
+          <button type="button" class="btn btn-primary btn-sm cdk-wide cdk-results-btn" id="resultsBtn" hidden>View
+            results</button>
 
           <div id="setupPanel">
             <span class="cdk-label">Starting layout</span>
@@ -1424,6 +1835,7 @@
             </div>
             <div class="cdk-breakdown" id="breakdown" aria-live="polite"></div>
             <button type="button" class="btn btn-outline btn-sm cdk-wide" id="newBtn">New Game</button>
+            <button type="button" class="cdk-link" data-open-guide>How the board scores</button>
           </div>
         </aside>
       </div>
@@ -1471,7 +1883,10 @@
 
         <h3>Scoring</h3>
         <p>Points come from completing a full row, column, or box (all 9 squares filled). The top of the board
-          is hardest to reach, so it's worth the most. The outside columns get a bonus.</p>
+          is hardest to reach, so it's worth the most. The outside columns get a bonus.
+          <button type="button" class="cdk-link" style="display: inline; margin: 0" data-open-guide>See it on the
+            board.</button>
+        </p>
         <table class="cdk-table-scores">
           <thead>
             <tr>
@@ -1559,10 +1974,9 @@
         <p class="text-muted" id="shareNote" hidden>When you finish a game, the final board, discards, score, and
           achievements are shared anonymously with Jace. No personal information is sent.</p>
       </details>
-
       <details class="cdk-trophies cdk-section" data-section="achievements">
         <summary class="section-header">
-          <h2>Achievements</h2>
+          <h2>Achievements <span class="cdk-comp-pct" id="trophyPct"></span></h2>
           <div class="section-divider"></div>
           <p class="text-muted" id="trophyCount"></p>
         </summary>
@@ -1571,13 +1985,11 @@
 
       <details class="cdk-completionist cdk-section" data-section="completionist">
         <summary class="section-header">
-          <h2>Completionist</h2>
+          <h2>Completionist <span class="cdk-comp-pct" id="compPct"></span></h2>
           <div class="section-divider"></div>
           <p class="text-muted" id="compCount"></p>
         </summary>
-        <div class="cdk-comp-wrap">
-          <table class="cdk-comp" id="compTable"></table>
-        </div>
+        <div class="cdk-comp-wrap" id="compTable"></div>
       </details>
 
       <details class="cdk-history cdk-section" data-section="history">
@@ -1603,6 +2015,72 @@
     <div class="cdk-btn-row">
       <button type="button" class="btn btn-outline btn-sm" id="feedbackCancel">Cancel</button>
       <button type="button" class="btn btn-primary btn-sm" id="feedbackSend">Send</button>
+    </div>
+  </dialog>
+
+  <!-- First visit (and "How the board scores"): which way rows, columns, and boxes run and what each is worth -->
+  <dialog class="cdk-modal cdk-guide" id="guideDialog" aria-labelledby="guideTitle">
+    <button type="button" class="cdk-modal-x" id="guideX" aria-label="Close">×</button>
+    <h2 id="guideTitle" tabindex="-1" autofocus>Welcome to Cardoku</h2>
+    <p class="cdk-modal-note">its Sudoku with playing cards.</p>
+    <div class="cdk-guide-tips">
+      <h3 class="cdk-guide-heading">How to Play?</h3>
+      <p>Fill all 9 squares of a row, column, or box (r/c/b) to score
+        points. Cards are <strong>1 point</strong> by default, but you won't get any points unless you complete a r/c/b.
+        Each r/c/b you complete you will earn more or less points.
+      </p>
+      <p>
+        See the scoring guide below:
+      </p>
+    </div>
+    <br>
+    <div class="cdk-guide-board" id="guideBoard" role="img"
+      aria-label="Rows 1 to 3 are worth 27, rows 4 to 6 are worth 18, rows 7 to 9 are worth 9. Columns 1 and 9 are worth 27, columns 2 to 8 are worth 18. Boxes 1 to 3 are worth 27, boxes 4 to 6 are worth 18, boxes 7 to 9 are worth 9.">
+    </div>
+    <p class="cdk-guide-legend"><span class="t27">27 points</span><span class="t18">18 points</span><span class="t9">9
+        points</span></p>
+    <div class="cdk-guide-tips">
+      <h3 class="cdk-guide-heading">Bonuses</h3>
+      <p>There are also placement bonuses depending on the 9 cards in the r/c/b.</p>
+      <p>Here are those bonuses:</p>
+      <ul>
+        <li><strong>Clean</strong>(2x): no wilds</li>
+        <li><strong>Flush</strong>(2x): a single suit</li>
+        <li><strong>Straight</strong>(3x): 1–9 in order</li>
+        <li><strong>Royal</strong>(2x): everything together</li>
+      </ul>
+      <p>Bonuses are multipliers that can stack. This means a royal r/c/b gets its default value multiplied by 9. Big
+        score incoming if you can pull that off.</p>
+      <h3 class="cdk-guide-heading">Discarding cards</h3>
+      <p>Sometimes you can't play a card (no legal moves), or you don't want to (interesting strategy). Each card
+        you discard is <strong>-9 points</strong>.</p>
+      <p class="cdk-guide-questions"><strong>How many points can you score?</strong></p>
+      <p><strong>How many achievements can you get?</strong></p>
+      <p><strong>Will you go for cardoku completionist?</strong></p>
+      <p>Full rules can be viewed below the grid once you are playing. Thanks for giving Cardoku a try.</p>
+    </div>
+    <div class="cdk-btn-row">
+      <button type="button" class="btn btn-primary btn-sm" id="guideClose">Let's play</button>
+    </div>
+  </dialog>
+
+  <!-- End of game: score, achievements, and the Completionist checklist with this game's new checks -->
+  <dialog class="cdk-modal cdk-results" id="resultsDialog" aria-labelledby="resultsTitle">
+    <div class="cdk-results-head" tabindex="-1" autofocus>
+      <span class="cdk-label" id="resultsTitle">Final score</span>
+      <span class="cdk-over-score" id="finalScore">0</span>
+      <p class="cdk-over-note" id="finalNote"></p>
+    </div>
+    <h3>Achievements</h3>
+    <div class="cdk-achievements" id="earned"></div>
+    <p class="cdk-over-teaser" id="teaser"></p>
+    <h3>Completionist <span class="cdk-comp-pct" id="resultsCompPct"></span></h3>
+    <p class="cdk-results-comp-note" id="resultsCompCount"></p>
+    <div class="cdk-comp-wrap" id="resultsCompTable"></div>
+    <div class="cdk-btn-row">
+      <button type="button" class="btn btn-outline btn-sm" id="feedbackBtn">Share game feedback</button>
+      <button type="button" class="btn btn-outline btn-sm" id="resultsClose">View board</button>
+      <button type="button" class="btn btn-primary btn-sm" id="resultsNew">New Game</button>
     </div>
   </dialog>
 
@@ -1658,6 +2136,7 @@
       const CURRENT_KEY = 'cardoku-current';    // the game in progress, so a refresh picks up where you left off
       const OPEN_SECTIONS_KEY = 'cardoku-open-sections';  // which sections below the board are expanded
       const FINISHED_KEY = 'cardoku-finished';  // { count, lastId }: lifetime finished games in this browser
+      const WELCOMED_KEY = 'cardoku-welcomed';  // set once the board guide has been seen
       const HISTORY_LIMIT = 50;
       const DISCARD_PENALTY = 9;
       const BREAK_POINTS = 180;  // score needed for the "break ___" achievements
@@ -1974,7 +2453,7 @@
       const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
       function breakdownHTML({ items, penalty }) {
-        if (!items.length && !penalty) return '<p>Complete a row, column, or box to score.</p>';
+        if (!items.length && !penalty) return '';
         const lines = [...items].sort((a, b) => b.points - a.points).map(it => `<li>
             <span>${it.name}${it.bonuses.length ? `<small>${it.bonuses.map(titleCase).join(' + ')} ×${fmt(it.mult)}</small>` : ''}</span>
             <span>${it.base}${it.mult !== 1 ? ` × ${fmt(it.mult)} = ${fmt(it.points)}` : ''}</span>
@@ -2147,26 +2626,77 @@
         return `${group} ${Number(element.slice(1)) + 1} · ${titleCase(column)}`;
       }
 
-      function renderCompletionist() {
-        const checked = loadCompletionist();
-        const possible = COMP_GROUPS.flatMap(([prefix]) => [...Array(9).keys()].flatMap(n =>
-          COMP_COLUMNS.filter(col => compPossible(prefix, n, col)).map(col => `${prefix}${n}:${col}`)));
-        $('compCount').textContent = `${possible.filter(k => checked.has(k)).length} of ${possible.length} checked off across all your games.`;
-        const box = on => `<span class="cdk-check${on ? ' on' : ''}" aria-label="${on ? 'done' : 'not yet'}">${on ? '✓' : ''}</span>`;
+      const COMP_POSSIBLE = COMP_GROUPS.flatMap(([prefix]) => [...Array(9).keys()].flatMap(n =>
+        COMP_COLUMNS.filter(col => compPossible(prefix, n, col)).map(col => `${prefix}${n}:${col}`)));
+
+      // Which group tab is showing in each checklist (phones only show one group at a time)
+      const compTabs = {};
+
+      const compStats = (checked, prefix = '') => {
+        const keys = COMP_POSSIBLE.filter(k => k.startsWith(prefix));
+        const done = keys.filter(k => checked.has(k)).length;
+        return { done, total: keys.length, pct: Math.floor(done / keys.length * 100) };
+      };
+
+      // The checklist: one table each for rows, columns, and boxes. Boxes in `fresh`
+      // (checked for the first time this game) are highlighted.
+      function renderCompTables(el, checked, fresh = []) {
+        const box = (on, isFresh) => `<span class="cdk-check${on ? ' on' : ''}${isFresh ? ' fresh' : ''}" aria-label="${isFresh ? 'new this game' : on ? 'done' : 'not yet'}">${on ? '✓' : ''}</span>`;
         // Impossible boxes (Flush/Royal for rows and boxes 7–9) are left blank
         const cellFor = (prefix, n, col) => compPossible(prefix, n, col)
-          ? box(checked.has(`${prefix}${n}:${col}`))
+          ? box(checked.has(`${prefix}${n}:${col}`), fresh.includes(`${prefix}${n}:${col}`))
           : '<span class="cdk-comp-na" title="Not possible: this one starts with three spades">–</span>';
-        $('compTable').innerHTML = `
-          <colgroup><col class="cdk-comp-index-col">${'<col>'.repeat(COMP_GROUPS.length * COMP_COLUMNS.length)}</colgroup>
-          <thead>
-            <tr><th rowspan="2">#</th>${COMP_GROUPS.map(([, label]) => `<th colspan="5" class="group-start">${label}</th>`).join('')}</tr>
-            <tr>${COMP_GROUPS.map(() => COMP_COLUMNS.map((col, k) => `<th${k === 0 ? ' class="group-start"' : ''}>${titleCase(col)}</th>`).join('')).join('')}</tr>
-          </thead>
-          <tbody>
-            ${[...Array(9)].map((_, n) => `<tr><td class="cdk-comp-index">${n + 1}</td>${COMP_GROUPS.map(([prefix]) =>
-          COMP_COLUMNS.map((col, k) => `<td${k === 0 ? ' class="group-start"' : ''}>${cellFor(prefix, n, col)}</td>`).join('')).join('')}</tr>`).join('')}
-          </tbody>`;
+        // Start on the group with this game's new checks, else wherever the player left it
+        if (!compTabs[el.id]) {
+          const freshGroup = COMP_GROUPS.find(([prefix]) => fresh.some(k => k.startsWith(prefix)));
+          compTabs[el.id] = freshGroup ? freshGroup[0] : 'r';
+        }
+        const tab = compTabs[el.id];
+        const plurals = { r: 'Rows', c: 'Columns', b: 'Boxes' };
+        el.innerHTML = `
+          <div class="cdk-comp-tabs" role="tablist">${COMP_GROUPS.map(([prefix]) => {
+          const st = compStats(checked, prefix);
+          const dot = fresh.some(k => k.startsWith(prefix)) ? '<span class="fresh-dot" aria-label="new checks"></span>' : '';
+          return `<button type="button" role="tab" class="cdk-comp-tab${prefix === tab ? ' active' : ''}" data-group="${prefix}"
+              aria-selected="${prefix === tab}">${plurals[prefix]}${dot}<small>${st.done} of ${st.total}</small></button>`;
+        }).join('')}</div>
+          <div class="cdk-comp-groups">${COMP_GROUPS.map(([prefix, label]) => {
+          const st = compStats(checked, prefix);
+          return `<div class="cdk-comp-group${prefix === tab ? ' active' : ''}" data-group="${prefix}">
+              <table class="cdk-comp">
+                <colgroup><col class="cdk-comp-index-col"><col class="cdk-comp-done-col">${'<col>'.repeat(COMP_COLUMNS.length - 1)}</colgroup>
+                <thead>
+                  <tr><th colspan="${COMP_COLUMNS.length + 1}">${label}<small>${st.done}/${st.total}</small></th></tr>
+                  <tr><th>#</th>${COMP_COLUMNS.map(col => `<th>${titleCase(col)}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                  ${[...Array(9)].map((_, n) => `<tr><td class="cdk-comp-index">${n + 1}</td>${COMP_COLUMNS.map(col =>
+            `<td${fresh.includes(`${prefix}${n}:${col}`) ? ' class="fresh"' : ''}>${cellFor(prefix, n, col)}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+              </table>
+            </div>`;
+        }).join('')}</div>`;
+      }
+
+      // Tabs: switch which group shows, in whichever checklist was tapped
+      document.addEventListener('click', e => {
+        const btn = e.target.closest('.cdk-comp-tab');
+        if (!btn) return;
+        const wrap = btn.closest('.cdk-comp-wrap');
+        compTabs[wrap.id] = btn.dataset.group;
+        wrap.querySelectorAll('[data-group]').forEach(x => {
+          const on = x.dataset.group === btn.dataset.group;
+          x.classList.toggle('active', on);
+          if (x.matches('.cdk-comp-tab')) x.setAttribute('aria-selected', on);
+        });
+      });
+
+      function renderCompletionist() {
+        const checked = loadCompletionist();
+        const st = compStats(checked);
+        $('compPct').textContent = `${st.pct}%`;
+        $('compCount').textContent = `${st.done} of ${st.total} checked off across all your games.`;
+        renderCompTables($('compTable'), checked);
       }
 
       // Bottom-of-page list: earned achievements are revealed, the rest stay a mystery
@@ -2191,6 +2721,7 @@
       function renderTrophies() {
         const state = loadAchievementState();
         const count = ACHIEVEMENTS.filter(a => state[a.id].unlocked).length;
+        $('trophyPct').textContent = `${Math.floor(count / ACHIEVEMENTS.length * 100)}%`;
         $('trophyCount').textContent = `${count} of ${ACHIEVEMENTS.length} unlocked. Complete games to unlock titles of unknown achievements.`;
         const tile = a => {
           const { unlocked, titleVisible } = state[a.id];
@@ -2249,9 +2780,11 @@
           }, 1000);
         }
 
+        const waiting = waitingTargets();
         grid.forEach((card, i) => {
           const el = cellEls[i];
           let cls = 'cdk-cell';
+          if (waiting.has(i)) cls += ' legal';
           if (phase === 'setup' && SETUP_BOXES.includes(boxOf(i))) cls += ' setup-zone';
           if (card) cls += ` filled ${colorOf(card)}`;
           if (card && phase === 'setup') cls += ' removable';
@@ -2296,19 +2829,27 @@
         newBtn.classList.toggle('btn-primary', phase === 'over');
         newBtn.classList.toggle('btn-outline', phase !== 'over');
 
-        $('overPanel').hidden = phase !== 'over';
+        $('resultsBtn').hidden = phase !== 'over';
+        if (phase !== 'over' && $('resultsDialog').open) $('resultsDialog').close();
         if (phase === 'over') {
           $('finalScore').textContent = fmt(score.total);
           $('finalNote').textContent = newBest ? 'New best! 🎉' : `Your best is ${fmt(best)}.`;
-          $('earned').innerHTML = earned.length
-            ? earned.map(achievementHTML).join('')
+          // First-time unlocks lead, then ones earned in earlier games
+          const ordered = [...earned.filter(id => newlyUnlocked.includes(id)), ...earned.filter(id => !newlyUnlocked.includes(id))];
+          $('earned').innerHTML = ordered.length
+            ? ordered.map(achievementHTML).join('')
             : '<p class="cdk-over-note">No achievements this time.</p>';
           $('teaser').innerHTML = teaser
-            ? `Still out there: <strong>${teaser.name}</strong>`
+            ? `🔒 An achievement you haven't unlocked yet: <strong>${teaser.name}</strong><small>Now listed under Teased in Achievements. How to get it is up to you.</small>`
             : 'You\'ve unlocked every achievement. 🏆';
-          $('newChecks').innerHTML = newChecks.length
-            ? `<span class="cdk-label">New Completionist checks</span><ul>${newChecks.map(k => `<li>✓ ${checkLabel(k)}</li>`).join('')}</ul>`
-            : '';
+          const checked = loadCompletionist();
+          const st = compStats(checked);
+          $('resultsCompPct').textContent = `${st.pct}%`;
+          const total = `${st.done} of ${st.total} checked off across all your games.`;
+          $('resultsCompCount').innerHTML = newChecks.length
+            ? `<b>${plural(newChecks.length, 'new check')} this game</b> (highlighted). ${total}`
+            : `No new checks this game. ${total}`;
+          renderCompTables($('resultsCompTable'), checked, newChecks);
         }
 
         saveCurrent();
@@ -2364,9 +2905,17 @@
         });
       }
 
+      // With Show possible moves on, the card waiting to be played (or the next spade during setup)
+      // lights up its squares before it's picked up
+      function waitingTargets() {
+        const card = phase === 'play' ? active : phase === 'setup' ? tray[0] : null;
+        return showMoves && !busy && card ? legalTargets(card) : new Set();
+      }
+
       function clearTargets() {
         cellEls.forEach(el => el.classList.remove('legal'));
         discardEl.classList.remove('legal');
+        waitingTargets().forEach(t => { if (t !== 'discard') cellEls[t].classList.add('legal'); });
       }
 
       function paintHover(target, card, targets) {
@@ -2663,6 +3212,7 @@
 
       function endGame() {
         phase = 'over';
+        delete compTabs.resultsCompTable;  // open on the group with this game's new checks
         const score = scoreBoard();
         countFinishedGame(gameId);  // before the checks, so Beginner's Skill counts this game
         newChecks = recordCompletionist(score.items);  // before the checks, so this game counts toward Completionist ones
@@ -2696,6 +3246,7 @@
         renderPastGames();
         renderCompletionist();
         renderTrophies();
+        $('resultsDialog').showModal();
       }
 
       // ---------- Saved games and results ----------
@@ -2704,6 +3255,33 @@
       const cardCode = card => card.rank === 'JOKER' ? (card.color === 'red' ? 'JKR' : 'JKB') : card.rank + card.suit;
       const codeColor = code => /^JKR$|[HD]$/.test(code) ? 'red' : 'black';
       const codeLabel = code => code.startsWith('JK') ? 'JK' : code.slice(0, -1) + SUITS[code.slice(-1)].sym;
+      const cardFromCode = code => code.startsWith('JK')
+        ? { rank: 'JOKER', suit: null, color: code === 'JKR' ? 'red' : 'black' }
+        : makeCard(code.slice(0, -1), code.slice(-1));
+
+      // Scores a saved game's board without touching the game in progress
+      function scoreRecord(record) {
+        const saved = { grid, discarded };
+        grid = record.board.map(code => code ? cardFromCode(code) : null);
+        discarded = record.discarded;
+        try {
+          return scoreBoard();
+        } finally {
+          ({ grid, discarded } = saved);
+        }
+      }
+
+      // "Send again" in Previous Games: re-sends a saved game (e.g. one that didn't reach the Sheet).
+      // The Sheet keeps one row per game id, so sending twice just updates that row.
+      function resendGame(id, button) {
+        const record = loadPastGames().find(g => g.id === id);
+        if (!record || !RESULTS_URL) return;
+        button.disabled = true;
+        button.textContent = 'Sending…';
+        postToScript(gamePayload(record, scoreRecord(record)))
+          .then(() => { button.textContent = 'Sent'; })
+          .catch(() => { button.textContent = "Couldn't send. Try again"; button.disabled = false; });
+      }
 
       function loadPastGames() {
         try {
@@ -2875,6 +3453,7 @@
                 <h4>Discards (${g.discards.length})</h4>
                 <p>${g.discards.map(code => `<span class="${codeColor(code)}">${codeLabel(code)}</span>`).join(' ') || 'None'}</p>
                 ${names.length ? `<h4>Achievements</h4><p>${names.join(', ')}</p>` : ''}
+                ${RESULTS_URL ? `<button type="button" class="btn btn-outline btn-sm cdk-resend" data-id="${g.id}">Send again</button>` : ''}
               </div>
             </div>
           </details>`;
@@ -2963,7 +3542,42 @@
         });
       });
       $('feedbackBtn').addEventListener('click', openFeedback);
+      $('history').addEventListener('click', e => {
+        const button = e.target.closest('.cdk-resend');
+        if (button) resendGame(button.dataset.id, button);
+      });
       $('feedbackSend').addEventListener('click', sendFeedback);
+      $('resultsBtn').addEventListener('click', () => $('resultsDialog').showModal());
+      $('resultsClose').addEventListener('click', () => $('resultsDialog').close());
+      $('resultsNew').addEventListener('click', () => {
+        $('resultsDialog').close();
+        if (!busy) newGame();
+      });
+
+      // Board guide: built once, shown on a first visit and from the "How the board scores" links
+      const tier = points => `t${points}`;
+      $('guideBoard').innerHTML = '<span></span>' +
+        ELEMENTS.filter(el => el.key[0] === 'c').map(el =>
+          `<span class="cdk-guide-head ${tier(el.base)}" title="${el.name}: ${el.base} points">C${el.key.slice(1) * 1 + 1}<small>${el.base}</small></span>`).join('') +
+        [0, 1, 2].map(band => {
+          const rowHeads = [0, 1, 2].map(k => {
+            const el = ELEMENTS.find(x => x.key === `r${band * 3 + k}`);
+            return `<span class="cdk-guide-head ${tier(el.base)}" style="grid-column: 1; grid-row: ${band * 3 + k + 2}" title="${el.name}: ${el.base} points">R${band * 3 + k + 1}<small>${el.base}</small></span>`;
+          }).join('');
+          const boxes = [0, 1, 2].map(k => {
+            const el = ELEMENTS.find(x => x.key === `b${band * 3 + k}`);
+            return `<div class="cdk-guide-box ${tier(el.base)}" style="grid-column: ${k * 3 + 2} / span 3; grid-row: ${band * 3 + 2} / span 3">${'<span></span>'.repeat(9)}<b>${el.name}<small>${el.base} pts</small></b></div>`;
+          }).join('');
+          return rowHeads + boxes;
+        }).join('');
+      const guide = $('guideDialog');
+      const openGuide = () => guide.showModal();
+      document.querySelectorAll('[data-open-guide]').forEach(btn => btn.addEventListener('click', openGuide));
+      $('guideClose').addEventListener('click', () => guide.close());
+      $('guideX').addEventListener('click', () => guide.close());
+      guide.addEventListener('close', () => {
+        try { localStorage.setItem(WELCOMED_KEY, '1'); } catch (e) { /* storage blocked */ }
+      });
       $('feedbackCancel').addEventListener('click', () => $('feedbackDialog').close());
       renderPastGames();
       // Private windows or "block all cookies" settings make storage throw; say so instead of failing silently
@@ -2977,6 +3591,11 @@
       if (!restoreCurrent()) newGame();
       renderCompletionist();
       renderTrophies();
+
+      // New players (nothing saved yet) get the board guide first
+      let welcomed = false;
+      try { welcomed = !!localStorage.getItem(WELCOMED_KEY); } catch (e) { /* storage blocked */ }
+      if (!welcomed && !loadPastGames().length) openGuide();
     })();
   </script>
 </body>
