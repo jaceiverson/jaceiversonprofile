@@ -1863,12 +1863,16 @@
         ctx.textAlign = 'left';
       }
 
-      const achievementNames = ids => ids.map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean);
+      // What a shared game shows off: the gameplay achievements it met, new or not. Milestones
+      // (games finished, Completionist) build up across games, so they say nothing about this one.
+      const sharedAchievements = record => record.achievements
+        .map(id => ACHIEVEMENTS.find(a => a.id === id))
+        .filter(a => a && a.type === 'gameplay');
 
       // One finished game for friends: score, start, board, and the achievements it earned
       function gameShareImage(record) {
         const pad = 24, cell = 44, size = cell * 9, w = size + pad * 2;
-        const earned = achievementNames(record.achievements);
+        const earned = sharedAchievements(record);
         const measure = makeCanvas(1, 1).ctx;
         measure.font = font(600, 12);
         const chips = flowChips(measure, earned.map(a => `${a.icon} ${a.name}`), size);
@@ -1879,13 +1883,13 @@
 
         const date = new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         drawShareHeader(ctx, pad, `${fmt(record.score)} pts`, `${date} · ${plural(record.lines, 'line')} · ${plural(record.discarded, 'discard')}`);
-        // Start type pill, top right
-        ctx.font = font(700, 12);
+        // Start type pill, top right, level with the score
+        ctx.font = font(700, 14);
         const startLabel = `${titleCase(record.layout || 'default')} start`;
-        const pillW = ctx.measureText(startLabel).width + 20;
-        roundRect(ctx, w - pad - pillW, pad + 26, pillW, 26, 13, IMG.tint);
-        ctx.fillStyle = IMG.navy;
-        ctx.fillText(startLabel, w - pad - pillW + 10, pad + 43);
+        const pillW = ctx.measureText(startLabel).width + 28;
+        roundRect(ctx, w - pad - pillW, pad + 24, pillW, 32, 16, IMG.navy);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(startLabel, w - pad - pillW + 14, pad + 45);
 
         drawBoard(ctx, record.board, pad, boardTop, cell);
 
@@ -2109,10 +2113,8 @@
       function shareGame() {
         const record = finishedRecord();
         if (!record) return;
-        const names = achievementNames(record.achievements).map(a => a.name);
-        const text = `I scored ${fmt(record.score)} in Cardoku (${titleCase(record.layout || 'default')} start)` +
-          (names.length ? ` and unlocked ${names.join(', ')}` : '') + `. Can you beat it? Play at ${SHARE_URL}`;
-        openShare('Share game', gameShareImage(record), `cardoku-${fmt(record.score)}.png`, text);
+        // The image carries the score, start, board, and achievements
+        openShare('Share game', gameShareImage(record), `cardoku-${fmt(record.score)}.png`, 'Check the game of Cardoku I just played.');
       }
 
       // Report card image and message for the achievement picked in the share dialog (if any)
