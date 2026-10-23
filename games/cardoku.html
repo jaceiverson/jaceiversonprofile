@@ -290,7 +290,8 @@
         <div id="history"></div>
       </details>
 
-      <button type="button" class="btn btn-primary cdk-progress-btn" id="progressBtn" hidden>Share Your Progress</button>
+      <button type="button" class="btn btn-primary cdk-progress-btn" id="progressBtn" hidden>Share Your
+        Progress</button>
 
       <p class="text-muted cdk-share-note" id="shareNote" hidden>When you finish a game, the final board state is shared
         anonymously with Jace. No personal information is sent.</p>
@@ -2121,9 +2122,7 @@
         const count = ACHIEVEMENTS.filter(a => state[a.id].unlocked).length;
         const bests = Object.values(loadStats().layouts).filter(s => s.count > 0).map(s => s.max);
         sharing.image = reportCardImage(highlight);
-        sharing.text = `My Cardoku report card: best score ${bests.length ? fmt(Math.max(...bests)) : '–'}, ` +
-          `${count} of ${ACHIEVEMENTS.length} achievements, ${compStats(loadCompletionist()).pct}% Completionist` +
-          (highlight ? `, featuring ${highlight.icon} ${highlight.name}` : '') + `. Play at ${SHARE_URL}`;
+        sharing.text = `Cardoku report card. Play at ${SHARE_URL}`;
         $('shareImage').src = sharing.image;
       }
 
