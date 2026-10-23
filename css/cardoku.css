@@ -116,6 +116,11 @@
   cursor: pointer;
 }
 
+.cdk-cell.restricted {
+  background: var(--warm-dark);
+  box-shadow: inset 0 0 0 2px var(--warm-darker);
+}
+
 .cdk-cell.removable,
 .cdk-cell.tappable {
   cursor: pointer;
@@ -315,7 +320,7 @@
   box-shadow: 0 16px 28px rgba(20, 54, 66, 0.28), 0 4px 8px rgba(20, 54, 66, 0.18);
 }
 
-/* Show possible moves switch */
+/* Show possible moves / placement restrictions switches */
 .cdk-toggle {
   display: flex;
   align-items: center;

@@ -115,6 +115,11 @@
               <span class="cdk-switch" aria-hidden="true"></span>
               Show possible moves
             </label>
+            <label class="cdk-toggle">
+              <input type="checkbox" id="showRestrictions">
+              <span class="cdk-switch" aria-hidden="true"></span>
+              Show placement restrictions
+            </label>
             <div class="cdk-stats">
               <div class="cdk-score"><b id="statScore">0</b><span>Score</span></div>
               <div><b id="statPlaced">0</b><span>Placed</span></div>
@@ -153,7 +158,8 @@
             orthogonally next to another card: directly above, below, left, or right. Wild cards still need to be played
             orthogonally.</li>
           <li>Drag the card onto an open square, or just tap the square you want. With <strong>Show possible
-              moves</strong> on, legal squares light up green.</li>
+              moves</strong> on, legal squares light up green. With <strong>Show placement restrictions</strong> on,
+            the cards already on the board that block your card are highlighted.</li>
           <li>If you can't (or don't want to) place it, discard it.</li>
           <li><strong>Undo</strong> takes back your last placement or discard, all the way back to the deal.</li>
           <li>The game ends when the deck runs out.</li>
@@ -414,6 +420,7 @@
       const DECK_SIZE = 45;
       const BEST_KEY = 'cardoku-best-score';
       const SHOW_MOVES_KEY = 'cardoku-show-moves';
+      const SHOW_RESTRICTIONS_KEY = 'cardoku-show-restrictions';
       const HISTORY_KEY = 'cardoku-history';
       const UNLOCKED_KEY = 'cardoku-achievements';  // older format: { id: date } (read once, then ACHIEVEMENT_STATE_KEY)
       const COMPLETIONIST_KEY = 'cardoku-completionist';  // ['r0:completed', 'b4:clean', ...]
@@ -432,48 +439,49 @@
       const RESULTS_URL = 'https://script.google.com/macros/s/AKfycbzoZjsnUscCSk9Fo58W5tdfh_X9Wbb4FmtHICKGiBQhoyxA3b2ucKMMkN-CCo_EM_GzyA/exec';
       const RULES_VERSION = '0.1';  // bump when scoring or rules change, so results can be compared fairly
 
-      // Names and descriptions could later live in a JSON file; the checks below are keyed by id
+      // Names and descriptions could later live in a JSON file; the checks below are keyed by id.
+      // type: 'gameplay' can be met in any single game; 'milestone' builds up across games (not shown to players yet)
       const ACHIEVEMENTS = [
-        { id: 'perfect', icon: '🎯', name: 'Perfect Score', desc: 'Finish with exactly 81 points.' },
-        { id: 'break-100', icon: '💯', name: 'Break 100', desc: 'Score 100 or more.' },
-        { id: 'break-200', icon: '🚀', name: 'Break 200', desc: 'Score 200 or more.' },
-        { id: 'break-300', icon: '🌋', name: 'Break 300', desc: 'Score 300 or more.' },
-        { id: 'no-foundation', icon: '🏗️', name: 'No Foundation Needed', desc: `Score ${BREAK_POINTS}+ without completing any of the bottom 3 rows.` },
-        { id: 'different-life', icon: '🃏', name: 'In a Different Life', desc: 'Surround an Ace with a King, Queen, Jack, and 10 (above, below, left, and right).' },
-        { id: 'wild-to-7', icon: '7️⃣', name: 'Wild to 7', desc: 'Complete a row, column, or box reading Joker, A, K, Q, J, 10, 9, 8, 7 (either direction).' },
-        { id: 'positive-diagonal', icon: '↗️', name: 'Positive Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from bottom left to top right.` },
-        { id: 'negative-diagonal', icon: '↘️', name: 'Negative Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from top left to bottom right.` },
-        { id: 'x-marks', icon: '❌', name: 'X Marks the Spot', desc: `Score ${BREAK_POINTS}+ and fill both diagonals.` },
-        { id: 'diagonal-purest', icon: '💎', name: 'Positive Diagonal Purest', desc: 'Fill the positive diagonal with only number cards (A–9).' },
-        { id: 'diagonal-royalty', icon: '👑', name: 'Positive Diagonal Royalty', desc: 'Fill the positive diagonal A through 9, bottom left to top right.' },
-        { id: 'neg-diagonal-purest', icon: '💎', name: 'Negative Diagonal Purest', desc: 'Fill the negative diagonal with only number cards (A–9).' },
-        { id: 'neg-diagonal-royalty', icon: '👑', name: 'Negative Diagonal Royalty', desc: 'Fill the negative diagonal A through 9, top left to bottom right.' },
-        { id: 'matrix', icon: '🟩', name: 'The Matrix', desc: 'Fill both diagonals with no wilds, each holding A–9 exactly once.' },
-        { id: 'hole-in-heart', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
-        { id: 'purist', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
-        { id: 'king-of-world', icon: '🌍', name: 'King of the World', desc: 'Complete Row 1 as a Royal. Where else would we be?' },
-        { id: 'royalty', icon: '🤴', name: 'Royalty', desc: 'Score a Royal: a row, column, or box that is a Straight and a Flush.' },
+        { id: 'perfect', type: 'gameplay', icon: '🎯', name: 'Perfect Score', desc: 'Finish with exactly 81 points.' },
+        { id: 'break-100', type: 'gameplay', icon: '💯', name: 'Break 100', desc: 'Score 100 or more.' },
+        { id: 'break-200', type: 'gameplay', icon: '🚀', name: 'Break 200', desc: 'Score 200 or more.' },
+        { id: 'break-300', type: 'gameplay', icon: '🌋', name: 'Break 300', desc: 'Score 300 or more.' },
+        { id: 'no-foundation', type: 'gameplay', icon: '🏗️', name: 'No Foundation Needed', desc: `Score ${BREAK_POINTS}+ without completing any of the bottom 3 rows.` },
+        { id: 'different-life', type: 'gameplay', icon: '🃏', name: 'In a Different Life', desc: 'Surround an Ace with a King, Queen, Jack, and 10 (above, below, left, and right).' },
+        { id: 'wild-to-7', type: 'gameplay', icon: '7️⃣', name: 'Wild to 7', desc: 'Complete a row, column, or box reading Joker, A, K, Q, J, 10, 9, 8, 7 (either direction).' },
+        { id: 'positive-diagonal', type: 'gameplay', icon: '↗️', name: 'Positive Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from bottom left to top right.` },
+        { id: 'negative-diagonal', type: 'gameplay', icon: '↘️', name: 'Negative Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from top left to bottom right.` },
+        { id: 'x-marks', type: 'gameplay', icon: '❌', name: 'X Marks the Spot', desc: `Score ${BREAK_POINTS}+ and fill both diagonals.` },
+        { id: 'diagonal-purest', type: 'gameplay', icon: '💎', name: 'Positive Diagonal Purest', desc: 'Fill the positive diagonal with only number cards (A–9).' },
+        { id: 'diagonal-royalty', type: 'gameplay', icon: '👑', name: 'Positive Diagonal Royalty', desc: 'Fill the positive diagonal A through 9, bottom left to top right.' },
+        { id: 'neg-diagonal-purest', type: 'gameplay', icon: '💎', name: 'Negative Diagonal Purest', desc: 'Fill the negative diagonal with only number cards (A–9).' },
+        { id: 'neg-diagonal-royalty', type: 'gameplay', icon: '👑', name: 'Negative Diagonal Royalty', desc: 'Fill the negative diagonal A through 9, top left to bottom right.' },
+        { id: 'matrix', type: 'gameplay', icon: '🟩', name: 'The Matrix', desc: 'Fill both diagonals with no wilds, each holding A–9 exactly once.' },
+        { id: 'hole-in-heart', type: 'gameplay', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
+        { id: 'purist', type: 'gameplay', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
+        { id: 'king-of-world', type: 'gameplay', icon: '🌍', name: 'King of the World', desc: 'Complete Row 1 as a Royal. Where else would we be?' },
+        { id: 'royalty', type: 'gameplay', icon: '🤴', name: 'Royalty', desc: 'Score a Royal: a row, column, or box that is a Straight and a Flush.' },
         // id kept from when this was named Resource Manager, so earlier unlocks still count
-        { id: 'resource-manager', icon: '💼', name: 'Resource CEO', desc: 'Every card on the board is part of a completed row, column, or box.' },
-        { id: 'no-discards', icon: '♻️', name: 'Resource Manager', desc: 'Finish a game without discarding a single card.' },
-        { id: 'trash-1', icon: '🗑️', name: 'Taking Out the Trash I', desc: `Discard 5 or more cards and still score ${TRASH_POINTS}+.` },
-        { id: 'trash-2', icon: '🚛', name: 'Taking Out the Trash II', desc: `Discard 10 or more cards and still score ${TRASH_POINTS}+.` },
-        { id: 'clean-3-corner', icon: '3️⃣', name: 'Clean 3 in the Corner', desc: 'Complete box 3 Clean with a 3 in the top right corner.' },
-        { id: 'the-block', icon: '🧱', name: 'The Block', desc: 'Complete rows 4–9 without placing any cards in rows 1–3.' },
-        { id: 'picture-frame', icon: '🖼️', name: 'Picture Frame', desc: 'Fill every square around the outside edge of the board.' },
-        { id: 'four-corners', icon: '⏹️', name: 'Four Corners', desc: 'Finish with a card in all four corners of the board.' },
-        { id: 'kingdom-court-corners', icon: '🏰', name: 'Kingdom Court Corners', desc: 'Finish with a King, Queen, Jack, and Joker in the four corners (any order, any suits).' },
-        { id: 'first-game', icon: '🐣', name: "Beginner's Skill", desc: 'Finish your first game.' },
-        { id: 'games-9', icon: '9️⃣', name: 'Full House', desc: 'Finish 9 games.' },
-        { id: 'sudoku-secret', icon: '🤫', name: 'Sudoku Secret', desc: 'Finish 45 games.' },
-        { id: 'games-100', icon: '🏟️', name: 'Centurion', desc: 'Finish 100 games.' },
-        { id: 'random-layout', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
-        { id: 'custom-layout', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
-        { id: 'zero', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
-        { id: 'in-the-red', icon: '📉', name: 'In the Red', subtitle: "How'd we get here?", desc: 'Finish with a negative score.' },
-        { id: 'zero-with-discards', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' },
-        { id: 'hard-mode', icon: '🥵', name: 'Hard Mode', desc: 'Finish a game without Show possible moves and without pressing Undo.' },
-        { id: 'expert-mode', icon: '🧠', name: 'Expert Mode', desc: 'Finish a Default layout game without Show possible moves and without pressing Undo, and score over 200.' }
+        { id: 'resource-manager', type: 'gameplay', icon: '💼', name: 'Resource CEO', desc: 'Every card on the board is part of a completed row, column, or box.' },
+        { id: 'no-discards', type: 'gameplay', icon: '♻️', name: 'Resource Manager', desc: 'Finish a game without discarding a single card.' },
+        { id: 'trash-1', type: 'gameplay', icon: '🗑️', name: 'Taking Out the Trash I', desc: `Discard 5 or more cards and still score ${TRASH_POINTS}+.` },
+        { id: 'trash-2', type: 'gameplay', icon: '🚛', name: 'Taking Out the Trash II', desc: `Discard 10 or more cards and still score ${TRASH_POINTS}+.` },
+        { id: 'clean-3-corner', type: 'gameplay', icon: '3️⃣', name: 'Clean 3 in the Corner', desc: 'Complete box 3 Clean with a 3 in the top right corner.' },
+        { id: 'the-block', type: 'gameplay', icon: '🧱', name: 'The Block', desc: 'Complete rows 4–9 without placing any cards in rows 1–3.' },
+        { id: 'picture-frame', type: 'gameplay', icon: '🖼️', name: 'Picture Frame', desc: 'Fill every square around the outside edge of the board.' },
+        { id: 'four-corners', type: 'gameplay', icon: '⏹️', name: 'Four Corners', desc: 'Finish with a card in all four corners of the board.' },
+        { id: 'kingdom-court-corners', type: 'gameplay', icon: '🏰', name: 'Kingdom Court Corners', desc: 'Finish with a King, Queen, Jack, and Joker in the four corners (any order, any suits).' },
+        { id: 'first-game', type: 'milestone', icon: '🐣', name: "Beginner's Skill", desc: 'Finish your first game.' },
+        { id: 'games-9', type: 'milestone', icon: '9️⃣', name: 'Full House', desc: 'Finish 9 games.' },
+        { id: 'sudoku-secret', type: 'milestone', icon: '🤫', name: 'Sudoku Secret', desc: 'Finish 45 games.' },
+        { id: 'games-100', type: 'milestone', icon: '🏟️', name: 'Centurion', desc: 'Finish 100 games.' },
+        { id: 'random-layout', type: 'gameplay', icon: '🎲', name: 'Roll the Dice', desc: 'Finish a game that started from the Random layout.' },
+        { id: 'custom-layout', type: 'gameplay', icon: '📐', name: 'Architect', desc: 'Finish a game with a Custom starting layout.' },
+        { id: 'zero', type: 'gameplay', icon: '🫥', name: 'Nothing to Show for It', desc: 'Finish with a score of exactly 0.' },
+        { id: 'in-the-red', type: 'gameplay', icon: '📉', name: 'In the Red', subtitle: "How'd we get here?", desc: 'Finish with a negative score.' },
+        { id: 'zero-with-discards', type: 'gameplay', icon: '🤷', name: 'A Little More Complicated, but Still Nothing to Show for It', desc: 'Finish with a score of exactly 0 after discarding at least one card.' },
+        { id: 'hard-mode', type: 'gameplay', icon: '🥵', name: 'Hard Mode', desc: 'Finish a game without Show possible moves, Show placement restrictions, or pressing Undo.' },
+        { id: 'expert-mode', type: 'gameplay', icon: '🧠', name: 'Expert Mode', desc: 'Finish a Default layout game without Show possible moves, Show placement restrictions, or pressing Undo, and score over 200.' }
       ];
 
       // Checklist boxes that can never be filled: rows 7–9 and boxes 7–9 start with three spades,
@@ -491,6 +499,7 @@
         const limited = !compPossible(g.prefix, 8, column);
         ACHIEVEMENTS.push({
           id: `comp-${g.prefix}-${column}`,
+          type: 'milestone',
           icon: g.icon,
           name: `Completionist: ${column === 'completed' ? '' : capitalize(column) + ' '}${capitalize(g.many)}`,
           desc: column === 'completed'
@@ -500,6 +509,7 @@
       }));
       ACHIEVEMENTS.push({
         id: 'completionist-complete',
+        type: 'milestone',
         icon: '🏅',
         name: "Completionist's Completion",
         subtitle: "Wow, you are thorough, aren't you?",
@@ -638,7 +648,7 @@
       let newlyUnlocked = [];  // the subset of `earned` this browser had never unlocked before
       let teaser = null;       // a random still-locked achievement shown at game over
       let newChecks = [];      // Completionist boxes this game checked for the first time
-      let assisted = false;    // Show possible moves was on at some point after the deal (Hard / Expert Mode)
+      let assisted = false;    // Show possible moves or placement restrictions was on at some point after the deal (Hard / Expert Mode)
       let undoUsed = false;    // Undo was pressed this game (Hard / Expert Mode)
       let drawingCard = null;  // the card mid-flight from the deck, so a save never loses it
       let layout = 'default';  // 'default' | 'random' | 'custom'
@@ -647,24 +657,29 @@
       let flashCells = new Set();
       let best = null;         // best final score in this browser (scores can be negative)
       let showMoves = true;
+      let showRestrictions = false;
       try {
         const savedBest = localStorage.getItem(BEST_KEY);
         if (savedBest !== null && !isNaN(savedBest)) best = Number(savedBest);
         showMoves = localStorage.getItem(SHOW_MOVES_KEY) !== 'off';
+        showRestrictions = localStorage.getItem(SHOW_RESTRICTIONS_KEY) === 'on';
       } catch (e) { /* storage blocked */ }
 
       // ---------- Rules ----------
 
-      function conflicts(card, i) {
+      // True if `other` can't share a row, column, or box with `card`
+      function clashes(card, other) {
         const k = kind(card);
-        return PEERS[i].filter(j => {
-          const other = grid[j];
-          if (!other || kind(other) !== k) return false;
-          if (k === 'num') return value(other) === value(card);
-          if (k === 'wild') return other.suit === card.suit || other.rank === card.rank;
-          return true;  // two jokers
-        });
+        if (!other || kind(other) !== k) return false;
+        if (k === 'num') return value(other) === value(card);
+        if (k === 'wild') return other.suit === card.suit || other.rank === card.rank;
+        return true;  // two jokers
       }
+
+      const conflicts = (card, i) => PEERS[i].filter(j => clashes(card, grid[j]));
+
+      // Every card on the board that limits where `card` can go, wherever it sits
+      const restrictions = card => [...grid.keys()].filter(j => clashes(card, grid[j]));
 
       function boxCounts() {
         const counts = Array(9).fill(0);
@@ -1092,10 +1107,12 @@
         }
 
         const waiting = waitingTargets();
+        const restricted = waitingRestrictions();
         grid.forEach((card, i) => {
           const el = cellEls[i];
           let cls = 'cdk-cell';
           if (waiting.has(i)) cls += ' legal';
+          if (restricted.has(i)) cls += ' restricted';
           if (phase === 'setup' && SETUP_BOXES.includes(boxOf(i))) cls += ' setup-zone';
           if (card) cls += ` filled ${colorOf(card)}`;
           if (card && phase === 'setup') cls += ' removable';
@@ -1145,9 +1162,10 @@
         if (phase === 'over') {
           $('finalScore').textContent = fmt(score.total);
           $('finalNote').textContent = newBest ? 'New best! 🎉' : `Your best is ${fmt(best)}.`;
-          // First-time unlocks up front; ones already unlocked in earlier games are tucked away
+          // First-time unlocks up front; gameplay ones already unlocked in earlier games are tucked away.
+          // Milestones stay met once reached, so repeating them every game says nothing.
           const fresh = earned.filter(id => newlyUnlocked.includes(id));
-          const repeats = earned.filter(id => !newlyUnlocked.includes(id));
+          const repeats = earned.filter(id => !newlyUnlocked.includes(id) && ACHIEVEMENTS.find(a => a.id === id).type === 'gameplay');
           $('earned').innerHTML =
             (fresh.length
               ? `<div class="cdk-achievements">${fresh.map(achievementHTML).join('')}</div>`
@@ -1232,10 +1250,23 @@
         return showMoves && !busy && card ? legalTargets(card) : new Set();
       }
 
+      // With Show placement restrictions on, a card marks the cards already on the board that
+      // rule out its row, column, and box (same number; same suit or rank for wilds; the other Joker)
+      function showRestricted(card) {
+        if (!showRestrictions || phase !== 'play') return;
+        restrictions(card).forEach(j => cellEls[j].classList.add('restricted'));
+      }
+
+      // Likewise with Show placement restrictions on, the card waiting to be played marks its blockers
+      function waitingRestrictions() {
+        return showRestrictions && !busy && phase === 'play' && active ? new Set(restrictions(active)) : new Set();
+      }
+
       function clearTargets() {
-        cellEls.forEach(el => el.classList.remove('legal'));
+        cellEls.forEach(el => el.classList.remove('legal', 'restricted'));
         discardEl.classList.remove('legal');
         waitingTargets().forEach(t => { if (t !== 'discard') cellEls[t].classList.add('legal'); });
+        waitingRestrictions().forEach(j => cellEls[j].classList.add('restricted'));
       }
 
       function paintHover(target, card, targets) {
@@ -1326,6 +1357,7 @@
             clearSelection();
             targets = legalTargets(card);
             showTargets(targets);
+            showRestricted(card);
             ghost = makeGhost(faceHTML(card), from);
             // Lift and tilt around the point where the card was grabbed
             ghost.firstElementChild.style.transformOrigin = `${startX - from.left}px ${startY - from.top}px`;
@@ -1389,6 +1421,7 @@
         selected = { src, targets: legalTargets(sourceCard(src)) };
         sourceEl(src).classList.add('selected');
         showTargets(selected.targets);
+        showRestricted(sourceCard(src));
       }
 
       function clearSelection() {
@@ -1522,7 +1555,7 @@
         deck = buildDeck();
         history = [];
         gameId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        assisted = showMoves;
+        assisted = showMoves || showRestrictions;
         undoUsed = false;
         busy = true;
         render();
@@ -1837,6 +1870,15 @@
         showMoves = showMovesInput.checked;
         if (showMoves && phase === 'play') assisted = true;
         try { localStorage.setItem(SHOW_MOVES_KEY, showMoves ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
+        clearSelection();
+        render();
+      });
+      const showRestrictionsInput = $('showRestrictions');
+      showRestrictionsInput.checked = showRestrictions;
+      showRestrictionsInput.addEventListener('change', () => {
+        showRestrictions = showRestrictionsInput.checked;
+        if (showRestrictions && phase === 'play') assisted = true;
+        try { localStorage.setItem(SHOW_RESTRICTIONS_KEY, showRestrictions ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
         clearSelection();
         render();
       });
