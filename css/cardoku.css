@@ -1335,16 +1335,19 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   color: var(--warm-darker);
 }
 
-/* Completionist boxes checked for the first time this game */
+/* Completionist boxes checked (or turned gold) for the first time this game: a glow and a pop.
+   Gold itself means earned without Undo (.cdk-check.gold) */
 .cdk-comp td.fresh {
-  background: var(--warm) !important;
+  background: var(--accent-100) !important;
 }
 
 .cdk-check.on.fresh {
-  background: var(--warm-darker);
-  border-color: var(--warm-darker);
-  box-shadow: 0 0 0 3px var(--warm-dark);
+  box-shadow: 0 0 0 3px var(--accent-100);
   animation: cdk-check-pop 0.5s ease-out both;
+}
+
+.cdk-check.on.gold.fresh {
+  box-shadow: 0 0 0 3px var(--warm-dark);
 }
 
 @keyframes cdk-check-pop {
@@ -1567,7 +1570,7 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   height: 7px;
   margin-left: 0.25rem;
   border-radius: 50%;
-  background: var(--warm-darker);
+  background: var(--accent);
   vertical-align: 2px;
 }
 
@@ -1699,6 +1702,11 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   border-color: var(--accent);
 }
 
+.cdk-check.on.gold {
+  background: var(--warm-darker);
+  border-color: var(--warm-darker);
+}
+
 /* ---------- Achievements (locked until earned) ---------- */
 .cdk-trophies {
   max-width: 820px;
@@ -1818,6 +1826,50 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   font-size: 0.65rem;
   font-weight: 700;
   vertical-align: middle;
+}
+
+/* Achievements earned without pressing Undo: a gold tag, and a gold border in the Achievements list */
+.cdk-no-undo {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--warm-darker);
+  color: var(--white);
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-style: normal;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.cdk-undo-note {
+  font-size: 0.85rem;
+  color: var(--grey-500);
+  margin-bottom: 0.75rem;
+}
+
+.cdk-undo-note .cdk-no-undo {
+  margin-left: 0.15rem;
+}
+
+.cdk-new.cdk-upgraded {
+  background: var(--warm-darker);
+}
+
+.cdk-upgraded-head {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--warm-darker);
+}
+
+.cdk-trophy.no-undo {
+  border: 2px solid var(--warm-darker);
+  box-shadow: 0 0 0 3px var(--warm);
+}
+
+.cdk-undo-voided {
+  margin-top: 0.5rem;
 }
 
 /* ---------- Rules ---------- */

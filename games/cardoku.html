@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
   <link rel="stylesheet" href="../css/style.css?v=2">
-  <link rel="stylesheet" href="../css/cardoku.css?v=2">
+  <link rel="stylesheet" href="../css/cardoku.css?v=3">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -120,6 +120,11 @@
               <input type="checkbox" id="showRestrictions">
               <span class="cdk-switch" aria-hidden="true"></span>
               Show placement restrictions
+            </label>
+            <label class="cdk-toggle">
+              <input type="checkbox" id="disableUndo">
+              <span class="cdk-switch" aria-hidden="true"></span>
+              Disable Undo
             </label>
             <div class="cdk-stats">
               <div class="cdk-score"><b id="statScore">0</b><span>Score</span></div>
@@ -269,6 +274,9 @@
           <div class="section-divider"></div>
           <p class="text-muted" id="trophyCount"></p>
         </summary>
+        <p class="cdk-undo-note">↩️ Earn a game achievement in a game where you never press Undo and it gets a gold
+          border and a <span class="cdk-no-undo">No Undo</span> tag. Already have it? Earning it again without Undo
+          upgrades it.</p>
         <div id="trophies"></div>
       </details>
 
@@ -442,9 +450,11 @@
       const BEST_KEY = 'cardoku-best-score';
       const SHOW_MOVES_KEY = 'cardoku-show-moves';
       const SHOW_RESTRICTIONS_KEY = 'cardoku-show-restrictions';
+      const DISABLE_UNDO_KEY = 'cardoku-disable-undo';  // 'on' hides the temptation for players who never undo
       const HISTORY_KEY = 'cardoku-history';
       const UNLOCKED_KEY = 'cardoku-achievements';  // older format: { id: date } (read once, then ACHIEVEMENT_STATE_KEY)
       const COMPLETIONIST_KEY = 'cardoku-completionist';  // ['r0:completed', 'b4:clean', ...]
+      const COMPLETIONIST_GOLD_KEY = 'cardoku-completionist-gold';  // the subset earned in a game without Undo
       const REVEALED_KEY = 'cardoku-revealed';  // older format: teased ids (read once, then ACHIEVEMENT_STATE_KEY)
       const ACHIEVEMENT_STATE_KEY = 'cardoku-achievement-state';  // { id: { unlocked, titleVisible } }
       const CURRENT_KEY = 'cardoku-current';    // the game in progress, so a refresh picks up where you left off
@@ -670,8 +680,10 @@
       let gameId = null;       // identifies a game in the saved history and in sent results
       let earned = [];         // achievement ids from the last finished game
       let newlyUnlocked = [];  // the subset of `earned` this browser had never unlocked before
+      let upgraded = [];       // already-unlocked achievements that got their No Undo tag this game
       let teaser = null;       // a random still-locked achievement shown at game over
       let newChecks = [];      // Completionist boxes this game checked for the first time
+      let newGoldChecks = [];  // Completionist boxes this game turned gold (earned without Undo for the first time)
       let assisted = false;    // Show possible moves or placement restrictions was on at some point after the deal (Hard / Expert Mode)
       let undoUsed = false;    // Undo was pressed this game (Hard / Expert Mode)
       let drawingCard = null;  // the card mid-flight from the deck, so a save never loses it
@@ -682,11 +694,13 @@
       let best = null;         // best final score in this browser (scores can be negative)
       let showMoves = true;
       let showRestrictions = false;
+      let undoDisabled = false;
       try {
         const savedBest = localStorage.getItem(BEST_KEY);
         if (savedBest !== null && !isNaN(savedBest)) best = Number(savedBest);
         showMoves = localStorage.getItem(SHOW_MOVES_KEY) !== 'off';
         showRestrictions = localStorage.getItem(SHOW_RESTRICTIONS_KEY) === 'on';
+        undoDisabled = localStorage.getItem(DISABLE_UNDO_KEY) === 'on';
       } catch (e) { /* storage blocked */ }
 
       // ---------- Rules ----------
@@ -885,15 +899,19 @@
         return ACHIEVEMENTS.filter(a => ACHIEVEMENT_CHECKS[a.id](s)).map(a => a.id);
       }
 
+      // Gameplay achievements earned in a game without pressing Undo get a No Undo tag (and a gold border)
+      const canUpgrade = a => a.type === 'gameplay';
+      const undoTag = on => on ? '<span class="cdk-no-undo" title="Earned without pressing Undo">No Undo</span>' : '';
       const subtitleHTML = (a, after = false) => a.subtitle ? `<em class="cdk-subtitle${after ? ' after' : ''}">${a.subtitle}</em>` : '';
       // Description with its subtitle, which goes first unless the achievement sets subtitleAfter
       const descHTML = a => a.subtitleAfter ? a.desc + subtitleHTML(a, true) : subtitleHTML(a) + a.desc;
 
       function achievementHTML(id) {
         const a = ACHIEVEMENTS.find(x => x.id === id);
-        const isNew = newlyUnlocked.includes(id) ? '<span class="cdk-new">New!</span>' : '';
+        const isNew = newlyUnlocked.includes(id) ? '<span class="cdk-new">New!</span>'
+          : upgraded.includes(id) ? '<span class="cdk-new cdk-upgraded">Upgraded!</span>' : '';
         return `<div class="cdk-achievement"><span class="cdk-achievement-icon">${a.icon}</span>
-          <span><strong>${a.name}${isNew}</strong>${descHTML(a)}</span></div>`;
+          <span><strong>${a.name}${isNew}${undoTag(canUpgrade(a) && !undoUsed)}</strong>${descHTML(a)}</span></div>`;
       }
 
       // Every achievement's saved state: { id: { unlocked: ISO date or null, titleVisible: true/false } }.
@@ -914,7 +932,7 @@
         const state = {};
         ACHIEVEMENTS.forEach(a => {
           const s = saved[a.id] || {};
-          state[a.id] = { unlocked: s.unlocked || null, titleVisible: !!(s.titleVisible || s.unlocked) };
+          state[a.id] = { unlocked: s.unlocked || null, titleVisible: !!(s.titleVisible || s.unlocked), noUndo: s.noUndo || null };
         });
         return state;
       }
@@ -930,12 +948,17 @@
       }
 
       // Unlocks the given ids (an unlock always makes the title visible); returns the ones that are new
-      function unlock(ids) {
+      // Records first unlocks, and the first time a gameplay achievement is earned without Undo.
+      // Returns the first unlocks, and the upgrades: ones unlocked before that just got their No Undo tag.
+      function unlock(ids, withoutUndo) {
         const state = loadAchievementState();
+        const now = new Date().toISOString();
         const fresh = ids.filter(id => !state[id].unlocked);
-        fresh.forEach(id => { state[id] = { unlocked: new Date().toISOString(), titleVisible: true }; });
+        const tagged = withoutUndo ? ids.filter(id => canUpgrade(ACHIEVEMENTS.find(a => a.id === id)) && !state[id].noUndo) : [];
+        fresh.forEach(id => { state[id].unlocked = now; state[id].titleVisible = true; });
+        tagged.forEach(id => { state[id].noUndo = now; });
         saveAchievementState(state);
-        return fresh;
+        return { fresh, upgraded: tagged.filter(id => !fresh.includes(id)) };
       }
 
       // A teased achievement: its name becomes visible at the bottom, its description stays hidden
@@ -950,27 +973,35 @@
       const COMP_COLUMNS = ['completed', 'clean', 'flush', 'straight', 'royal'];
       const COMP_GROUPS = [['r', 'Row'], ['c', 'Column'], ['b', 'Box']];
 
-      function loadCompletionist() {
+      function loadCompletionist(key = COMPLETIONIST_KEY) {
         try {
-          const saved = JSON.parse(localStorage.getItem(COMPLETIONIST_KEY) || '[]');
+          const saved = JSON.parse(localStorage.getItem(key) || '[]');
           return new Set(Array.isArray(saved) ? saved : []);
         } catch (e) {
           return new Set();
         }
       }
 
-      // Checks off every completed element (and each bonus it earned) from a finished game
-      // Returns the checks this game added for the first time, e.g. ['r6:completed', 'b8:clean']
-      function recordCompletionist(items) {
+      const loadGoldChecks = () => loadCompletionist(COMPLETIONIST_GOLD_KEY);
+
+      // Checks off every completed element (and each bonus it earned) from a finished game, and turns
+      // them gold if the game had no Undo. Returns the checks added for the first time
+      // (e.g. ['r6:completed', 'b8:clean']) and the ones that turned gold for the first time.
+      function recordCompletionist(items, withoutUndo) {
         const checked = loadCompletionist();
-        const fresh = [];
+        const gold = loadGoldChecks();
+        const fresh = [], freshGold = [];
         items.forEach(it => {
           [`${it.key}:completed`, ...it.bonuses.map(b => `${it.key}:${b}`)].forEach(key => {
             if (!checked.has(key)) { checked.add(key); fresh.push(key); }
+            if (withoutUndo && !gold.has(key)) { gold.add(key); freshGold.push(key); }
           });
         });
-        try { localStorage.setItem(COMPLETIONIST_KEY, JSON.stringify([...checked])); } catch (e) { /* storage blocked */ }
-        return fresh;
+        try {
+          localStorage.setItem(COMPLETIONIST_KEY, JSON.stringify([...checked]));
+          localStorage.setItem(COMPLETIONIST_GOLD_KEY, JSON.stringify([...gold]));
+        } catch (e) { /* storage blocked */ }
+        return { fresh, freshGold };
       }
 
       // 'r6:clean' → 'Row 7 · Clean'
@@ -986,19 +1017,24 @@
       // Which group tab is showing in each checklist (phones only show one group at a time)
       const compTabs = {};
 
-      const compStats = (checked, prefix = '') => {
+      const compStats = (checked, prefix = '', gold = new Set()) => {
         const keys = COMP_POSSIBLE.filter(k => k.startsWith(prefix));
         const done = keys.filter(k => checked.has(k)).length;
-        return { done, total: keys.length, pct: Math.floor(done / keys.length * 100) };
+        return { done, gold: keys.filter(k => gold.has(k)).length, total: keys.length, pct: Math.floor(done / keys.length * 100) };
       };
 
-      // The checklist: one table each for rows, columns, and boxes. Boxes in `fresh`
-      // (checked for the first time this game) are highlighted.
+      // The checklist: one table each for rows, columns, and boxes. Gold checks were earned in a game
+      // without Undo. Boxes in `fresh` (checked, or turned gold, for the first time this game) are highlighted.
       function renderCompTables(el, checked, fresh = []) {
-        const box = (on, isFresh) => `<span class="cdk-check${on ? ' on' : ''}${isFresh ? ' fresh' : ''}" aria-label="${isFresh ? 'new this game' : on ? 'done' : 'not yet'}">${on ? '✓' : ''}</span>`;
+        const gold = loadGoldChecks();
+        const box = (key, isFresh) => {
+          const on = checked.has(key), isGold = on && gold.has(key);
+          const label = (isGold ? 'done without Undo' : on ? 'done' : 'not yet') + (isFresh ? ', new this game' : '');
+          return `<span class="cdk-check${on ? ' on' : ''}${isGold ? ' gold' : ''}${isFresh ? ' fresh' : ''}" aria-label="${label}">${on ? '✓' : ''}</span>`;
+        };
         // Impossible boxes (Flush/Royal for rows and boxes 7–9) are left blank
         const cellFor = (prefix, n, col) => compPossible(prefix, n, col)
-          ? box(checked.has(`${prefix}${n}:${col}`), fresh.includes(`${prefix}${n}:${col}`))
+          ? box(`${prefix}${n}:${col}`, fresh.includes(`${prefix}${n}:${col}`))
           : '<span class="cdk-comp-na" title="Not possible: this one starts with three spades">–</span>';
         // Start on the group with this game's new checks, else wherever the player left it
         if (!compTabs[el.id]) {
@@ -1049,7 +1085,9 @@
         const checked = loadCompletionist();
         const st = compStats(checked);
         $('compPct').textContent = `${st.pct}%`;
-        $('compCount').textContent = `${st.done} of ${st.total} checked off across all your games.`;
+        const goldCount = compStats(checked, '', loadGoldChecks()).gold;
+        $('compCount').textContent = `${st.done} of ${st.total} checked off across all your games` +
+          (goldCount ? `, ${goldCount} in gold (no Undo).` : '.');
         renderCompTables($('compTable'), checked);
       }
 
@@ -1135,14 +1173,14 @@
         $('trophyPct').textContent = `${Math.floor(count / ACHIEVEMENTS.length * 100)}%`;
         $('trophyCount').textContent = `${count} of ${ACHIEVEMENTS.length} unlocked. Complete games to unlock titles of unknown achievements.`;
         const tile = a => {
-          const { unlocked, titleVisible } = state[a.id];
+          const { unlocked, titleVisible, noUndo } = state[a.id];
           if (!unlocked) {
             return `<div class="cdk-trophy locked${titleVisible ? ' revealed' : ''}" data-id="${a.id}"><span class="cdk-trophy-icon">🔒</span>
               <span><strong>${titleVisible ? a.name : '???'}</strong>Locked</span></div>`;
           }
           const date = new Date(unlocked).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-          return `<div class="cdk-trophy" data-id="${a.id}"><span class="cdk-trophy-icon">${a.icon}</span>
-            <span><strong>${a.name}</strong>${descHTML(a)}<small>Unlocked ${date}</small></span></div>`;
+          return `<div class="cdk-trophy${noUndo ? ' no-undo' : ''}" data-id="${a.id}"><span class="cdk-trophy-icon">${a.icon}</span>
+            <span><strong>${a.name}${undoTag(noUndo)}</strong>${descHTML(a)}<small>Unlocked ${date}</small></span></div>`;
         };
         const groups = [
           ['Completed', ACHIEVEMENTS.filter(a => state[a.id].unlocked), 'Nothing yet.'],
@@ -1234,7 +1272,8 @@
         $('discardCount').textContent = discards.length;
         discardEl.classList.toggle('suggest', showMoves && !!active && !busy && legalTargets(active).size === 1);
         discardBtn.disabled = !active || busy;
-        undoBtn.disabled = !history.length || busy;
+        undoBtn.disabled = undoDisabled || !history.length || busy;
+        undoBtn.title = undoDisabled ? 'Undo is turned off (Disable Undo)' : '';
 
         $('statScore').textContent = fmt(score.total);
         $('statPlaced').textContent = placed;
@@ -1252,11 +1291,18 @@
           // First-time unlocks up front; gameplay ones already unlocked in earlier games are tucked away.
           // Milestones stay met once reached, so repeating them every game says nothing.
           const fresh = earned.filter(id => newlyUnlocked.includes(id));
-          const repeats = earned.filter(id => !newlyUnlocked.includes(id) && ACHIEVEMENTS.find(a => a.id === id).type === 'gameplay');
+          // Already unlocked, now earned without Undo for the first time
+          const ups = earned.filter(id => upgraded.includes(id));
+          const repeats = earned.filter(id => !newlyUnlocked.includes(id) && !ups.includes(id) && ACHIEVEMENTS.find(a => a.id === id).type === 'gameplay');
           $('earned').innerHTML =
             (fresh.length
               ? `<div class="cdk-achievements">${fresh.map(achievementHTML).join('')}</div>`
               : '<p class="cdk-over-note">No new achievements this time.</p>') +
+            (ups.length
+              ? `<h4 class="cdk-upgraded-head">Upgraded achievements</h4>
+                  <div class="cdk-achievements">${ups.map(achievementHTML).join('')}</div>`
+              : '') +
+            (undoUsed ? '<p class="cdk-over-note cdk-undo-voided">↩️ You used Undo, so achievements this game don\'t get the No Undo tag.</p>' : '') +
             (repeats.length
               ? `<details class="cdk-repeats"><summary>Achievements you already got, but met the requirements again (${repeats.length})</summary>
                   <div class="cdk-achievements">${repeats.map(achievementHTML).join('')}</div></details>`
@@ -1268,10 +1314,12 @@
           const st = compStats(checked);
           $('resultsCompPct').textContent = `${st.pct}%`;
           const total = `${st.done} of ${st.total} checked off across all your games.`;
-          $('resultsCompCount').innerHTML = newChecks.length
-            ? `<b>${plural(newChecks.length, 'new check')} this game</b> (highlighted). ${total}`
+          const goldOnly = newGoldChecks.filter(k => !newChecks.includes(k));
+          const parts = [newChecks.length && plural(newChecks.length, 'new check'), goldOnly.length && `${goldOnly.length} turned gold`].filter(Boolean);
+          $('resultsCompCount').innerHTML = parts.length
+            ? `<b>${parts.join(', ')} this game</b> (highlighted). ${total}`
             : `No new checks this game. ${total}`;
-          renderCompTables($('resultsCompTable'), checked, newChecks);
+          renderCompTables($('resultsCompTable'), checked, [...newChecks, ...goldOnly]);
         }
 
         saveCurrent();
@@ -1283,7 +1331,7 @@
         const state = {
           v: 1, phase, layout, grid, tray, deck, discards, placed, discarded, history, gameId,
           active: active || drawingCard,  // a card mid-draw counts as drawn
-          newBest, earned, newlyUnlocked, newChecks, teaser: teaser && teaser.id, assisted, undoUsed
+          newBest, earned, newlyUnlocked, upgraded, newChecks, newGoldChecks, teaser: teaser && teaser.id, assisted, undoUsed
         };
         try { localStorage.setItem(CURRENT_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
       }
@@ -1307,7 +1355,10 @@
         newBest = !!s.newBest;
         earned = ACHIEVEMENTS.map(a => a.id).filter(id => (s.earned || []).includes(id));
         newlyUnlocked = (s.newlyUnlocked || []).filter(id => earned.includes(id));
-        newChecks = Array.isArray(s.newChecks) ? s.newChecks.filter(k => /^[rcb][0-8]:(completed|clean|flush|straight|royal)$/.test(k)) : [];
+        upgraded = (s.upgraded || []).filter(id => earned.includes(id));
+        const checkKeys = list => Array.isArray(list) ? list.filter(k => /^[rcb][0-8]:(completed|clean|flush|straight|royal)$/.test(k)) : [];
+        newChecks = checkKeys(s.newChecks);
+        newGoldChecks = checkKeys(s.newGoldChecks);
         teaser = ACHIEVEMENTS.find(a => a.id === s.teaser) || null;
         // Games saved before these were tracked can't prove they went unassisted
         assisted = s.assisted !== false;
@@ -1601,14 +1652,16 @@
       }
 
       function undo() {
-        if (busy || !history.length) return;
+        if (busy || undoDisabled || !history.length) return;
         clearSelection();
         ({ grid, active, deck, discards, placed, discarded } = history.pop());
         phase = 'play';
+        if (!undoUsed) toast('Undo used: achievements this game won\'t get the No Undo tag.');
         undoUsed = true;
         newBest = false;
         earned = [];
         newChecks = [];
+        newGoldChecks = [];
         render();
       }
 
@@ -1658,9 +1711,9 @@
         delete compTabs.resultsCompTable;  // open on the group with this game's new checks
         const score = scoreBoard();
         countFinishedGame(gameId);  // before the checks, so Beginner's Skill counts this game
-        newChecks = recordCompletionist(score.items);  // before the checks, so this game counts toward Completionist ones
+        ({ fresh: newChecks, freshGold: newGoldChecks } = recordCompletionist(score.items, !undoUsed));  // before the checks, so this game counts toward Completionist ones
         earned = checkAchievements();
-        newlyUnlocked = unlock(earned);
+        ({ fresh: newlyUnlocked, upgraded } = unlock(earned, !undoUsed));
         const unlocked = loadUnlocked();
         const locked = ACHIEVEMENTS.filter(a => !unlocked[a.id]);
         teaser = locked.length ? locked[Math.floor(Math.random() * locked.length)] : null;
@@ -1866,7 +1919,8 @@
       // What a shared game shows off: the same achievements as the results dialog, new ones first
       // (milestones included), then gameplay ones already unlocked in earlier games
       function sharedAchievements(record) {
-        const fresh = record.id === gameId ? newlyUnlocked : [];
+        // Upgrades sit with the new ones, right after them
+        const fresh = record.id === gameId ? [...newlyUnlocked, ...upgraded] : [];
         const shown = id => fresh.includes(id) || (ACHIEVEMENTS.find(a => a.id === id) || {}).type === 'gameplay';
         const ids = [...record.achievements.filter(id => fresh.includes(id)), ...record.achievements.filter(id => !fresh.includes(id))];
         return ids.filter(shown).map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean);
@@ -1903,8 +1957,13 @@
         if (chips.length) {
           y += 12;
           ctx.font = font(600, 12);
-          chips.forEach(c => {
-            roundRect(ctx, pad + c.x, y + c.y, c.w, c.h, 13, IMG.light);
+          // Gold pill: earned without Undo; grey pill: earned with it (or a milestone)
+          chips.forEach((c, k) => {
+            const gold = canUpgrade(earned[k]) && !undoUsed;
+            roundRect(ctx, pad + c.x, y + c.y, c.w, c.h, 13, gold ? '#f6ecc9' : '#eceef1');
+            ctx.strokeStyle = gold ? IMG.gold : '#d6d9df';
+            ctx.lineWidth = 1;
+            ctx.stroke();
             ctx.fillStyle = IMG.navy;
             ctx.fillText(c.label, pad + c.x + 10, y + c.y + 17, c.w - 20);
           });
@@ -1934,12 +1993,14 @@
         const state = loadAchievementState();
         const unlocked = ACHIEVEMENTS.filter(a => state[a.id].unlocked);
         const checked = loadCompletionist();
-        const comp = compStats(checked);
+        const goldChecks = loadGoldChecks();
+        const comp = compStats(checked, '', goldChecks);
 
+        const golden = ACHIEVEMENTS.filter(a => canUpgrade(a) && state[a.id].noUndo);
+        // Every unlocked achievement's icon, as many rows as it takes
         const iconSize = 26, perRow = Math.floor((inner - 96) / iconSize);
-        const shownIcons = unlocked.slice(0, perRow * 3);
-        const iconRows = Math.max(1, Math.ceil(shownIcons.length / perRow));
-        const achievementsH = Math.max(84, 30 + iconRows * iconSize);
+        const iconRows = Math.max(1, Math.ceil(unlocked.length / perRow));
+        const achievementsH = Math.max(84, 56 + iconRows * iconSize);
         const measure = makeCanvas(1, 1).ctx;
         measure.font = font(500, 12);
         const descLines = highlight ? wrapLines(measure, highlight.desc, inner - 84) : [];
@@ -1976,17 +2037,26 @@
 
         // The achievement the player picked to show off
         if (highlight) {
+          // Gold box if it was earned without Undo, grey otherwise (same as the share game pills)
           const boxH = highlightH - 24;
-          roundRect(ctx, pad, y - 12, inner, boxH, 12, '#fcf9ee');
-          ctx.strokeStyle = '#ece4c4';
+          const gold = !!state[highlight.id].noUndo;
+          roundRect(ctx, pad, y - 12, inner, boxH, 12, gold ? '#fcf9ee' : IMG.light);
+          ctx.strokeStyle = gold ? IMG.gold : '#d6d9df';
           ctx.lineWidth = 1;
           ctx.stroke();
+          if (gold) {
+            ctx.font = font(700, 9);
+            const tagW = ctx.measureText('NO UNDO').width + 14;
+            roundRect(ctx, pad + inner - 12 - tagW, y - 2, tagW, 16, 8, IMG.gold);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('NO UNDO', pad + inner - 12 - tagW + 7, y + 9);
+          }
           ctx.font = font(400, 40);
           ctx.textBaseline = 'middle';
           ctx.fillText(highlight.icon, pad + 16, y - 12 + boxH / 2);
           ctx.textBaseline = 'alphabetic';
           const tx = pad + 72;
-          ctx.fillStyle = IMG.gold;
+          ctx.fillStyle = gold ? IMG.gold : IMG.grey;
           ctx.font = font(700, 10);
           ctx.fillText('FEATURED ACHIEVEMENT', tx, y + 8);
           ctx.fillStyle = IMG.navy;
@@ -1998,36 +2068,38 @@
           y += highlightH;
         }
 
-        // Achievements: progress ring, then the icons earned so far
+        // Achievements: one ring of all achievements, gold for those earned without Undo, green for the
+        // rest of the unlocked ones, then the icons
         section('Achievements');
-        const ringR = 32, cx = pad + ringR + 2, cy = y + ringR + 6;
-        const frac = unlocked.length / ACHIEVEMENTS.length;
-        ctx.lineWidth = 8;
-        ctx.strokeStyle = IMG.tint;
-        ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke();
-        if (frac > 0) {
-          ctx.strokeStyle = IMG.accent;
-          ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.arc(cx, cy, ringR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac); ctx.stroke();
-          ctx.lineCap = 'butt';
-        }
+        const cx = pad + 36, cy = y + 40, ringR = 30;
+        const arc = (from, to, color) => {
+          ctx.strokeStyle = color;
+          ctx.beginPath(); ctx.arc(cx, cy, ringR, -Math.PI / 2 + Math.PI * 2 * from, -Math.PI / 2 + Math.PI * 2 * to); ctx.stroke();
+        };
+        ctx.lineWidth = 10;
+        arc(0, 1, IMG.tint);
+        const goldFrac = golden.length / ACHIEVEMENTS.length, unlockedFrac = unlocked.length / ACHIEVEMENTS.length;
+        if (goldFrac > 0) arc(0, goldFrac, IMG.gold);
+        if (unlockedFrac > goldFrac) arc(goldFrac, unlockedFrac, IMG.accent);
         ctx.textAlign = 'center';
         ctx.fillStyle = IMG.navy;
-        ctx.font = font(700, 16);
-        ctx.fillText(`${Math.floor(frac * 100)}%`, cx, cy + 6);
+        ctx.font = font(700, 15);
+        ctx.fillText(`${Math.floor(unlockedFrac * 100)}%`, cx, cy + 5);
         ctx.textAlign = 'left';
         const iconsX = pad + 96;
-        ctx.font = font(600, 13);
-        ctx.fillText(`${unlocked.length} of ${ACHIEVEMENTS.length} unlocked`, iconsX, y + 14);
+        const legend = (color, label, ly) => {
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(iconsX + 5, ly - 4, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = IMG.navy;
+          ctx.font = font(600, 13);
+          ctx.fillText(label, iconsX + 16, ly);
+        };
+        legend(IMG.accent, `${unlocked.length} of ${ACHIEVEMENTS.length} unlocked`, y + 14);
+        legend(IMG.gold, plural(golden.length, 'upgraded achievement'), y + 34);
         ctx.font = font(400, 18);
-        shownIcons.forEach((a, k) => {
-          ctx.fillText(a.icon, iconsX + (k % perRow) * iconSize, y + 44 + Math.floor(k / perRow) * iconSize);
+        unlocked.forEach((a, k) => {
+          ctx.fillText(a.icon, iconsX + (k % perRow) * iconSize, y + 70 + Math.floor(k / perRow) * iconSize);
         });
-        if (unlocked.length > shownIcons.length) {
-          ctx.fillStyle = IMG.grey;
-          ctx.font = font(600, 12);
-          ctx.fillText(`+${unlocked.length - shownIcons.length} more`, iconsX, y + 44 + iconRows * iconSize);
-        }
         y += achievementsH + 30;
 
         // Completionist: overall bar, then rows / columns / boxes
@@ -2038,7 +2110,9 @@
           ctx.fillText(label, pad, by + height - 2);
           const bx = pad + 70, bw = inner - 70 - 44;
           roundRect(ctx, bx, by, bw, height, height / 2, IMG.tint);
+          // Green for every check, with the gold (no Undo) ones laid over its start
           if (st.done) roundRect(ctx, bx, by, Math.max(height, bw * st.done / st.total), height, height / 2, IMG.accent);
+          if (st.gold) roundRect(ctx, bx, by, Math.max(height, bw * st.gold / st.total), height, height / 2, IMG.gold);
           ctx.fillStyle = IMG.navy;
           ctx.font = font(700, 12);
           ctx.textAlign = 'right';
@@ -2047,11 +2121,11 @@
         };
         bar('Overall', comp, y + 4, 14);
         [['Rows', 'r'], ['Columns', 'c'], ['Boxes', 'b']].forEach(([label, prefix], k) => {
-          bar(label, compStats(checked, prefix), y + 40 + k * 28, 10);
+          bar(label, compStats(checked, prefix, goldChecks), y + 40 + k * 28, 10);
         });
         ctx.fillStyle = IMG.grey;
         ctx.font = font(500, 11);
-        ctx.fillText(`${comp.done} of ${comp.total} bonuses checked off across all games`, pad, y + 140);
+        ctx.fillText(`${comp.done} of ${comp.total} bonuses checked off across all games, ${comp.gold} in gold`, pad, y + 140);
 
         drawShareFooter(ctx, pad, w, h - 18);
         return canvas.toDataURL('image/png');
@@ -2280,6 +2354,7 @@
         newBest = false;
         earned = [];
         newChecks = [];
+        newGoldChecks = [];
         applyLayout(layout);
       }
 
@@ -2318,6 +2393,13 @@
         if (showRestrictions && phase === 'play') assisted = true;
         try { localStorage.setItem(SHOW_RESTRICTIONS_KEY, showRestrictions ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
         clearSelection();
+        render();
+      });
+      const disableUndoInput = $('disableUndo');
+      disableUndoInput.checked = undoDisabled;
+      disableUndoInput.addEventListener('change', () => {
+        undoDisabled = disableUndoInput.checked;
+        try { localStorage.setItem(DISABLE_UNDO_KEY, undoDisabled ? 'on' : 'off'); } catch (e) { /* storage blocked */ }
         render();
       });
       layoutBtns.forEach(btn => btn.addEventListener('click', () => {
@@ -2391,6 +2473,17 @@
         try { localStorage.setItem(WELCOMED_KEY, '1'); } catch (e) { /* storage blocked */ }
       });
       $('feedbackCancel').addEventListener('click', () => $('feedbackDialog').close());
+      // Clicking the dimmed area outside any dialog closes it (only when the press started outside too,
+      // so dragging out of a text box doesn't)
+      document.querySelectorAll('dialog').forEach(dialog => {
+        const outside = e => {
+          const r = dialog.getBoundingClientRect();
+          return e.target === dialog && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
+        };
+        let pressedOutside = false;
+        dialog.addEventListener('pointerdown', e => { pressedOutside = outside(e); });
+        dialog.addEventListener('click', e => { if (pressedOutside && outside(e)) dialog.close(); });
+      });
       renderPastGames();
       // Private windows or "block all cookies" settings make storage throw; say so instead of failing silently
       try {
