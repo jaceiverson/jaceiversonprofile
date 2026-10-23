@@ -832,6 +832,16 @@
       color: var(--grey-500);
     }
 
+    /* Starting layout: Default, Random, or Custom */
+    .cdk-game-layout {
+      padding: 0.05rem 0.45rem;
+      border-radius: 999px;
+      background: var(--navy-50);
+      color: var(--navy-400);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
     .cdk-game-badges {
       color: var(--warm-darker);
       font-weight: 600;
@@ -1206,6 +1216,7 @@
     /* Results: score, achievements, and the Completionist checklist after a game */
     .cdk-results {
       width: min(860px, calc(100% - 32px));
+      padding-top: 3rem;  /* room for the × above the score */
     }
 
     .cdk-results-head {
@@ -2069,6 +2080,7 @@
 
   <!-- End of game: score, achievements, and the Completionist checklist with this game's new checks -->
   <dialog class="cdk-modal cdk-results" id="resultsDialog" aria-labelledby="resultsTitle">
+    <button type="button" class="cdk-modal-x" id="resultsX" aria-label="Close">×</button>
     <div class="cdk-results-head" tabindex="-1" autofocus>
       <span class="cdk-label" id="resultsTitle">Final score</span>
       <span class="cdk-over-score" id="finalScore">0</span>
@@ -3459,6 +3471,7 @@
           return `<details class="cdk-game">
             <summary>
               <span class="cdk-game-score">${fmt(g.score)} pts</span>
+              <span class="cdk-game-layout">${titleCase(g.layout || 'default')}</span>
               <span class="cdk-game-meta">${date} · ${plural(g.lines, 'line')} · ${plural(g.discarded, 'discard')}</span>
               ${names.length ? `<span class="cdk-game-badges">🏆 ${names.length}</span>` : ''}
             </summary>
@@ -3565,6 +3578,7 @@
       $('feedbackSend').addEventListener('click', sendFeedback);
       $('resultsBtn').addEventListener('click', () => $('resultsDialog').showModal());
       $('resultsClose').addEventListener('click', () => $('resultsDialog').close());
+      $('resultsX').addEventListener('click', () => $('resultsDialog').close());
       $('resultsNew').addEventListener('click', () => {
         $('resultsDialog').close();
         if (!busy) newGame();
