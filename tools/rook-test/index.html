@@ -135,6 +135,7 @@
     <label><input type="checkbox" id="gameLog"> Game log</label>
     <label title="Bots won't click Deal Next Hand, so you can look at the hand summary"><input type="checkbox" id="pauseHand"> Pause after each hand</label>
     <span class="spacer"></span>
+    <button type="button" id="voiceBtn" title="Gives every player a fake mic (a pulsing tone, muted on playback) and joins them all to voice">🎙️ Fake Voice Test</button>
     <button type="button" id="pauseBtn">Pause Bots</button>
     <button type="button" class="primary" id="newBtn">New Game</button>
   </header>
@@ -193,7 +194,7 @@
               <label><input type="checkbox" checked> Bot</label>
               <button type="button">Focus</button>
             </div>
-            <iframe title="${i === 0 ? 'Host' : 'Player ' + (i + 1)}"></iframe>`;
+            <iframe allow="autoplay; microphone" title="${i === 0 ? 'Host' : 'Player ' + (i + 1)}"></iframe>`;
           el.querySelector('.name').textContent = `${name}${i === 0 ? ' (host)' : ''}`;
           const frame = el.querySelector('iframe');
           frame.srcdoc = html;
@@ -301,6 +302,48 @@
         if (live.length) click(pick(live));
       }
 
+      // ---------- Voice ----------
+      // Each frame gets a fake microphone: a quiet tone that "talks" for a second every four seconds,
+      // staggered by player so the green speaking glow moves around the table. Playback is muted.
+      let voiceTesting = false;
+
+      function fakeVoice() {
+        voiceTesting = true;
+        seats.forEach((seat, i) => {
+          const w = seat.frame.contentWindow;
+          const play = w.HTMLMediaElement.prototype.play;
+          w.HTMLMediaElement.prototype.play = function () { this.muted = true; return play.call(this); };
+          w.navigator.mediaDevices.getUserMedia = async () => {
+            const ctx = new w.AudioContext();
+            ctx.resume();
+            const tone = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const out = ctx.createMediaStreamDestination();
+            tone.frequency.value = 220 + 110 * i;
+            gain.gain.value = 0;
+            tone.connect(gain).connect(out);
+            tone.start();
+            w.setTimeout(() => w.setInterval(() => {
+              gain.gain.value = 0.5;
+              w.setTimeout(() => { gain.gain.value = 0; }, 1000);
+            }, 4000), i * 1000);
+            return out.stream;
+          };
+          const join = doc(seat).getElementById('voiceJoinBtn');
+          if (join && !join.hidden) join.click();
+        });
+      }
+
+      // "Name: links/3, talking" for each player, from what's actually on their page
+      function voiceReport() {
+        return seats.map(seat => {
+          const d = doc(seat);
+          const links = d.querySelectorAll('body > audio').length;
+          const talking = d.querySelector('.rook-seat.speaking, .rook-lobby-seat.speaking') ? ' 🟢' : '';
+          return `${seat.name} ${links}/3${talking}`;
+        }).join(' · ');
+      }
+
       function tick() {
         let hostStatus = '';
         try { hostStatus = doc(seats[0]).getElementById('status').textContent; } catch (e) { /* reloading */ }
@@ -315,13 +358,15 @@
         }
 
         let text = hostStatus ? `Host sees: ${hostStatus}` : 'Starting…';
+        if (voiceTesting) { try { text += `  |  Voice links: ${voiceReport()}`; } catch (e) { /* reloading */ } }
         if (over) text += '  —  Game over. Scroll the frames to see the summary and full game log, or click New Game.';
         else if (handDone && $('pauseHand').checked) text += '  —  Paused after the hand. Click Deal Next Hand in any frame to keep going.';
         else if (paused) text += '  —  Bots paused.';
         setStatus(text);
       }
 
-      $('newBtn').addEventListener('click', newGame);
+      $('newBtn').addEventListener('click', () => { voiceTesting = false; newGame(); });
+      $('voiceBtn').addEventListener('click', fakeVoice);
       $('pauseBtn').addEventListener('click', () => {
         paused = !paused;
         $('pauseBtn').textContent = paused ? 'Resume Bots' : 'Pause Bots';

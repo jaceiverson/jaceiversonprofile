@@ -21,6 +21,7 @@
   </script>
   <!-- PeerJS: browser-to-browser connection for online play (no server of our own needed) -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="../js/game-voice.js?v=1"></script>
   <style>
     /* Player colors: X = navy, O = accent green */
     .sttt {
@@ -99,6 +100,25 @@
     .sttt-online[hidden] { display: none; }
     .sttt-online-msg { margin-right: auto; color: var(--navy); }
 
+    /* Opt-in voice chat (js/game-voice.js) */
+    .sttt-online [hidden] { display: none !important; }
+    .sttt-voice { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+    .sttt-voice-msg { flex-basis: 100%; order: 10; font-size: 0.85rem; color: #c62828; }
+
+    .sttt-voice-chip {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.15rem 0.6rem;
+      border-radius: 100px;
+      background: var(--white);
+      border: 2px solid var(--grey-100);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .sttt-voice-chip.x { color: var(--x-color); }
+    .sttt-voice-chip.o { color: var(--o-color); }
+    .sttt-voice-chip.speaking { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-100); }
+
     /* Game mode modal */
     .sttt-modal {
       width: min(600px, calc(100% - 32px));
@@ -141,6 +161,23 @@
       color: var(--grey-500);
       margin-top: 0.5rem;
     }
+
+    .sttt-name { text-align: center; margin-bottom: 1.5rem; }
+    .sttt-modal-label small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+    .sttt-name input {
+      font: inherit;
+      font-weight: 600;
+      text-align: center;
+      width: min(280px, 100%);
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius-sm);
+    }
+
+    .sttt-name input.invalid { border-color: #c62828; box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.2); }
+    .sttt-name-error { color: #c62828; font-size: 0.85rem; margin-top: 0.35rem; }
+    .sttt-name-error[hidden] { display: none; }
 
     .sttt-modes {
       display: grid;
@@ -362,6 +399,13 @@
 
         <div class="sttt-online" id="onlinePanel" hidden>
           <span class="sttt-online-msg" id="onlineMsg" aria-live="polite"></span>
+          <span class="sttt-voice-msg" id="voiceMsg" role="alert" hidden></span>
+          <span class="sttt-voice" id="voiceControls" hidden>
+            <span id="voiceChips"></span>
+            <button type="button" class="btn btn-outline btn-sm" id="voiceJoinBtn">🎙️ Join Voice</button>
+            <button type="button" class="btn btn-outline btn-sm" id="voiceMuteBtn" hidden>Mute</button>
+            <button type="button" class="btn btn-outline btn-sm" id="voiceLeaveBtn" hidden>Leave Voice</button>
+          </span>
           <button type="button" class="btn btn-outline btn-sm" id="copyBtn" hidden>Copy Link</button>
         </div>
 
@@ -393,9 +437,12 @@
             board that hasn't been decided yet.</p>
 
           <h3>Playing Online</h3>
-          <p>Choose <strong>Play Online</strong>, click <strong>Host a Game</strong>, and send your friend the link
+          <p>Enter your name, choose <strong>Play Online</strong>, click <strong>Host a Game</strong>, and send your friend the link
             (or the game code). The host plays X and picks the ruleset. Your browsers connect directly to each
             other, so keep the tab open until the game is done.</p>
+          <p>Want to talk while you play? Once you're connected, click <strong>Join Voice</strong> and allow the
+            microphone. It's opt in: your mic stays off until you click it, and you'll hear your opponent once
+            they join too. Your mark glows green while you talk.</p>
         </div>
 
       </div>
@@ -414,6 +461,12 @@
       </div>
       <p>Sent to a won board? <strong>Dead Square</strong>: you still play there.
         <strong>Free Square</strong>: play any open board instead.</p>
+    </div>
+
+    <div class="sttt-name">
+      <label class="sttt-modal-label" for="nameInput">Your name <small>(for online play)</small></label>
+      <input type="text" id="nameInput" maxlength="16" placeholder="Name" autocomplete="off" data-1p-ignore data-lpignore="true">
+      <p class="sttt-name-error" id="nameError" hidden>Enter your name to play online.</p>
     </div>
 
     <div class="sttt-modes">
@@ -497,6 +550,12 @@
       let conn = null;
       let myMark = null;
       let shareLink = '';
+      let myName = '';
+      let theirName = '';     // sent by the other player when you connect
+
+      // Opt-in voice chat: theirVoice is the opponent's state ('on', 'muted', or null)
+      const voice = new GameVoice({ onChange: () => renderVoice() });
+      let theirVoice = null;
 
       function newState() {
         return {
@@ -568,13 +627,18 @@
         return `<span class="${p.toLowerCase()}">${p}</span>`;
       }
 
+      const esc = s => String(s).replace(/[&<>"']/g, ch =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 16);
+      const opponent = () => esc(theirName || 'Your opponent');
+
       function statusText(playable) {
         if (state.gameWinner === TIE) return "It's a draw!";
         if (state.gameWinner) {
           if (myMark === null) return `${mark(state.gameWinner)} wins the game! 🎉`;
-          return state.gameWinner === myMark ? 'You win the game! 🎉' : `${mark(state.gameWinner)} wins the game. Rematch?`;
+          return state.gameWinner === myMark ? 'You win the game! 🎉' : `${opponent()} (${mark(state.gameWinner)}) wins the game. Rematch?`;
         }
-        if (!myTurn()) return `Waiting for ${mark(state.turn)} to move…`;
+        if (!myTurn()) return `Waiting for ${opponent()} (${mark(state.turn)}) to move…`;
 
         const who = myMark === null ? `${mark(state.turn)}'s turn` : `Your turn (${mark(myMark)})`;
         if (playable.length === 1) return `${who}, play in the highlighted board`;
@@ -679,6 +743,7 @@
         const code = randomCode();
         showOnline('Creating game…');
         peer = new Peer(PEER_PREFIX + code);
+        voice.attach(peer);
         peer.on('open', () => {
           shareLink = `${location.origin}${location.pathname}?join=${code}`;
           showOnline(`Game code <strong>${code}</strong>. Send the link to a friend. Waiting for them to join…`, { link: true });
@@ -694,6 +759,7 @@
         if (!code || !peerAvailable()) return;
         showOnline('Connecting…');
         peer = new Peer();
+        voice.attach(peer);
         peer.on('open', () => attach(peer.connect(PEER_PREFIX + code, { reliable: true }), 'O'));
         peer.on('error', onPeerError);
       }
@@ -704,21 +770,44 @@
           myMark = mark;
           reset();
           if (mark === 'X') send({ type: 'reset', rule });
-          showOnline(`Connected! You are ${mark === 'X' ? '<strong>X</strong> (you go first)' : '<strong>O</strong>'}.`);
+          send({ type: 'hello', name: myName });
+          showConnected();
+          renderVoice();
         });
         c.on('data', msg => {
           if (msg.type === 'move') play(msg.b, msg.c);
           else if (msg.type === 'reset') { rule = msg.rule === 'free' ? 'free' : 'dead'; reset(); }
+          else if (msg.type === 'hello') {
+            theirName = cleanName(msg.name);
+            showConnected();
+            render();
+            renderVoice();
+          }
+          else if (msg.type === 'voice') {
+            theirVoice = msg.state === 'on' || msg.state === 'muted' ? msg.state : null;
+            syncVoice();
+          }
         });
         c.on('close', () => {
           conn = null;
           myMark = null;
+          theirVoice = null;
+          voice.leave();
           render();
-          showOnline('Your opponent left the game. Click <strong>Change Mode</strong> to start a new one.');
+          showOnline(`${opponent()} left the game. Click <strong>Change Mode</strong> to start a new one.`);
+          theirName = '';
         });
       }
 
+      function showConnected() {
+        const you = myMark === 'X' ? '<strong>X</strong> (you go first)' : '<strong>O</strong>';
+        showOnline(theirName
+          ? `Connected! You're playing <strong>${esc(theirName)}</strong>. You are ${you}.`
+          : `Connected! You are ${you}.`);
+      }
+
       function onPeerError(err) {
+        if (err.type === 'peer-unavailable' && conn && conn.open) return;  // a voice call that didn't connect, not a missing game
         if (err.type === 'unavailable-id') { peer.destroy(); hostGame(); return; }  // code collision, try another
         const msg = err.type === 'peer-unavailable'
           ? "Couldn't find that game. Double-check the code, or ask your friend for a new link."
@@ -727,6 +816,9 @@
       }
 
       function leave() {
+        voice.leave();
+        theirVoice = null;
+        theirName = '';
         if (conn) conn.close();
         if (peer) peer.destroy();
         peer = conn = null;
@@ -736,10 +828,91 @@
         reset();
       }
 
+      // ---------- Voice chat ----------
+
+      function syncVoice() {
+        voice.sync(theirVoice && conn ? [conn.peer] : []);
+        renderVoice();
+      }
+
+      function sendVoiceState() {
+        send({ type: 'voice', state: voice.joined ? (voice.muted ? 'muted' : 'on') : null });
+      }
+
+      // Buttons, plus a chip per player in voice that glows while they talk
+      function renderVoice() {
+        const online = !!(conn && conn.open && myMark);
+        document.getElementById('voiceControls').hidden = !online;
+        document.getElementById('voiceJoinBtn').hidden = voice.joined;
+        document.getElementById('voiceMuteBtn').hidden = document.getElementById('voiceLeaveBtn').hidden = !voice.joined;
+        document.getElementById('voiceMuteBtn').textContent = voice.muted ? '🔇 Unmute' : 'Mute';
+        if (!online) { document.getElementById('voiceChips').innerHTML = ''; return; }
+
+        const theirMark = myMark === 'X' ? 'O' : 'X';
+        const chip = (mark, state, talking, who) =>
+          `<span class="sttt-voice-chip ${mark.toLowerCase()}${talking ? ' speaking' : ''}" title="${who} (${mark})">${who} ${state === 'muted' ? '🔇' : '🎙️'}</span>`;
+        document.getElementById('voiceChips').innerHTML =
+          (voice.joined ? chip(myMark, voice.muted ? 'muted' : 'on', voice.isSpeaking(), 'You') : '') + ' ' +
+          (theirVoice ? chip(theirMark, theirVoice, voice.isSpeaking(conn.peer), opponent()) : '');
+      }
+
+      function showVoiceError(message) {
+        document.getElementById('voiceMsg').textContent = message;
+        document.getElementById('voiceMsg').hidden = !message;
+      }
+
+      document.getElementById('voiceJoinBtn').addEventListener('click', async () => {
+        showVoiceError('');
+        document.getElementById('voiceJoinBtn').disabled = true;
+        try {
+          await voice.join();
+          sendVoiceState();
+          syncVoice();
+        } catch (e) {
+          showVoiceError(e.message);
+        }
+        document.getElementById('voiceJoinBtn').disabled = false;
+        renderVoice();
+      });
+      document.getElementById('voiceMuteBtn').addEventListener('click', () => {
+        voice.setMuted(!voice.muted);
+        sendVoiceState();
+      });
+      document.getElementById('voiceLeaveBtn').addEventListener('click', () => {
+        voice.leave();
+        sendVoiceState();
+      });
+
       // ---------- Mode picker ----------
+
+      const nameInput = document.getElementById('nameInput');
+      const nameError = document.getElementById('nameError');
+      const NAME_KEY = 'sttt-name';
+
+      function savedName() {
+        try { return localStorage.getItem(NAME_KEY) || localStorage.getItem('rook-name') || ''; } catch (e) { return ''; }
+      }
+
+      // Online play needs a name; Pass & Play doesn't
+      function requireName() {
+        myName = cleanName(nameInput.value);
+        nameInput.classList.toggle('invalid', !myName);
+        nameError.hidden = !!myName;
+        if (!myName) { nameInput.focus(); return false; }
+        try { localStorage.setItem(NAME_KEY, myName); } catch (e) { /* storage blocked */ }
+        return true;
+      }
+
+      function openPicker() {
+        nameInput.value = nameInput.value || savedName();
+        nameInput.classList.remove('invalid');
+        nameError.hidden = true;
+        modal.showModal();
+      }
 
       function startJoin() {
         const code = parseCode(joinInput.value);
+        if (!requireName()) return;
         if (!code) { joinInput.focus(); return; }
         modal.close();
         joinGame(code);
@@ -747,7 +920,7 @@
 
       document.getElementById('modeBtn').addEventListener('click', () => {
         leave();
-        modal.showModal();
+        openPicker();
       });
       document.getElementById('localBtn').addEventListener('click', () => modal.close());
       // Clicking the dimmed area outside the picker closes it (and plays locally), like pressing Esc
@@ -758,7 +931,12 @@
       };
       modal.addEventListener('pointerdown', e => { pressedOutside = outside(e); });
       modal.addEventListener('click', e => { if (pressedOutside && outside(e)) modal.close(); });
-      document.getElementById('hostBtn').addEventListener('click', () => { modal.close(); hostGame(); });
+      document.getElementById('hostBtn').addEventListener('click', () => {
+        if (!requireName()) return;
+        modal.close();
+        hostGame();
+      });
+      nameInput.addEventListener('input', () => { nameInput.classList.remove('invalid'); nameError.hidden = true; });
       document.getElementById('joinBtn').addEventListener('click', startJoin);
       joinInput.addEventListener('keydown', e => { if (e.key === 'Enter') startJoin(); });
       copyBtn.addEventListener('click', () => {
@@ -770,10 +948,11 @@
 
       reset();
 
-      // Invite links skip the picker and connect straight away
+      // Invite links open the picker with the code filled in, since a name is needed to join
       const inviteCode = new URLSearchParams(location.search).get('join');
-      if (inviteCode) joinGame(parseCode(inviteCode));
-      else modal.showModal();
+      if (inviteCode) joinInput.value = parseCode(inviteCode);
+      openPicker();
+      if (inviteCode) (nameInput.value ? document.getElementById('joinBtn') : nameInput).focus();
     })();
   </script>
 </body>

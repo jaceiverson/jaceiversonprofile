@@ -43,6 +43,13 @@
 .rook-online[hidden] { display: none; }
 .rook-online-msg { margin-right: auto; color: var(--navy); }
 
+/* Voice chat */
+.rook-voice { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
+.rook-voice-msg { flex-basis: 100%; order: 10; font-size: 0.85rem; color: #c62828; }
+.rook-voice-icon { font-size: 0.8em; }
+.rook-seat.speaking { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(19, 154, 67, 0.45); }
+.rook-lobby-seat.speaking { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-100); }
+
 .rook-toggle {
   display: inline-flex;
   align-items: center;

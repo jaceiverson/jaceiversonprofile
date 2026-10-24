@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
   <link rel="stylesheet" href="../css/style.css?v=2">
-  <link rel="stylesheet" href="../css/rook.css?v=2">
+  <link rel="stylesheet" href="../css/rook.css?v=3">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -23,6 +23,7 @@
   </script>
   <!-- PeerJS: browser-to-browser connection for online play (no server of our own needed) -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="../js/game-voice.js?v=1"></script>
 </head>
 
 <body>
@@ -65,6 +66,7 @@
 
         <div class="rook-online" id="onlinePanel" hidden>
           <span class="rook-online-msg" id="onlineMsg" aria-live="polite"></span>
+          <span class="rook-voice-msg" id="voiceMsg" role="alert" hidden></span>
           <!-- Host-only game options, both off by default -->
           <span class="rook-options" id="hostOptions" hidden>
             <label class="rook-toggle" title="Show each team's points taken during the hand">
@@ -73,6 +75,12 @@
             <label class="rook-toggle" title="Let everyone look back at every trick: who played what and who took it">
               <input type="checkbox" data-option="log"> Game log
             </label>
+          </span>
+          <!-- Opt-in voice chat (js/game-voice.js) -->
+          <span class="rook-voice" id="voiceControls" hidden>
+            <button type="button" class="btn btn-outline btn-sm" id="voiceJoinBtn">🎙️ Join Voice</button>
+            <button type="button" class="btn btn-outline btn-sm" id="voiceMuteBtn" hidden>Mute</button>
+            <button type="button" class="btn btn-outline btn-sm" id="voiceLeaveBtn" hidden>Leave Voice</button>
           </span>
           <button type="button" class="btn btn-outline btn-sm" id="copyBtn" hidden>Copy Link</button>
           <button type="button" class="btn btn-navy btn-sm" id="rejoinBtn" hidden>Rejoin</button>
@@ -152,6 +160,12 @@
             arranges the teams and starts the game. Your browsers connect directly to each other, so the
             host needs to keep their tab open until the game is done. If anyone else drops, they can rejoin
             with the same link and the same name.</p>
+
+          <h3>Voice Chat</h3>
+          <p>Want to talk while you play? Click <strong>Join Voice</strong> and allow the microphone. It's opt in:
+            nobody's mic turns on until they click it. You'll hear everyone else who joined, a 🎙️ shows who's in,
+            and a player's seat glows green while they talk. Headphones help keep echo down. Like the game, the
+            audio goes straight between your browsers.</p>
 
           <h3>Game Options</h3>
           <p>The host can turn these on or off at any time. Both start off.</p>
@@ -479,7 +493,7 @@
           trump: G.trump, trick: G.trick, trickDone: G.trickDone, trickNo: G.trickNo,
           taken: G.taken, tricksWon: G.tricksWon, lastTrick: G.lastTrick, scores: G.scores,
           history: G.history, result: G.result, winner: G.winner,
-          seats: G.seats.map(s => ({ name: s.name, connected: s.connected })),
+          seats: G.seats.map(s => ({ name: s.name, connected: s.connected, voice: s.voice || null, pid: s.pid || null })),
           counts: G.hands.map(h => h.length),
           hand: seat >= 0 ? G.hands[seat] : []
         };
@@ -516,6 +530,7 @@
       let picked = [];       // cards selected to bury
       let pickedTrump = null;
       let peer = null;
+      const voice = new GameVoice({ onChange: () => renderVoice() });
       let deal = null;       // { order, step, shuffling, timer } while the deal animation plays
       let dealtKey = '';     // the hand that was last animated, so each deal only plays once
 
@@ -552,7 +567,10 @@
       const seatOfId = id => seatsNow().findIndex(s => s && s.id === id);
 
       function lobbyView(seat) {
-        return { phase: 'lobby', mySeat: seat, seats: lobby.map(s => s && { name: s.name, connected: s.connected }) };
+        return {
+          phase: 'lobby', mySeat: seat,
+          seats: lobby.map(s => s && { name: s.name, connected: s.connected, voice: s.voice || null, pid: s.pid || null })
+        };
       }
 
       // Sends every player their own view of the game, then redraws the host's screen
@@ -583,9 +601,10 @@
         G = null;
         options = { live: false, log: false };
         optionBoxes.forEach(box => { box.checked = false; });
-        lobby = [{ id: 'host', name: myName, connected: true }, null, null, null];
+        lobby = [{ id: 'host', pid: PEER_PREFIX + gameCode, name: myName, connected: true }, null, null, null];
         showOnline('Creating game…');
         peer = new Peer(PEER_PREFIX + gameCode);
+        voice.attach(peer);
         peer.on('open', () => {
           shareLink = `${location.origin}${location.pathname}?join=${gameCode}`;
           broadcast();
@@ -606,6 +625,7 @@
       function onHostData(c, msg) {
         if (!msg || typeof msg !== 'object') return;
         if (msg.type === 'act') { hostAct(c.peer, msg.action); return; }
+        if (msg.type === 'voice') { setVoiceState(c.peer, msg.state); return; }
         if (msg.type !== 'hello') return;
 
         const name = cleanName(msg.name);
@@ -618,14 +638,15 @@
           const old = conns.get(seats[seat].id);
           conns.delete(seats[seat].id);
           if (old) old.close();
-          seats[seat].id = c.peer;
+          seats[seat].id = seats[seat].pid = c.peer;
           seats[seat].connected = true;
+          seats[seat].voice = null;
         } else if (G) {
           return reject(c, 'That game has already started. To rejoin, use the same name you played with.');
         } else {
           const free = lobby.indexOf(null);
           if (free < 0) return reject(c, 'That game already has four players.');
-          lobby[free] = { id: c.peer, name, connected: true };
+          lobby[free] = { id: c.peer, pid: c.peer, name, connected: true };
         }
         conns.set(c.peer, c);
         broadcast();
@@ -636,10 +657,18 @@
         conns.delete(c.peer);
         const seat = seatOfId(c.peer);
         if (seat >= 0) {
-          if (G) G.seats[seat].connected = false;
+          if (G) Object.assign(G.seats[seat], { connected: false, voice: null });
           else lobby[seat] = null;
         }
         if (role === 'host') broadcast();
+      }
+
+      // Who's in voice lives on the seat, so every player can see it and call the others
+      function setVoiceState(id, state) {
+        const seat = seatOfId(id);
+        if (seat < 0) return;
+        seatsNow()[seat].voice = state === 'on' || state === 'muted' ? state : null;
+        broadcast();
       }
 
       function startGame() {
@@ -663,6 +692,7 @@
         rejected = false;
         showOnline('Connecting…');
         peer = new Peer();
+        voice.attach(peer);
         peer.on('open', () => {
           conn = peer.connect(PEER_PREFIX + code, { reliable: true });
           conn.on('open', () => conn.send({ type: 'hello', name: myName }));
@@ -685,6 +715,7 @@
       function onHostLost() {
         conn = null;
         if (role !== 'guest') return;
+        voice.leave();
         if (rejected) {
           // Keep the host's reason on screen and go back to the start
           teardown();
@@ -733,6 +764,7 @@
 
       function onPeerError(err) {
         if (err.type === 'unavailable-id' && role === 'host' && !G) { teardown(); hostGame(); return; }  // code collision, try another
+        if (err.type === 'peer-unavailable' && (role === 'host' || (conn && conn.open))) return;
         if (err.type === 'peer-unavailable') {
           rejected = true;
           showOnline("Couldn't find that game. Double-check the code, or ask the host for a new link.", { rejoin: !!gameCode });
@@ -745,6 +777,7 @@
       function teardown() {
         clearTimeout(trickTimer);
         stopDeal();
+        voice.leave();
         const p = peer;
         peer = conn = null;
         for (const c of conns.values()) c.close();
@@ -780,7 +813,7 @@
         $('idle').hidden = role !== null;
         $('lobby').hidden = !(view && view.phase === 'lobby');
         $('table').hidden = !inGame;
-        if (!view) return;
+        if (!view) { renderVoice(); return; }
         if (view.phase !== 'widow') { picked = []; pickedTrump = null; }
         if (view.phase === 'lobby') renderLobby();
         else {
@@ -788,6 +821,40 @@
           renderTable();
         }
         renderOnline();
+        // Call (or hang up on) whoever else is in voice
+        voice.sync(view.seats.filter((s, i) => s && i !== view.mySeat && s.connected && s.voice).map(s => s.pid));
+        renderVoice();
+      }
+
+      const voiceIcon = s => (s && s.voice === 'muted' ? ' <span class="rook-voice-icon" title="In voice, muted">🔇</span>'
+        : s && s.voice ? ' <span class="rook-voice-icon" title="In voice">🎙️</span>' : '');
+
+      // Voice buttons, plus a glow on the seat of whoever is talking (cheap, so it can run often)
+      function renderVoice() {
+        const inGame = !!view && (role === 'host' || !!conn);
+        $('voiceControls').hidden = !inGame;
+        $('voiceJoinBtn').hidden = voice.joined;
+        $('voiceMuteBtn').hidden = $('voiceLeaveBtn').hidden = !voice.joined;
+        $('voiceMuteBtn').textContent = voice.muted ? '🔇 Unmute' : 'Mute';
+        if (!view) return;
+        document.querySelectorAll('.rook-seat[data-seat], .rook-lobby-seat[data-seat]').forEach(el => {
+          const i = Number(el.dataset.seat);
+          const s = view.seats[i];
+          const talking = !!s && (i === view.mySeat ? voice.isSpeaking() : voice.isSpeaking(s.pid));
+          el.classList.toggle('speaking', talking);
+        });
+      }
+
+      // Tells the host whether we're in voice (and muted), so the others can call us
+      function sendVoiceState() {
+        const state = voice.joined ? (voice.muted ? 'muted' : 'on') : null;
+        if (role === 'host') setVoiceState('host', state);
+        else if (conn && conn.open) conn.send({ type: 'voice', state });
+      }
+
+      function showVoiceError(message) {
+        $('voiceMsg').textContent = message;
+        $('voiceMsg').hidden = !message;
       }
 
       // ---------- Deal animation (purely visual; the host has already dealt) ----------
@@ -870,7 +937,7 @@
               const s = view.seats[i];
               const tag = isHost ? 'button type="button"' : 'div';
               const cls = 'rook-lobby-seat' + (s ? '' : ' empty') + (swapFrom === i ? ' picked' : '');
-              const label = s ? `${esc(s.name)}${i === view.mySeat ? ' (you)' : ''}` : 'Waiting for a player…';
+              const label = s ? `${esc(s.name)}${i === view.mySeat ? ' (you)' : ''}${voiceIcon(s)}` : 'Waiting for a player…';
               return `<${tag} class="${cls}" data-seat="${i}">${label}<small>Seat ${i + 1}</small></${tag.split(' ')[0]}>`;
             }).join('')}
           </div>`).join('');
@@ -925,7 +992,7 @@
           if (v.dealer === s) meta.push('dealer');
           if (!seat.connected) meta.push('disconnected');
           felt += `<div class="${cls.join(' ')}" data-seat="${s}">
-            <div class="rook-seat-name">${s === me ? 'You' : esc(seat.name)}</div>
+            <div class="rook-seat-name">${s === me ? 'You' : esc(seat.name)}${voiceIcon(seat)}</div>
             <div class="rook-seat-meta">${meta.join(' · ')}</div>
             ${badge}
           </div>`;
@@ -1183,6 +1250,27 @@
         broadcast();
       });
       $('startBtn').addEventListener('click', startGame);
+
+      $('voiceJoinBtn').addEventListener('click', async () => {
+        showVoiceError('');
+        $('voiceJoinBtn').disabled = true;
+        try {
+          await voice.join();
+          sendVoiceState();
+        } catch (e) {
+          showVoiceError(e.message);
+        }
+        $('voiceJoinBtn').disabled = false;
+        renderVoice();
+      });
+      $('voiceMuteBtn').addEventListener('click', () => {
+        voice.setMuted(!voice.muted);
+        sendVoiceState();
+      });
+      $('voiceLeaveBtn').addEventListener('click', () => {
+        voice.leave();
+        sendVoiceState();
+      });
 
       optionBoxes.forEach(box => box.addEventListener('change', () => {
         if (role !== 'host') return;
