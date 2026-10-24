@@ -883,6 +883,36 @@ h3 { font-size: 1.2rem; font-weight: 600; }
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
+/* Small "under construction" pill that sits next to a page-header title */
+.wip-badge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 100px;
+  background: var(--warm);
+  border: 1px solid var(--warm-darker);
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+/* Secondary line under the page-header description */
+.page-header .page-header-note {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.page-header .page-header-note a {
+  color: var(--white);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* Breadcrumb trail above a page-header title (e.g. Projects › Games) */
 .page-header .crumbs {
   font-size: 0.85rem;
