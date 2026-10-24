@@ -276,7 +276,7 @@
         </summary>
         <p class="cdk-undo-note">↩️ Earn a game achievement in a game where you never press Undo and it gets a gold
           border and a <span class="cdk-no-undo">No Undo</span> tag. Already have it? Earning it again without Undo
-          upgrades it.</p>
+          upgrades it. Completionist achievements upgrade once all their checks are gold.</p>
         <div id="trophies"></div>
       </details>
 
@@ -882,16 +882,20 @@
       };
 
       // True once every possible box in one checklist column (e.g. every row's Clean) is checked
-      function compColumnDone(prefix, column) {
-        const checked = loadCompletionist();
+      function compColumnDone(prefix, column, checked = loadCompletionist()) {
         return [...Array(9).keys()].filter(n => compPossible(prefix, n, column)).every(n => checked.has(`${prefix}${n}:${column}`));
       }
 
+      // Completionist achievements upgrade (No Undo tag) once every check they need is gold
+      const GOLD_CHECKS = {};
       COMP_ACHIEVEMENT_GROUPS.forEach(g => g.columns.forEach(column => {
         ACHIEVEMENT_CHECKS[`comp-${g.prefix}-${column}`] = () => compColumnDone(g.prefix, column);
+        GOLD_CHECKS[`comp-${g.prefix}-${column}`] = () => compColumnDone(g.prefix, column, loadGoldChecks());
       }));
-      ACHIEVEMENT_CHECKS['completionist-complete'] = () =>
-        ['r', 'c', 'b'].every(prefix => ['completed', 'clean', 'flush', 'straight', 'royal'].every(col => compColumnDone(prefix, col)));
+      const allColumnsDone = checked =>
+        ['r', 'c', 'b'].every(prefix => ['completed', 'clean', 'flush', 'straight', 'royal'].every(col => compColumnDone(prefix, col, checked)));
+      ACHIEVEMENT_CHECKS['completionist-complete'] = () => allColumnsDone(loadCompletionist());
+      GOLD_CHECKS['completionist-complete'] = () => allColumnsDone(loadGoldChecks());
 
       function checkAchievements() {
         const score = scoreBoard();
@@ -900,7 +904,10 @@
       }
 
       // Gameplay achievements earned in a game without pressing Undo get a No Undo tag (and a gold border)
-      const canUpgrade = a => a.type === 'gameplay';
+      // Completionist ones get it once all their checks are gold (GOLD_CHECKS)
+      const canUpgrade = a => a.type === 'gameplay' || !!GOLD_CHECKS[a.id];
+      // Gold in this game's results: gameplay ones if no Undo this game, Completionist ones if they're upgraded
+      const goldNow = a => a.type === 'gameplay' ? !undoUsed : !!(loadAchievementState()[a.id] || {}).noUndo;
       const undoTag = on => on ? '<span class="cdk-no-undo" title="Earned without pressing Undo">No Undo</span>' : '';
       const subtitleHTML = (a, after = false) => a.subtitle ? `<em class="cdk-subtitle${after ? ' after' : ''}">${a.subtitle}</em>` : '';
       // Description with its subtitle, which goes first unless the achievement sets subtitleAfter
@@ -911,7 +918,7 @@
         const isNew = newlyUnlocked.includes(id) ? '<span class="cdk-new">New!</span>'
           : upgraded.includes(id) ? '<span class="cdk-new cdk-upgraded">Upgraded!</span>' : '';
         return `<div class="cdk-achievement"><span class="cdk-achievement-icon">${a.icon}</span>
-          <span><strong>${a.name}${isNew}${undoTag(canUpgrade(a) && !undoUsed)}</strong>${descHTML(a)}</span></div>`;
+          <span><strong>${a.name}${isNew}${undoTag(goldNow(a))}</strong>${descHTML(a)}</span></div>`;
       }
 
       // Every achievement's saved state: { id: { unlocked: ISO date or null, titleVisible: true/false } }.
@@ -954,7 +961,8 @@
         const state = loadAchievementState();
         const now = new Date().toISOString();
         const fresh = ids.filter(id => !state[id].unlocked);
-        const tagged = withoutUndo ? ids.filter(id => canUpgrade(ACHIEVEMENTS.find(a => a.id === id)) && !state[id].noUndo) : [];
+        const tagged = ids.filter(id => !state[id].noUndo &&
+          (GOLD_CHECKS[id] ? GOLD_CHECKS[id]() : withoutUndo && canUpgrade(ACHIEVEMENTS.find(a => a.id === id))));
         fresh.forEach(id => { state[id].unlocked = now; state[id].titleVisible = true; });
         tagged.forEach(id => { state[id].noUndo = now; });
         saveAchievementState(state);
@@ -1733,6 +1741,8 @@
           layout,
           achievements: earned,
           newAchievements: newlyUnlocked,  // first unlocked in this game (milestones only show in Previous Games then)
+          upgradedAchievements: upgraded,
+          goldAchievements: earned.filter(id => goldNow(ACHIEVEMENTS.find(a => a.id === id))),  // gold pills in Previous Games
           undoUsed,  // decides gold vs grey achievement pills in Previous Games
           rules: RULES_VERSION,
           board: grid.map(card => card ? cardCode(card) : null),
@@ -1961,7 +1971,7 @@
           ctx.font = font(600, 12);
           // Gold pill: earned without Undo; grey pill: earned with it (or a milestone)
           chips.forEach((c, k) => {
-            const gold = canUpgrade(earned[k]) && !undoUsed;
+            const gold = goldNow(earned[k]);
             roundRect(ctx, pad + c.x, y + c.y, c.w, c.h, 13, gold ? '#f6ecc9' : '#eceef1');
             ctx.strokeStyle = gold ? IMG.gold : '#d6d9df';
             ctx.lineWidth = 1;
@@ -1998,7 +2008,7 @@
         const goldChecks = loadGoldChecks();
         const comp = compStats(checked, '', goldChecks);
 
-        const golden = ACHIEVEMENTS.filter(a => canUpgrade(a) && state[a.id].noUndo);
+        const golden = ACHIEVEMENTS.filter(a => state[a.id].noUndo);
         // Every unlocked achievement's icon, as many rows as it takes
         const iconSize = 26, perRow = Math.floor((inner - 96) / iconSize);
         const iconRows = Math.max(1, Math.ceil(unlocked.length / perRow));
@@ -2313,14 +2323,14 @@
           // Like the results dialog: gameplay achievements met this game, plus milestones only in the game
           // that first unlocked them (they stay met forever after). Older games didn't record new unlocks,
           // so they show no milestones.
-          const firsts = g.newAchievements || [];
+          const firsts = [...(g.newAchievements || []), ...(g.upgradedAchievements || [])];
           const earnedHere = g.achievements
             .map(id => ACHIEVEMENTS.find(a => a.id === id) || { id, name: id, icon: '', type: 'gameplay' })
-            .filter(a => canUpgrade(a) || firsts.includes(a.id));
+            .filter(a => a.type === 'gameplay' || firsts.includes(a.id));
           // Same pills as the share image: gold for gameplay ones earned without Undo, grey otherwise.
           // Games saved before undoUsed was recorded show grey.
           const pills = earnedHere.map(a => {
-            const gold = g.undoUsed === false && canUpgrade(a);
+            const gold = g.goldAchievements ? g.goldAchievements.includes(a.id) : g.undoUsed === false && a.type === 'gameplay';
             return `<span class="cdk-pill${gold ? ' gold' : ''}"${gold ? ' title="Earned without Undo"' : ''}>${a.icon ? a.icon + ' ' : ''}${a.name}</span>`;
           }).join('');
           return `<details class="cdk-game">
