@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!--
+  Rook Test Bench (in the repo, but _config.yml keeps tools/ off the live site)
+
+  Loads the current games/rook.html into four player frames on one screen and lets bots play any seat.
+  The game file is read fresh on every New Game, so this always tests the latest code. A few constants
+  are patched in the frames only (target score, timings); the real file is never changed.
+
+  Run it with tools/rook-test/run.sh, or serve the repo root on port 8765 and open /tools/rook-test/.
+-->
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rook Test Bench</title>
+  <style>
+    :root {
+      --navy: #143642;
+      --navy-400: #256980;
+      --grey: #555c6d;
+      --line: #c4c8d2;
+      --bg: #eef0f3;
+      --accent: #139a43;
+      --warm: #FCF9EE;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font: 14px/1.4 Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--grey);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
+      background: var(--navy);
+      color: #fff;
+    }
+
+    header h1 { font-size: 1rem; margin: 0 0.5rem 0 0; }
+    header label { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+    header input[type=text] { width: 15rem; }
+    header input[type=number] { width: 4.5rem; }
+    header input, header select { font: inherit; padding: 0.15rem 0.35rem; border-radius: 4px; border: 0; }
+    header input[type=checkbox] { accent-color: var(--accent); }
+
+    button {
+      font: inherit;
+      font-weight: 600;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      border: 0;
+      cursor: pointer;
+      background: #fff;
+      color: var(--navy);
+    }
+
+    button.primary { background: var(--accent); color: #fff; }
+    .spacer { flex: 1; }
+
+    #status {
+      padding: 0.4rem 1rem;
+      background: var(--warm);
+      border-bottom: 1px solid var(--line);
+      color: var(--navy);
+      font-weight: 600;
+      min-height: 2rem;
+    }
+
+    #grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 6px;
+      padding: 6px;
+      min-height: 0;
+    }
+
+    /* One player blown up to the whole grid */
+    #grid.focused { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    #grid.focused .seat:not(.focus) { display: none; }
+
+    .seat {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(20, 54, 66, 0.15);
+    }
+
+    .seat-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .seat-bar .name { margin-right: auto; }
+    .seat-bar label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 500; }
+    .seat-bar button { padding: 0.1rem 0.6rem; border: 1px solid var(--line); }
+    .seat iframe { flex: 1; width: 100%; border: 0; min-height: 0; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🐦 Rook Test Bench</h1>
+    <label>Players <input type="text" id="names" value="Jace, Mom, Dad, Sis" title="Host first, then the three guests"></label>
+    <label>Play to <input type="number" id="target" value="150" min="50" step="50"></label>
+    <label>Speed
+      <select id="speed">
+        <option value="fast">Fast</option>
+        <option value="normal">Normal (real game)</option>
+      </select>
+    </label>
+    <label title="How often a bot bids instead of passing">Bot bids <input type="number" id="bidChance" value="35" min="0" max="100" step="5">%</label>
+    <label><input type="checkbox" id="liveScores"> Live scores</label>
+    <label><input type="checkbox" id="gameLog"> Game log</label>
+    <label title="Bots won't click Deal Next Hand, so you can look at the hand summary"><input type="checkbox" id="pauseHand"> Pause after each hand</label>
+    <span class="spacer"></span>
+    <button type="button" id="pauseBtn">Pause Bots</button>
+    <button type="button" class="primary" id="newBtn">New Game</button>
+  </header>
+  <div id="status">Click New Game to start.</div>
+  <div id="grid"></div>
+
+  <script>
+    (function () {
+      const $ = id => document.getElementById(id);
+      const grid = $('grid');
+      const statusEl = $('status');
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+      // Constants in rook.html that the bench overrides, per speed
+      const SPEEDS = {
+        fast: { TRICK_PAUSE: 250, SHUFFLE_MS: 150, DEAL_MS: 40 },
+        normal: {}
+      };
+      const BOT_TICK = 120;
+
+      let seats = [];        // { frame, bot (checkbox), name }
+      let paused = false;
+      let runId = 0;         // bumps on New Game so an older setup loop stops
+      let ticker = null;
+
+      const setStatus = text => { statusEl.textContent = text; };
+      const doc = seat => seat.frame.contentDocument;
+
+      // Reads rook.html and patches it for the frames: target score, timings, and a few page-level bits
+      // (base URL so relative paths work, no analytics, no leave-page prompt, no URL rewriting)
+      async function loadGame() {
+        const res = await fetch('/games/rook.html', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Couldn't load games/rook.html (${res.status})`);
+        let html = await res.text();
+        const overrides = { WIN_SCORE: Number($('target').value) || 500, ...SPEEDS[$('speed').value] };
+        for (const [name, value] of Object.entries(overrides)) {
+          const re = new RegExp(`const ${name} = \\d+;`);
+          if (!re.test(html)) throw new Error(`rook.html no longer has "const ${name} = <number>;" — update the bench`);
+          html = html.replace(re, `const ${name} = ${value};`);
+        }
+        return html
+          .replace('<head>', '<head><base href="/games/">')
+          .replace('https://www.googletagmanager.com/gtag/js', 'about:blank')
+          .replace("window.addEventListener('beforeunload'", "window.addEventListener('rook-bench-no-beforeunload'")
+          .replace("window.history.replaceState(null, '', location.pathname);", '');
+      }
+
+      function buildSeats(names, html) {
+        grid.innerHTML = '';
+        grid.classList.remove('focused');
+        seats = names.map((name, i) => {
+          const el = document.createElement('div');
+          el.className = 'seat';
+          el.innerHTML = `<div class="seat-bar">
+              <span class="name"></span>
+              <label><input type="checkbox" checked> Bot</label>
+              <button type="button">Focus</button>
+            </div>
+            <iframe title="${i === 0 ? 'Host' : 'Player ' + (i + 1)}"></iframe>`;
+          el.querySelector('.name').textContent = `${name}${i === 0 ? ' (host)' : ''}`;
+          const frame = el.querySelector('iframe');
+          frame.srcdoc = html;
+          el.querySelector('button').addEventListener('click', e => {
+            const on = !el.classList.contains('focus');
+            seats.forEach(s => s.el.classList.remove('focus'));
+            el.classList.toggle('focus', on);
+            grid.classList.toggle('focused', on);
+            e.target.textContent = on ? 'Show All' : 'Focus';
+            seats.forEach(s => { if (s.el !== el) s.el.querySelector('button').textContent = 'Focus'; });
+          });
+          grid.appendChild(el);
+          return { el, frame, name, bot: el.querySelector('input') };
+        });
+      }
+
+      // Waits until check() returns something truthy (or gives up)
+      async function waitFor(check, ms, run) {
+        for (let t = 0; t < ms; t += 100) {
+          if (run !== runId) return null;
+          try { const v = check(); if (v) return v; } catch (e) { /* frame still loading */ }
+          await sleep(100);
+        }
+        return null;
+      }
+
+      async function newGame() {
+        const run = ++runId;
+        clearInterval(ticker);
+        const names = $('names').value.split(',').map(s => s.trim()).filter(Boolean);
+        if (names.length !== 4 || new Set(names.map(n => n.toLowerCase())).size !== 4) {
+          setStatus('Enter four different player names, separated by commas.');
+          return;
+        }
+
+        setStatus('Loading the game…');
+        let html;
+        try { html = await loadGame(); } catch (e) { setStatus(e.message); return; }
+        buildSeats(names, html);
+
+        // Host
+        const host = seats[0];
+        if (!await waitFor(() => doc(host).getElementById('hostBtn'), 8000, run)) return setStatus('The host frame never loaded.');
+        doc(host).getElementById('nameInput').value = host.name;
+        doc(host).getElementById('hostBtn').click();
+        setStatus('Hosting…');
+        const code = await waitFor(() => {
+          const el = doc(host).querySelector('#onlineMsg strong');
+          return el && /^[a-z0-9]{6}$/.test(el.textContent) && el.textContent;
+        }, 15000, run);
+        if (!code) return run === runId && setStatus("Couldn't create a game. Is PeerJS reachable (ad blocker, offline)?");
+        doc(host).querySelector('[data-option=live]').checked = $('liveScores').checked;
+        doc(host).querySelector('[data-option=log]').checked = $('gameLog').checked;
+        doc(host).querySelectorAll('[data-option]').forEach(box => box.dispatchEvent(new Event('change')));
+
+        // Guests
+        for (const guest of seats.slice(1)) {
+          setStatus(`Game ${code}: ${guest.name} is joining…`);
+          if (!await waitFor(() => doc(guest).getElementById('joinBtn'), 8000, run)) return;
+          doc(guest).getElementById('nameInput').value = guest.name;
+          doc(guest).getElementById('joinInput').value = code;
+          doc(guest).getElementById('joinBtn').click();
+          if (!await waitFor(() => /Connected/.test(doc(guest).getElementById('onlineMsg').textContent), 15000, run)) {
+            return run === runId && setStatus(`${guest.name} couldn't join game ${code}.`);
+          }
+        }
+
+        if (!await waitFor(() => !doc(host).getElementById('startBtn').disabled, 8000, run)) return;
+        doc(host).getElementById('startBtn').click();
+        // Skip the page header so each frame opens on the table
+        seats.forEach(seat => doc(seat).getElementById('game').scrollIntoView());
+        ticker = setInterval(tick, BOT_TICK);
+      }
+
+      // ---------- Bots ----------
+      // Bots only click what a real player would see, so they exercise the real page and connections.
+
+      const pick = list => list[Math.floor(Math.random() * list.length)];
+
+      function botStep(d) {
+        const q = s => d.querySelector(s);
+        const click = el => { if (el) el.click(); };
+
+        if (q('[data-act=seen]')) return click(q('[data-act=seen]'));
+        if (q('[data-act=bid]')) {
+          const bid = Math.random() * 100 < Number($('bidChance').value);
+          return click(q(bid ? '[data-act=bid]' : '[data-act=pass]'));
+        }
+        if (q('[data-act=pass]')) return click(q('[data-act=pass]'));   // bid is maxed out
+        if (q('[data-act=keep]')) return click(q('[data-act=keep]'));
+        if (q('[data-act=widow]')) {
+          // Bury the lowest cards (the hand is sorted high to low), then name the suit we hold most of
+          const open = [...d.querySelectorAll('#hand .rook-card.live:not(.sel)')];
+          if (d.querySelectorAll('#hand .sel').length < 5) return click(open[open.length - 1]);
+          if (!q('.rook-trump.active')) {
+            const counts = {};
+            open.forEach(c => { const s = c.dataset.card[0]; if (c.dataset.card !== 'rk') counts[s] = (counts[s] || 0) + 1; });
+            const best = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || 'r';
+            return click(q(`[data-trump=${best}]`));
+          }
+          return click(q('[data-act=widow]'));
+        }
+        if (q('[data-act=next]')) return $('pauseHand').checked ? null : click(q('[data-act=next]'));
+        const live = [...d.querySelectorAll('#hand .rook-card.live')];
+        if (live.length) click(pick(live));
+      }
+
+      function tick() {
+        let hostStatus = '';
+        try { hostStatus = doc(seats[0]).getElementById('status').textContent; } catch (e) { /* reloading */ }
+        const over = /wins the game/.test(hostStatus);
+        const handDone = /is done/.test(hostStatus);
+
+        if (!paused) {
+          seats.forEach(seat => {
+            if (!seat.bot.checked) return;
+            try { botStep(doc(seat)); } catch (e) { /* frame mid-render */ }
+          });
+        }
+
+        let text = hostStatus ? `Host sees: ${hostStatus}` : 'Starting…';
+        if (over) text += '  —  Game over. Scroll the frames to see the summary and full game log, or click New Game.';
+        else if (handDone && $('pauseHand').checked) text += '  —  Paused after the hand. Click Deal Next Hand in any frame to keep going.';
+        else if (paused) text += '  —  Bots paused.';
+        setStatus(text);
+      }
+
+      $('newBtn').addEventListener('click', newGame);
+      $('pauseBtn').addEventListener('click', () => {
+        paused = !paused;
+        $('pauseBtn').textContent = paused ? 'Resume Bots' : 'Pause Bots';
+      });
+
+      newGame();
+    })();
+  </script>
+</body>
+
+</html>

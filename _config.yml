@@ -1,0 +1,3 @@
+# GitHub Pages builds this site with Jekyll and publishes the files as they are, except for these.
+exclude:
+  - tools/   # local helpers, not part of the site: Cardoku's Apps Script and the Rook test bench
