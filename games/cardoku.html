@@ -491,6 +491,8 @@
         { id: 'neg-diagonal-royalty', type: 'gameplay', icon: '👑', name: 'Negative Diagonal Royalty', desc: 'Fill the negative diagonal A through 9, top left to bottom right.' },
         { id: 'matrix', type: 'gameplay', icon: '🟩', name: 'The Matrix', desc: 'Fill both diagonals with no wilds, each holding A–9 exactly once.' },
         { id: 'hole-in-heart', type: 'gameplay', icon: '🍩', name: 'Hole in My Heart', desc: `Score ${BREAK_POINTS}+ with a card in every box except the middle one, which stays empty.` },
+        { id: 'no-bullseyes', type: 'gameplay', icon: '🏹', name: 'No Bullseyes', desc: 'Finish a game without a card in the center square of any box.' },
+        { id: 'half-dozen', type: 'gameplay', icon: '🥯', name: 'Half a Dozen', desc: 'Fill all 8 outer squares of any 6 boxes while leaving each of their centers empty.' },
         { id: 'purist', type: 'gameplay', icon: '🧼', name: 'Purist', desc: 'Discard every wild and Joker and still finish with a positive score.' },
         { id: 'king-of-world', type: 'gameplay', icon: '🌍', name: 'King of the World', desc: 'Complete a Royal Row 1. Where else would they be?' },
         { id: 'wild-side', type: 'gameplay', icon: '🐯', name: 'Wild Side', desc: 'Complete a row, column, or box with 5 wilds in it.' },
@@ -822,6 +824,7 @@
       const NEG_DIAGONAL = [...Array(9)].map((_, k) => k * 9 + k);        // top left → bottom right
       const BORDER = [...Array(81).keys()].filter(i => i < 9 || i >= 72 || i % 9 === 0 || i % 9 === 8);
       const CORNERS = [0, 8, 72, 80];
+      const BOX_CENTERS = [10, 13, 16, 37, 40, 43, 64, 67, 70];
       const WILD_TO_7 = ['JOKER', 'A', 'K', 'Q', 'J', '10', '9', '8', '7'];
 
       const isFull = cells => cells.every(i => grid[i]);
@@ -852,6 +855,8 @@
           allNumbers(d) && d.map(i => value(grid[i])).sort((a, b) => a - b).join() === '1,2,3,4,5,6,7,8,9'),
         'hole-in-heart': s => s.total >= BREAK_POINTS && isEmpty(cellsOf('b4')) &&
           ['b0', 'b1', 'b2', 'b3', 'b5', 'b6', 'b7', 'b8'].every(k => !isEmpty(cellsOf(k))),
+        'no-bullseyes': () => isEmpty(BOX_CENTERS),
+        'half-dozen': () => BOX_CENTERS.filter((c, b) => !grid[c] && cellsOf(`b${b}`).every(i => i === c || grid[i])).length >= 6,
         'purist': s => grid.every(card => !card || kind(card) === 'num') && s.total > 0,
         'king-of-world': s => s.items.some(it => it.key === 'r0' && it.bonuses.includes('royal')),
         // 5 is the most a line can hold: one wild per suit, plus a Joker
