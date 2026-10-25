@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cardoku — Jace Iverson</title>
+  <title>Cardoku — Sudoku Flavored Solitaire</title>
   <meta name="description"
     content="Cardoku. I love sudoku, and wanted a way to play in a new way. Everyone has a deck of cards, so here we are.">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
   <link rel="stylesheet" href="../css/style.css?v=2">
-  <link rel="stylesheet" href="../css/cardoku.css?v=4">
+  <link rel="stylesheet" href="../css/cardoku.css?v=5">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -53,8 +53,8 @@
     <div class="container">
       <nav class="crumbs" aria-label="Breadcrumb"><a href="/games/">Games</a></nav>
       <h1>Cardoku - beta testing</h1>
-      <p>A deck of cards & sudoku rules (with wilds). Place cards on the grid to try to get the high score. Try to
-        unlock all the achievements.</p>
+      <p>Sudoku flavored Solitaire: a deck of cards & sudoku rules (with wilds). Place cards on the grid to try to get
+        the high score. Try to unlock all the achievements.</p>
     </div>
   </div>
 
@@ -459,6 +459,7 @@
       const ACHIEVEMENT_STATE_KEY = 'cardoku-achievement-state';  // { id: { unlocked, titleVisible } }
       const CURRENT_KEY = 'cardoku-current';    // the game in progress, so a refresh picks up where you left off
       const OPEN_SECTIONS_KEY = 'cardoku-open-sections';  // which sections below the board are expanded
+      const CLOSED_TROPHY_GROUPS_KEY = 'cardoku-closed-trophy-groups';  // achievement groups you collapsed
       const FINISHED_KEY = 'cardoku-finished';  // { count, lastId }: lifetime finished games in this browser
       const STATS_KEY = 'cardoku-stats';  // { layouts: { default: { count, total, max } }, last: { id, score, layout } }
       const WELCOMED_KEY = 'cardoku-welcomed';  // set once the board guide has been seen
@@ -481,7 +482,9 @@
         { id: 'break-300', type: 'gameplay', icon: '🌋', name: 'Break 300', desc: 'Score 300 or more.' },
         { id: 'no-foundation', type: 'gameplay', icon: '🏗️', name: 'No Foundation Needed', desc: `Score ${BREAK_POINTS}+ without completing any of the bottom 3 rows.` },
         { id: 'different-life', type: 'gameplay', icon: '🃏', name: 'In a Different Life', desc: 'Surround an Ace with a King, Queen, Jack, and 10 (above, below, left, and right).' },
-        { id: 'wild-to-7', type: 'gameplay', icon: '7️⃣', name: 'Wild to 7', desc: 'Complete a row, column, or box reading Joker, A, K, Q, J, 10, 9, 8, 7 (either direction).' },
+        { id: 'wild-to-7', type: 'gameplay', icon: '7️⃣', name: 'Now THAT\'s a Straight!', desc: 'Complete a row, column, or box reading Joker, A, K, Q, J, 10, 9, 8, 7 (either direction).' },
+        { id: 'klondike', type: 'gameplay', icon: '⛏️', name: 'Klondike', desc: 'Fill a column top to bottom with K, Q, J, 10, 9, 8, 7, 6, 5 in alternating colors.' },
+        { id: 'jackpot', type: 'gameplay', icon: '🎰', name: 'Jackpot', subtitle: 'Lucky 7s', desc: 'Line up three 7s in a row on a diagonal.' },
         { id: 'positive-diagonal', type: 'gameplay', icon: '↗️', name: 'Positive Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from bottom left to top right.` },
         { id: 'negative-diagonal', type: 'gameplay', icon: '↘️', name: 'Negative Diagonal', desc: `Score ${BREAK_POINTS}+ and fill the diagonal from top left to bottom right.` },
         { id: 'x-marks', type: 'gameplay', icon: '❌', name: 'X Marks the Spot', desc: `Score ${BREAK_POINTS}+ and fill both diagonals.` },
@@ -502,6 +505,7 @@
         { id: 'no-discards', type: 'gameplay', icon: '♻️', name: 'Resource Manager', desc: 'Finish a game without discarding a single card.' },
         { id: 'trash-1', type: 'gameplay', icon: '🗑️', name: 'Taking Out the Trash I', desc: `Discard 5 or more cards and still score ${TRASH_POINTS}+.` },
         { id: 'trash-2', type: 'gameplay', icon: '🚛', name: 'Taking Out the Trash II', desc: `Discard 10 or more cards and still score ${TRASH_POINTS}+.` },
+        { id: 'no-clowning', type: 'gameplay', icon: '🤡', name: 'No Clowning Around', desc: 'Discard both Jokers.' },
         { id: 'clean-3-corner', type: 'gameplay', icon: '3️⃣', name: 'Clean 3 in the Corner', desc: 'Complete box 3 Clean with a 3 in the top right corner.' },
         { id: 'the-block', type: 'gameplay', icon: '🧱', name: 'The Block', desc: 'Complete rows 4–9 without placing any cards in rows 1–3.' },
         { id: 'picture-frame', type: 'gameplay', icon: '🖼️', name: 'Picture Frame', desc: 'Fill every square around the outside edge of the board.' },
@@ -826,6 +830,7 @@
       const CORNERS = [0, 8, 72, 80];
       const BOX_CENTERS = [10, 13, 16, 37, 40, 43, 64, 67, 70];
       const WILD_TO_7 = ['JOKER', 'A', 'K', 'Q', 'J', '10', '9', '8', '7'];
+      const KLONDIKE = ['K', 'Q', 'J', '10', '9', '8', '7', '6', '5'];
 
       const isFull = cells => cells.every(i => grid[i]);
       const isEmpty = cells => cells.every(i => !grid[i]);
@@ -844,6 +849,16 @@
           const ranks = it.cells.map(i => grid[i].rank).join();
           return ranks === WILD_TO_7.join() || ranks === [...WILD_TO_7].reverse().join();
         }),
+        // Columns run top to bottom, so the King is always on top
+        'klondike': () => [...Array(9).keys()].some(n => {
+          const cards = cellsOf(`c${n}`).map(i => grid[i]);
+          return cards.every((card, r) => card && card.rank === KLONDIKE[r] && (r === 0 || colorOf(card) !== colorOf(cards[r - 1])));
+        }),
+        // Three touching cells going down-right or down-left, anywhere on the board
+        'jackpot': () => grid.some((card, i) => [1, -1].some(step => [0, 1, 2].every(k => {
+          const r = Math.floor(i / 9) + k, c = i % 9 + k * step;
+          return r < 9 && c >= 0 && c < 9 && grid[r * 9 + c] && grid[r * 9 + c].rank === '7';
+        }))),
         'positive-diagonal': s => s.total >= BREAK_POINTS && isFull(POS_DIAGONAL),
         'negative-diagonal': s => s.total >= BREAK_POINTS && isFull(NEG_DIAGONAL),
         'x-marks': s => s.total >= BREAK_POINTS && isFull(POS_DIAGONAL) && isFull(NEG_DIAGONAL),
@@ -866,6 +881,7 @@
         'no-discards': () => discarded === 0,
         'trash-1': s => discarded >= 5 && s.total >= TRASH_POINTS,
         'trash-2': s => discarded >= 10 && s.total >= TRASH_POINTS,
+        'no-clowning': () => discards.filter(card => card.rank === 'JOKER').length === 2,
         'clean-3-corner': s => s.items.some(it => it.key === 'b2' && it.bonuses.includes('clean')) && value(grid[8]) === 3,
         'the-block': s => ['r3', 'r4', 'r5', 'r6', 'r7', 'r8'].every(k => s.done.has(k)) &&
           ['r0', 'r1', 'r2'].every(k => isEmpty(cellsOf(k))),
@@ -1200,10 +1216,21 @@
           ['Teased', ACHIEVEMENTS.filter(a => !state[a.id].unlocked && state[a.id].titleVisible), 'Each completed game hints at one you haven\'t found.'],
           ['Unknown', ACHIEVEMENTS.filter(a => !state[a.id].titleVisible), 'You\'ve seen them all.']
         ];
+        const closed = loadClosedTrophyGroups();
         $('trophies').innerHTML = groups.map(([title, list, empty]) => `
-          <h3 class="cdk-trophy-group">${title} <span>${list.length}</span></h3>
-          ${list.length ? `<div class="cdk-trophy-grid">${list.map(tile).join('')}</div>` : `<p class="cdk-trophy-empty">${empty}</p>`}
+          <details class="cdk-trophy-sub" data-group="${title}"${closed.includes(title) ? '' : ' open'}>
+            <summary><h3 class="cdk-trophy-group">${title} <span>${list.length}</span></h3></summary>
+            ${list.length ? `<div class="cdk-trophy-grid">${list.map(tile).join('')}</div>` : `<p class="cdk-trophy-empty">${empty}</p>`}
+          </details>
         `).join('');
+      }
+
+      // Completed / Teased / Unknown start open; remember the ones you close
+      function loadClosedTrophyGroups() {
+        try {
+          const closed = JSON.parse(localStorage.getItem(CLOSED_TROPHY_GROUPS_KEY) || '[]');
+          return Array.isArray(closed) ? closed : [];
+        } catch (e) { return []; }
       }
 
       // ---------- Rendering ----------
@@ -2457,6 +2484,12 @@
           try { localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(open)); } catch (e) { /* storage blocked */ }
         });
       });
+      // toggle doesn't bubble, so listen on the way down; the groups are redrawn by renderTrophies()
+      $('trophies').addEventListener('toggle', e => {
+        if (!e.target.matches('.cdk-trophy-sub')) return;
+        const closed = [...$('trophies').querySelectorAll('.cdk-trophy-sub:not([open])')].map(d => d.dataset.group);
+        try { localStorage.setItem(CLOSED_TROPHY_GROUPS_KEY, JSON.stringify(closed)); } catch (e) { /* storage blocked */ }
+      }, true);
       $('feedbackBtn').addEventListener('click', openFeedback);
       $('shareGameBtn').addEventListener('click', shareGame);
       $('progressBtn').addEventListener('click', shareProgress);

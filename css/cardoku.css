@@ -1799,8 +1799,50 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   margin: 1.75rem 0 0.75rem;
 }
 
-.cdk-trophy-group:first-child {
+.cdk-trophy-sub:first-child .cdk-trophy-group {
   margin-top: 0.5rem;
+}
+
+/* Completed / Teased / Unknown each collapse on their own */
+.cdk-trophy-sub>summary {
+  display: block;
+  list-style: none;
+  cursor: pointer;
+}
+
+.cdk-trophy-sub>summary::-webkit-details-marker {
+  display: none;
+}
+
+.cdk-trophy-sub:not([open]) .cdk-trophy-group {
+  margin-bottom: 0;
+}
+
+/* Small arrow before the title that turns when the group opens */
+.cdk-trophy-group::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  flex-shrink: 0;
+  margin-right: 0.15rem;
+  border-right: 2px solid var(--navy-400);
+  border-bottom: 2px solid var(--navy-400);
+  transform: rotate(-45deg);
+  transition: transform var(--transition);
+}
+
+.cdk-trophy-sub[open] .cdk-trophy-group::before {
+  transform: rotate(45deg);
+}
+
+.cdk-trophy-sub>summary:hover .cdk-trophy-group {
+  color: var(--navy-400);
+}
+
+.cdk-trophy-sub>summary:focus-visible {
+  outline: 3px solid var(--navy-400);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .cdk-trophy-group span {
