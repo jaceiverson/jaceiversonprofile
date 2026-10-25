@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
   <link rel="stylesheet" href="../css/style.css?v=2">
-  <link rel="stylesheet" href="../css/rook.css?v=3">
+  <link rel="stylesheet" href="../css/rook.css?v=4">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -152,6 +152,10 @@
             <li>The bidding team scores their bid if they took at least that many points, and loses their bid
               if they didn't. The other team scores whatever points they took.</li>
             <li>First team to 500 (and ahead) wins.</li>
+            <li>When the game ends, anyone can download it as a CSV for a spreadsheet: <strong>Hand by Hand</strong>
+              (one row per hand), <strong>Trick by Trick</strong> (one row per trick), or, after a few rounds of
+              <strong>Play Again</strong>, <strong>All Games</strong> from the session. The host can also export the
+              game so far from the Score Sheet at any time.</li>
           </ul>
 
           <h3>Playing Online</h3>
@@ -303,8 +307,11 @@
 
       const minBid = G => (G.highBid ? G.highBid + 5 : MIN_BID);
 
-      function newGame(seats) {
-        const G = { seats, scores: [0, 0], history: [], log: [], handNo: 0, dealer: -1, winner: null };
+      function newGame(seats, pastGames = []) {
+        const G = {
+          seats, scores: [0, 0], history: [], log: [], handNo: 0, dealer: -1, winner: null,
+          pastGames, gameNo: pastGames.length + 1   // earlier games this session, for the all-games export
+        };
         startHand(G);
         return G;
       }
@@ -319,7 +326,7 @@
 
         G.handNo++;
         G.dealer = (G.dealer + 1) % 4;
-        G.log.push({ hand: G.handNo, bidWinner: null, bid: 0, trump: null, tricks: [] });
+        G.log.push({ hand: G.handNo, dealer: G.dealer, bids: null, bidWinner: null, bid: 0, trump: null, tricks: [] });
         Object.assign(G, {
           phase: 'bidding',
           hands: hands.map(h => sortHand(h)),
@@ -406,7 +413,7 @@
             G.trump = a.trump;
             G.hands[seat] = hand.filter(c => !bury.includes(c));
             G.hands = G.hands.map(h => sortHand(h, G.trump));
-            Object.assign(G.log[G.log.length - 1], { bidWinner: seat, bid: G.bid, trump: G.trump });
+            Object.assign(G.log[G.log.length - 1], { bids: G.bids.slice(), bidWinner: seat, bid: G.bid, trump: G.trump });
             G.phase = 'play';
             G.turn = seat;   // bid winner leads the first trick
             return true;
@@ -439,7 +446,7 @@
 
           case 'again':
             if (G.phase !== 'gameover') return false;
-            Object.assign(G, newGame(G.seats));
+            Object.assign(G, newGame(G.seats, G.pastGames.concat(currentGame(G))));
             return true;
         }
         return false;
@@ -469,7 +476,7 @@
 
         G.result = {
           bidWinner: G.bidWinner, bid: G.bid, trump: G.trump, made, delta,
-          taken: G.taken.slice(), discards: G.discards.slice(), widowPts, widowTeam: lastTeam
+          taken: G.taken.slice(), widow: G.widow.slice(), discards: G.discards.slice(), widowPts, widowTeam: lastTeam
         };
         G.history.push({ hand: G.handNo, ...G.result, scores: G.scores.slice() });
 
@@ -492,13 +499,86 @@
           widowSeen: G.widowSeen, log: log || G.phase === 'gameover' ? G.log : null, live,
           trump: G.trump, trick: G.trick, trickDone: G.trickDone, trickNo: G.trickNo,
           taken: G.taken, tricksWon: G.tricksWon, lastTrick: G.lastTrick, scores: G.scores,
-          history: G.history, result: G.result, winner: G.winner,
+          history: G.history, result: G.result, winner: G.winner, gameNo: G.gameNo,
+          pastGames: G.phase === 'gameover' ? G.pastGames : null,
           seats: G.seats.map(s => ({ name: s.name, connected: s.connected, voice: s.voice || null, pid: s.pid || null })),
           counts: G.hands.map(h => h.length),
           hand: seat >= 0 ? G.hands[seat] : []
         };
         if (G.phase === 'reveal' || G.phase === 'widow') v.widow = G.widow;
         return v;
+      }
+      // ---------- CSV export ----------
+      // Two layouts: one row per hand (handsCsv) or one row per trick (tricksCsv). Both take a list of games,
+      // so the same code exports one game or every game this session. Hand details repeat on each trick row
+      // so the file sorts and filters cleanly in a spreadsheet. A hand still being played has no results
+      // (and no widow, which isn't public until the hand is over).
+      const cardLabel = c => (c === 'rk' ? 'Rook' : `${SUIT_NAMES[suitOf(c)]} ${numOf(c)}`);
+      const cardList = list => (list || []).map(cardLabel).join(' ');
+
+      // Snapshot of a game for exporting (names are kept as they were in that game)
+      function currentGame(G) {
+        return { game: G.gameNo, names: G.seats.map(s => s.name), log: G.log, history: G.history };
+      }
+
+      function csvCell(v) {
+        if (typeof v === 'number') return String(v);
+        let text = String(v == null ? '' : v);
+        if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;   // so spreadsheets don't run a name as a formula
+        return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+      }
+
+      const toCsv = rows => rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+
+      // Columns both layouts share: who bid what, and how the hand turned out
+      function handColumns(g, h, r) {
+        const names = g.names;
+        const bids = (h.bids || []).map((b, s) => `${names[s]}: ${b === null ? '-' : b}`).join('; ');
+        return {
+          start: [g.game, h.hand, names[h.dealer], bids, names[h.bidWinner], `Team ${teamOf(h.bidWinner) + 1}`,
+            h.bid, SUIT_NAMES[h.trump], r ? cardList(r.widow) : '', r ? cardList(r.discards) : ''],
+          results: r
+            ? [r.made ? 'Yes' : 'No', r.taken[0], r.taken[1], r.delta[0], r.delta[1], r.scores[0], r.scores[1]]
+            : ['', '', '', '', '', '', ''],
+          teams: [`${names[0]} & ${names[2]}`, `${names[1]} & ${names[3]}`]
+        };
+      }
+
+      const HAND_HEAD = ['Game', 'Hand', 'Dealer', 'Bids', 'Bid Winner', 'Bidding Team', 'Bid', 'Trump', 'Widow', 'Buried'];
+      const RESULT_HEAD = ['Bid Made', 'Team 1 Points Taken', 'Team 2 Points Taken', 'Team 1 Hand Score',
+        'Team 2 Hand Score', 'Team 1 Total', 'Team 2 Total'];
+
+      function handsCsv(games) {
+        const rows = [[...HAND_HEAD, 'Team 1 Tricks', 'Team 2 Tricks', 'Last Trick Team', 'Widow Points',
+          ...RESULT_HEAD, 'Team 1', 'Team 2']];
+        for (const g of games) {
+          for (const h of g.log) {
+            const r = g.history.find(x => x.hand === h.hand);
+            if (!r) continue;   // only finished hands
+            const c = handColumns(g, h, r);
+            const won = t => h.tricks.filter(x => teamOf(x.winner) === t).length;
+            rows.push([...c.start, won(0), won(1), `Team ${r.widowTeam + 1}`, r.widowPts, ...c.results, ...c.teams]);
+          }
+        }
+        return toCsv(rows);
+      }
+
+      function tricksCsv(games) {
+        const rows = [[...HAND_HEAD, 'Trick', 'Led By', '1st Player', '1st Card', '2nd Player', '2nd Card',
+          '3rd Player', '3rd Card', '4th Player', '4th Card', 'Taken By', 'Taken By Team', 'Trick Points',
+          ...RESULT_HEAD, 'Team 1', 'Team 2']];
+        for (const g of games) {
+          for (const h of g.log) {
+            const c = handColumns(g, h, g.history.find(x => x.hand === h.hand));
+            h.tricks.forEach((t, n) => rows.push([
+              ...c.start, n + 1, g.names[t.plays[0].seat],
+              ...t.plays.flatMap(p => [g.names[p.seat], cardLabel(p.card)]),
+              g.names[t.winner], `Team ${teamOf(t.winner) + 1}`, t.points,
+              ...c.results, ...c.teams
+            ]));
+          }
+        }
+        return toCsv(rows);
       }
       // END ENGINE
 
@@ -1154,6 +1234,7 @@
           <h3>${over ? `${teamLabel(v.winner)} wins, ${v.scores[v.winner]} to ${v.scores[1 - v.winner]}! 🎉` : `Hand ${v.handNo} results`}</h3>
           ${lines.map(l => `<p>${l}</p>`).join('')}
           <button type="button" class="btn btn-primary btn-sm" data-act="${over ? 'again' : 'next'}">${over ? 'Play Again' : 'Deal Next Hand'}</button>
+          ${over ? exportButtons(true) : ''}
         </div>`;
       }
 
@@ -1216,7 +1297,9 @@
         const v = view;
         if (!v.history.length) { $('history').innerHTML = ''; return; }
         const cell = n => `<span class="${n < 0 ? 'neg' : ''}">${n > 0 ? '+' : ''}${n}</span>`;
-        $('history').innerHTML = `<h3>Score Sheet</h3>
+        // The host can save the game so far at any point (everyone can once the game is over)
+        const exportBtn = role === 'host' && v.phase !== 'gameover' ? ` <span class="rook-export">${exportButtons(false)}</span>` : '';
+        $('history').innerHTML = `<h3>Score Sheet${exportBtn}</h3>
           <table>
             <thead><tr><th>Hand</th><th>Bid</th><th>Trump</th><th class="t0-text">Team 1</th><th class="t1-text">Team 2</th></tr></thead>
             <tbody>${v.history.map(h => `<tr>
@@ -1229,7 +1312,54 @@
           </table>`;
       }
 
+      // CSV download buttons. At game over everyone has the full game; mid-game only the host does.
+      function exportButtons(over) {
+        const btn = (kind, label, title) =>
+          `<button type="button" class="btn btn-outline btn-sm" data-csv="${kind}" title="${title}">${label}</button>`;
+        const games = (over ? (view.pastGames || []).length : 0) + 1;
+        return `<span class="rook-downloads">
+          <span class="rook-downloads-label">${over ? 'Download CSV:' : 'Export CSV:'}</span>
+          ${btn('hands', 'Hand by Hand', 'One row per hand of this game')}
+          ${btn('tricks', 'Trick by Trick', 'One row per trick of this game')}
+          ${games > 1 ? btn('all', `All ${games} Games`, 'Every trick of every game played this session') : ''}
+        </span>`;
+      }
+
+      // Builds and downloads a CSV. The host exports from the full game state; everyone else from the
+      // game-over view, which includes the whole log and the earlier games this session.
+      function exportGame(kind) {
+        let current, past;
+        if (role === 'host' && G) {
+          current = currentGame(G);
+          past = G.pastGames;
+        } else if (view.log) {
+          current = { game: view.gameNo, names: view.seats.map(s => s.name), log: view.log, history: view.history };
+          past = view.pastGames || [];
+        } else return;
+
+        const games = kind === 'all' ? past.concat(current) : [current];
+        const csv = kind === 'hands' ? handsCsv(games) : tricksCsv(games);
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+        const name = kind === 'all' ? `rook-all-games-${stamp}.csv` : `rook-game-${current.game}-${kind === 'hands' ? 'hands' : 'tricks'}-${stamp}.csv`;
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));   // BOM so Excel reads names right
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      }
+
       // ---------- Events ----------
+
+      // CSV buttons live in the game-over summary and the host's Score Sheet
+      [$('actions'), $('history')].forEach(el => el.addEventListener('click', e => {
+        const btn = e.target.closest('[data-csv]');
+        if (btn) exportGame(btn.dataset.csv);
+      }));
 
       $('lobbyTeams').addEventListener('click', e => {
         const btn = e.target.closest('button[data-seat]');

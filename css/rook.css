@@ -474,6 +474,11 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
 
 .rook-history { margin-top: 1.5rem; overflow-x: auto; }
 .rook-history h3 { color: var(--navy); font-size: 1rem; margin-bottom: 0.5rem; }
+.rook-history h3 .rook-export { display: inline-block; margin-left: 0.5rem; font-size: 0.85rem; font-weight: 500; }
+.rook-downloads { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.4rem; }
+.rook-summary .rook-downloads { display: flex; margin-top: 0.75rem; }
+.rook-downloads-label { font-size: 0.85rem; font-weight: 600; color: var(--grey-700); }
+.rook-summary .rook-downloads .btn { margin-top: 0; }
 
 .rook-history table {
   width: 100%;
