@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rook — Jace Iverson</title>
-  <meta name="description" content="Play Rook online with four players: bid, take the widow, name trump, and race your partner to 500.">
+  <meta name="description" content="Play Rook - The Card Game (Dixon Family Rules).">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,8 +55,7 @@
     <div class="container">
       <nav class="crumbs" aria-label="Breadcrumb"><a href="/games/">Games</a></nav>
       <h1>Rook</h1>
-      <p>The card game I grew up playing with my family. Four players, two teams, one bird. Host a game,
-        send the link to three friends, and race to 500.</p>
+      <p>The classic card game played with a Rook deck using Dixon family rules.</p>
     </div>
   </div>
 
@@ -187,7 +186,8 @@
 
     <div class="rook-name">
       <label class="rook-modal-label" for="nameInput">Your name</label>
-      <input type="text" id="nameInput" maxlength="16" placeholder="Name" autocomplete="off" data-1p-ignore data-lpignore="true">
+      <input type="text" id="nameInput" maxlength="16" placeholder="Name" autocomplete="off" data-1p-ignore
+        data-lpignore="true">
       <p class="rook-name-error" id="nameError" hidden>Enter your name first.</p>
     </div>
 
@@ -934,12 +934,12 @@
           <div class="rook-lobby-team">
             <h3>${teamLabel(t)}</h3>
             ${[t, t + 2].map(i => {
-              const s = view.seats[i];
-              const tag = isHost ? 'button type="button"' : 'div';
-              const cls = 'rook-lobby-seat' + (s ? '' : ' empty') + (swapFrom === i ? ' picked' : '');
-              const label = s ? `${esc(s.name)}${i === view.mySeat ? ' (you)' : ''}${voiceIcon(s)}` : 'Waiting for a player…';
-              return `<${tag} class="${cls}" data-seat="${i}">${label}<small>Seat ${i + 1}</small></${tag.split(' ')[0]}>`;
-            }).join('')}
+          const s = view.seats[i];
+          const tag = isHost ? 'button type="button"' : 'div';
+          const cls = 'rook-lobby-seat' + (s ? '' : ' empty') + (swapFrom === i ? ' picked' : '');
+          const label = s ? `${esc(s.name)}${i === view.mySeat ? ' (you)' : ''}${voiceIcon(s)}` : 'Waiting for a player…';
+          return `<${tag} class="${cls}" data-seat="${i}">${label}<small>Seat ${i + 1}</small></${tag.split(' ')[0]}>`;
+        }).join('')}
           </div>`).join('');
 
         $('lobbyHint').textContent = isHost
@@ -1002,7 +1002,7 @@
         let mid = '';
         const back = '<img src="../img/rook/back.jpg" alt="" draggable="false">';
         if (deal) mid = `<div class="rook-deck${deal.shuffling ? ' shuffling' : ''}" aria-hidden="true">${back.repeat(3)}</div>`;
-        else if (v.phase === 'bidding') mid =v.highBid ? `High bid<br><strong>${v.highBid}</strong>` : 'Bidding<br>starts at 100';
+        else if (v.phase === 'bidding') mid = v.highBid ? `High bid<br><strong>${v.highBid}</strong>` : 'Bidding<br>starts at 100';
         else if (v.phase === 'raise') mid = 'Widow<br>5 cards';
         else if (v.phase === 'reveal') mid = 'Widow<br>face up';
         else if (v.phase === 'widow') mid = 'Widow<br>picked up';
