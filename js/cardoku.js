@@ -1951,15 +1951,26 @@
     }).join('') + '</div>';
   }
 
-  // Lays the spades out for setup: the staircase, the staircase shuffled, or all in the tray
+  // Any legal setup, every one equally likely: three random cells in each bottom box, redrawn until
+  // each bottom row also has three (about 1 draw in 9 qualifies)
+  function randomLayoutCells() {
+    for (;;) {
+      const cells = SETUP_BOXES.flatMap(b => shuffle(ELEMENTS.find(e => e.key === 'b' + b).cells.slice()).slice(0, 3));
+      const rows = Array(9).fill(0);
+      cells.forEach(i => rows[Math.floor(i / 9)]++);
+      if (rows.slice(6).every(n => n === 3)) return cells;
+    }
+  }
+
+  // Lays the spades out for setup: the staircase, a random legal arrangement, or all in the tray
   function applyLayout(choice) {
     clearSelection();
     layout = choice;
     grid = Array(81).fill(null);
     tray = setupSpades();
     if (choice !== 'custom') {
-      const spades = choice === 'random' ? shuffle(tray) : tray;
-      LAYOUT_CELLS.forEach((cell, k) => { grid[cell] = spades[k]; });
+      const [cells, spades] = choice === 'random' ? [randomLayoutCells(), shuffle(tray)] : [LAYOUT_CELLS, tray];
+      cells.forEach((cell, k) => { grid[cell] = spades[k]; });
       tray = [];
     }
     render();
