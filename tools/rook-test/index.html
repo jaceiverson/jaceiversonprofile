@@ -4,9 +4,10 @@
 <!--
   Rook Test Bench (in the repo, but _config.yml keeps tools/ off the live site)
 
-  Loads the current games/rook.html into four player frames on one screen and lets bots play any seat.
-  The game file is read fresh on every New Game, so this always tests the latest code. A few constants
-  are patched in the frames only (target score, timings); the real file is never changed.
+  Loads the current games/rook.html (with js/rook-engine.js and js/rook.js) into four player frames on
+  one screen and lets bots play any seat. The game files are read fresh on every New Game, so this always
+  tests the latest code. A few constants are patched in the frames only (target score, timings); the real
+  files are never changed.
 
   Run it with tools/rook-test/run.sh, or serve the repo root on port 8765 and open /tools/rook-test/.
 -->
@@ -149,7 +150,7 @@
       const statusEl = $('status');
       const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-      // Constants in rook.html that the bench overrides, per speed
+      // Constants in js/rook-engine.js and js/rook.js that the bench overrides, per speed
       const SPEEDS = {
         fast: { TRICK_PAUSE: 250, SHUFFLE_MS: 150, DEAL_MS: 40 },
         normal: {}
@@ -164,23 +165,36 @@
       const setStatus = text => { statusEl.textContent = text; };
       const doc = seat => seat.frame.contentDocument;
 
-      // Reads rook.html and patches it for the frames: target score, timings, and a few page-level bits
-      // (base URL so relative paths work, no analytics, no leave-page prompt, no URL rewriting)
+      async function fetchText(path) {
+        const res = await fetch(path, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Couldn't load ${path} (${res.status})`);
+        return res.text();
+      }
+
+      // Reads rook.html and its two scripts, patches the scripts (target score, timings, no leave-page
+      // prompt, no URL rewriting), and inlines them into the page with a base URL so relative paths
+      // work and no analytics
       async function loadGame() {
-        const res = await fetch('/games/rook.html', { cache: 'no-store' });
-        if (!res.ok) throw new Error(`Couldn't load games/rook.html (${res.status})`);
-        let html = await res.text();
+        const [html, ...scripts] = await Promise.all(['/games/rook.html', '/js/rook-engine.js', '/js/rook.js'].map(fetchText));
+        let [engine, page] = scripts;
         const overrides = { WIN_SCORE: Number($('target').value) || 500, ...SPEEDS[$('speed').value] };
         for (const [name, value] of Object.entries(overrides)) {
           const re = new RegExp(`const ${name} = \\d+;`);
-          if (!re.test(html)) throw new Error(`rook.html no longer has "const ${name} = <number>;" — update the bench`);
-          html = html.replace(re, `const ${name} = ${value};`);
+          if (re.test(engine)) engine = engine.replace(re, `const ${name} = ${value};`);
+          else if (re.test(page)) page = page.replace(re, `const ${name} = ${value};`);
+          else throw new Error(`js/rook-engine.js and js/rook.js no longer have "const ${name} = <number>;" — update the bench`);
         }
-        return html
-          .replace('<head>', '<head><base href="/games/">')
-          .replace('https://www.googletagmanager.com/gtag/js', 'about:blank')
+        page = page
           .replace("window.addEventListener('beforeunload'", "window.addEventListener('rook-bench-no-beforeunload'")
           .replace("window.history.replaceState(null, '', location.pathname);", '');
+        const inline = (doc, file, js) => {
+          const re = new RegExp(`<script src="\\.\\./js/${file.replace('.', '\\.')}[^"]*"><\/script>`);
+          if (!re.test(doc)) throw new Error(`rook.html no longer loads js/${file} — update the bench`);
+          return doc.replace(re, () => `<script>${js}<\/script>`);
+        };
+        return inline(inline(html, 'rook-engine.js', engine), 'rook.js', page)
+          .replace('<head>', '<head><base href="/games/">')
+          .replace('https://www.googletagmanager.com/gtag/js', 'about:blank');
       }
 
       function buildSeats(names, html) {
