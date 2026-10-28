@@ -535,12 +535,6 @@
     try { localStorage.setItem(ACHIEVEMENT_STATE_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
   }
 
-  // { id: ISO date } for unlocked achievements only
-  function loadUnlocked() {
-    const state = loadAchievementState();
-    return Object.fromEntries(Object.keys(state).filter(id => state[id].unlocked).map(id => [id, state[id].unlocked]));
-  }
-
   // Unlocks the given ids (an unlock always makes the title visible); returns the ones that are new
   // Records first unlocks, and the first time a gameplay achievement is earned without Undo.
   // Returns the first unlocks, and the upgrades: ones unlocked before that just got their No Undo tag.
@@ -914,7 +908,7 @@
               <div class="cdk-achievements">${repeats.map(achievementHTML).join('')}</div></details>`
           : '');
       $('teaser').innerHTML = teaser
-        ? `🔒 An achievement you haven't unlocked yet: <strong>${teaser.name}</strong><small>Now listed under Teased in Achievements. How to get it is up to you.</small>`
+        ? `🔒 An achievement you haven't unlocked yet: <strong>${teaser.name}</strong><small>Listed under Teased in Achievements. How to get it is up to you.</small>`
         : 'You\'ve unlocked every achievement. 🏆';
       const checked = loadCompletionist();
       const st = compStats(checked);
@@ -1320,9 +1314,12 @@
     ({ fresh: newChecks, freshGold: newGoldChecks } = recordCompletionist(score.items, !undoUsed));  // before the checks, so this game counts toward Completionist ones
     earned = checkAchievements();
     ({ fresh: newlyUnlocked, upgraded } = unlock(earned, !undoUsed));
-    const unlocked = loadUnlocked();
-    const locked = ACHIEVEMENTS.filter(a => !unlocked[a.id]);
-    teaser = locked.length ? locked[Math.floor(Math.random() * locked.length)] : null;
+    // Tease one whose name is still "???"; once every locked name is known, repeat a teased one
+    const state = loadAchievementState();
+    const locked = ACHIEVEMENTS.filter(a => !state[a.id].unlocked);
+    const unknown = locked.filter(a => !state[a.id].titleVisible);
+    const pool = unknown.length ? unknown : locked;
+    teaser = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
     if (teaser) reveal(teaser.id);
     newBest = best === null || score.total > best;
     if (newBest) {
