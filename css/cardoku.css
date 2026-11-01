@@ -1986,3 +1986,20 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   display: inline;
   margin: 0;
 }
+
+/* "Play the real game" banner above the board */
+.cdk-real-game-banner {
+  background: #fff3b0;
+  border: 1px solid #e6c200;
+  border-left: 6px solid #e6c200;
+  color: #4a3b00;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin: 0 0 1rem;
+  font-weight: 500;
+}
+.cdk-real-game-banner a {
+  color: #4a3b00;
+  font-weight: 700;
+  text-decoration: underline;
+}
