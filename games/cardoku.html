@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
   <link rel="stylesheet" href="../css/style.css?v=2">
-  <link rel="stylesheet" href="../css/cardoku.css?v=5">
+  <link rel="stylesheet" href="../css/cardoku.css?v=6">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -309,6 +309,13 @@
       <button type="button" class="btn btn-primary cdk-progress-btn" id="progressBtn" hidden>Share Your
         Progress</button>
 
+      <!-- Moving to the Cardoku app: a transfer code for this browser's progress (js/cardoku-transfer.js) -->
+      <div class="cdk-transfer">
+        <p class="text-muted" id="transferStatus" hidden></p>
+        <p class="cdk-transfer-code" id="transferCode" hidden></p>
+        <button type="button" class="btn btn-outline cdk-progress-btn" id="transferBtn" hidden>Move to the Cardoku app</button>
+      </div>
+
       <p class="text-muted cdk-share-note" id="shareNote" hidden>When you finish a game, the final board state is shared
         anonymously with Jace. No personal information is sent.</p>
     </div>
@@ -441,6 +448,7 @@
     });
   </script>
   <script src="../js/cardoku.js?v=1"></script>
+  <script src="../js/cardoku-transfer.js?v=1"></script>
 </body>
 
 </html>

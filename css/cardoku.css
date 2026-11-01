@@ -2003,3 +2003,16 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   font-weight: 700;
   text-decoration: underline;
 }
+
+/* Moving to the Cardoku app (js/cardoku-transfer.js) */
+.cdk-transfer {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.cdk-transfer-code {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0.5rem 0;
+}
