@@ -2010,6 +2010,14 @@ body.cdk-dragging .cdk-slot.has-wild:hover::after {
   margin-top: 1.5rem;
 }
 
+/* Outside .cdk, so the site's white-on-dark outline button needs the page's light version */
+.cdk-transfer .btn-outline {
+  color: var(--navy);
+  border-color: var(--navy-100);
+  background: var(--white);
+  margin-top: 1rem;
+}
+
 .cdk-transfer-code {
   font-size: 2rem;
   font-weight: 700;

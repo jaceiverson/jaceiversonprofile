@@ -74,18 +74,18 @@
   const codeBox = document.getElementById('transferCode');
   if (!button) return;
 
-  let p;
-  try {
-    p = progress();
-  } catch (e) {
-    return;  // storage blocked: nothing to move
-  }
-  const unlocked = Object.values(p.achievements).filter(a => a.unlocked).length;
-  if (!p.games.length && !unlocked) return;
+  // Always shown, with what this browser has (or why it can't tell), so it's never mysteriously missing
   button.hidden = false;
   status.hidden = false;
-  status.textContent = `Moving to the app? This browser has ${p.games.length} saved game${p.games.length === 1 ? '' : 's'} ` +
-    `and ${unlocked} achievement${unlocked === 1 ? '' : 's'}. Make a code, then enter it in the app under Transfer Data.`;
+  try {
+    const p = progress();
+    const unlocked = Object.values(p.achievements).filter(a => a.unlocked).length;
+    status.textContent = `Moving to the app? This browser has ${p.games.length} saved game${p.games.length === 1 ? '' : 's'} ` +
+      `(${p.finished} played) and ${unlocked} achievement${unlocked === 1 ? '' : 's'}. ` +
+      'Make a code, then enter it in the app under Transfer Data.';
+  } catch (e) {
+    status.textContent = "Moving to the app? Couldn't read this browser's saved games: " + e.message;
+  }
 
   button.addEventListener('click', async () => {
     button.disabled = true;
@@ -105,7 +105,7 @@
         'It works once, within 7 days. Everything stays here too.';
       button.textContent = 'Make a new code';
     } catch (e) {
-      status.textContent = "Couldn't make a code. Check your connection and try again.";
+      status.textContent = "Couldn't make a code (" + e.message + '). Check your connection and try again.';
       button.textContent = 'Move to the Cardoku app';
     }
     button.disabled = false;
