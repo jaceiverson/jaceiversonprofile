@@ -197,3 +197,15 @@ dialog.camel-game.round-results { position: fixed; inset: 0; margin: auto; heigh
 .camel-game .journal-round summary { cursor: pointer; padding: 12px 0; font-size: 13px; font-weight: 700; }
 .camel-game .journal-round summary span { float: right; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 12px; }
 .camel-game .journal-round ol { max-height: 260px; overflow: auto; padding: 0 8px 0 22px; margin: 0 0 14px; }
+
+.camel-game .welcome-title .help-pill {
+  display: inline-flex;
+  width: auto;
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #eeeee2;
+  font-size: 12px;
+}
+
+.camel-game .welcome-title { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
