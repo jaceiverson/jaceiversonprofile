@@ -4,15 +4,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    const rookParams = new URLSearchParams(location.search);
+    if (rookParams.get('embed') === '1') document.documentElement.classList.add('rook-embed');
+    if (rookParams.get('localPractice') === '1') document.documentElement.classList.add('rook-private-practice');
+  </script>
   <title>Rook — Jace Iverson</title>
   <meta name="description" content="Play Rook - The Card Game (Dixon Family Rules).">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
   <link rel="stylesheet" href="../css/style.css?v=2">
-  <link rel="stylesheet" href="../css/rook.css?v=4">
+  <link rel="stylesheet" href="../css/rook.css?v=35">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -66,13 +73,9 @@
         <div class="rook-online" id="onlinePanel" hidden>
           <span class="rook-online-msg" id="onlineMsg" aria-live="polite"></span>
           <span class="rook-voice-msg" id="voiceMsg" role="alert" hidden></span>
-          <!-- Host-only game options, both off by default -->
-          <span class="rook-options" id="hostOptions" hidden>
-            <label class="rook-toggle" title="Show each team's points taken during the hand">
-              <input type="checkbox" data-option="live"> Live scores
-            </label>
-            <label class="rook-toggle" title="Let everyone look back at every trick: who played what and who took it">
-              <input type="checkbox" data-option="log"> Game log
+          <span class="rook-options" id="practiceOptions" hidden>
+            <label class="rook-toggle" title="Show or hide the trick-by-trick log during practice">
+              <input type="checkbox" id="practiceLog"> Game log
             </label>
           </span>
           <!-- Opt-in voice chat (js/game-voice.js) -->
@@ -82,13 +85,68 @@
             <button type="button" class="btn btn-outline btn-sm" id="voiceLeaveBtn" hidden>Leave Voice</button>
           </span>
           <button type="button" class="btn btn-outline btn-sm" id="copyBtn" hidden>Copy Link</button>
+          <button type="button" class="btn btn-outline btn-sm" id="copyPracticeSeedBtn" hidden>Copy deal code</button>
           <button type="button" class="btn btn-navy btn-sm" id="rejoinBtn" hidden>Rejoin</button>
           <button type="button" class="btn btn-outline btn-sm" id="leaveBtn" hidden>Leave Game</button>
         </div>
 
+        <section class="rook-host-config" id="hostOptions" aria-labelledby="hostConfigTitle" hidden>
+          <h2 id="hostConfigTitle">Game settings</h2>
+          <div class="rook-host-config-controls">
+            <label class="rook-game-type-control" for="gameGoalMode"><span>Game type</span>
+              <select id="gameGoalMode">
+                <option value="points500">First team to 500 (default)</option>
+                <option value="points">First team to a point total</option>
+                <option value="hands">Set number of hands</option>
+              </select>
+            </label>
+            <label class="rook-game-goal-value" id="gameGoalValueRow" for="gameGoalValue" hidden>
+              <span id="gameGoalValueLabel">Point total</span>
+              <input id="gameGoalValue" type="number" min="100" max="5000" step="5" value="750">
+            </label>
+            <label class="rook-toggle" title="Show each team's points taken during the hand">
+              <input type="checkbox" data-option="live"> Live scores
+            </label>
+            <label class="rook-toggle" title="Let everyone look back at every trick: who played what and who took it">
+              <input type="checkbox" data-option="log"> Game log
+            </label>
+          </div>
+          <p class="rook-host-config-note">Game Type is set before the first deal. Live Scores and Game Log can be changed during play.</p>
+        </section>
+
         <div class="rook-idle" id="idle">
-          <p>Rook needs four players, each on their own device.</p>
-          <button type="button" class="btn btn-primary" id="openModalBtn">Host or Join a Game</button>
+          <section class="rook-start-panel" aria-labelledby="modeTitle">
+            <h2 id="modeTitle">Play Rook</h2>
+            <div class="rook-name">
+              <label class="rook-modal-label" for="nameInput">Your name</label>
+              <input type="text" id="nameInput" maxlength="16" placeholder="Name" autocomplete="off" data-1p-ignore data-lpignore="true">
+              <p class="rook-name-error" id="nameError" hidden>Enter your name first.</p>
+            </div>
+            <div class="rook-modes">
+              <div class="rook-mode">
+                <span class="rook-mode-icon">🐦</span><strong>Host a Game</strong>
+                <span class="rook-mode-desc">Start a table and invite three friends.</span>
+                <button type="button" class="btn btn-navy btn-sm" id="hostBtn">Host a Game</button>
+              </div>
+              <div class="rook-mode rook-practice-mode" id="practiceModeCard">
+                <span class="rook-mode-icon">🃏</span><strong>Practice</strong>
+                <span class="rook-mode-desc">Play with three computer players. Reuse a deal code to replay the same cards.</span>
+                <label class="rook-modal-label rook-practice-seed-label" for="practiceSeedInput">Deal code (optional)</label>
+                <input type="text" id="practiceSeedInput" maxlength="12" placeholder="New random deal" autocomplete="off" spellcheck="false">
+                <label class="rook-practice-rig"><input type="checkbox" id="practiceGrandSlam"> Grand slam test hand</label>
+                <label class="rook-practice-suit" id="practiceGrandSlamSuitRow" for="practiceGrandSlamSuit" hidden>
+                  <span>Trump color</span><select id="practiceGrandSlamSuit"><option value="r">Red</option><option value="b">Black</option><option value="g">Green</option><option value="y">Yellow</option></select>
+                </label>
+                <span class="rook-practice-rig-note" id="practiceGrandSlamNote" hidden>Gives you the Rook, the 1, and ranks 4–14 in that color.</span>
+                <button type="button" class="btn btn-primary btn-sm" id="practiceBtn">Start Practice</button>
+              </div>
+              <div class="rook-mode">
+                <span class="rook-mode-icon">🌐</span><strong>Join a Game</strong>
+                <span class="rook-mode-desc">Got a code or link from the host?</span>
+                <div class="rook-join"><input type="text" id="joinInput" placeholder="Game code" aria-label="Game code" autocomplete="off"><button type="button" class="btn btn-primary btn-sm" id="joinBtn">Join</button></div>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div id="lobby" hidden>
@@ -102,16 +160,53 @@
         </div>
 
         <div id="table" hidden>
-          <div class="rook-scoreboard" id="scoreboard"></div>
-          <div class="rook-status" id="status" aria-live="polite"></div>
-          <div class="rook-felt" id="felt"></div>
-          <div class="rook-actions" id="actions"></div>
-          <div class="rook-hand" id="hand"></div>
-          <div class="rook-hand-hint" id="handHint"></div>
-          <div class="rook-last" id="lastTrick"></div>
-          <div class="rook-history rook-log" id="gameLog"></div>
-          <div class="rook-history" id="history"></div>
+          <div class="rook-table-tools" id="tableTools">
+            <button type="button" class="btn btn-outline btn-sm" id="scoreDialogOpen" disabled>Score sheet</button>
+            <button type="button" class="btn btn-outline btn-sm" id="logDialogOpen" hidden>Game log</button>
+          </div>
+          <div class="rook-desktop-layout" id="desktopLayout">
+            <div class="rook-scoreboard" id="scoreboard"></div>
+            <div class="rook-status" id="status" aria-live="polite"></div>
+            <div class="rook-felt" id="felt"></div>
+            <div class="rook-actions" id="actions"></div>
+            <div class="rook-hand-preferences">
+              <label class="rook-toggle rook-confirm-card-toggle"><input type="checkbox" id="confirmCardBeforePlayToggle"> Confirm card before play</label>
+            </div>
+            <div class="rook-hand" id="hand"></div>
+            <div class="rook-hand-sorting" id="handSorting"></div>
+            <div class="rook-hand-hint" id="handHint"></div>
+            <div class="rook-last" id="lastTrick"></div>
+          </div>
         </div>
+
+        <dialog class="rook-data-dialog" id="scoreDialog" aria-labelledby="scoreDialogTitle">
+          <div class="rook-data-dialog-inner">
+            <div class="rook-data-dialog-heading">
+              <h2 id="scoreDialogTitle">Score sheet</h2><button type="button" class="btn btn-outline btn-sm"
+                data-close-dialog>Close</button>
+            </div>
+            <div class="rook-history" id="history"></div>
+          </div>
+        </dialog>
+        <dialog class="rook-data-dialog" id="logDialog" aria-labelledby="logDialogTitle">
+          <div class="rook-data-dialog-inner">
+            <div class="rook-data-dialog-heading">
+              <h2 id="logDialogTitle">Game log</h2><button type="button" class="btn btn-outline btn-sm"
+                data-close-dialog>Close</button>
+            </div>
+            <div class="rook-history rook-log" id="gameLog"></div>
+          </div>
+        </dialog>
+        <dialog class="rook-data-dialog rook-dropped-dialog" id="droppedCardsDialog"
+          aria-labelledby="droppedCardsDialogTitle">
+          <div class="rook-data-dialog-inner">
+            <div class="rook-data-dialog-heading">
+              <h2 id="droppedCardsDialogTitle">Dropped widow cards</h2><button type="button"
+                class="btn btn-outline btn-sm" data-close-dialog>Close</button>
+            </div>
+            <div class="rook-dropped-cards" id="droppedCardList"></div>
+          </div>
+        </dialog>
 
         <details class="rook-rules-text rook-section" data-section="rules">
           <summary class="section-header">
@@ -133,7 +228,7 @@
               100.</li>
             <li>The winner can raise their own bid before seeing the widow.</li>
             <li>The widow is turned face up for everyone. Once all four players click <strong>Got It</strong>,
-              the bid winner picks it up, buries any 5 cards, and names trump.</li>
+              the bid winner picks it up, drops any 5 cards, confirms the drops, and names trump.</li>
           </ol>
 
           <h3>Playing Tricks</h3>
@@ -148,14 +243,16 @@
           <h3>Scoring</h3>
           <ul>
             <li>Point cards: Rook 20, each 1 is 15, each 10 and 14 is 10, each 5 is 5. That's 180 points per hand.</li>
-            <li>The team that takes the last trick also gets the points buried in the widow.</li>
-            <li>The bidding team scores their bid if they took at least that many points, and loses their bid
-              if they didn't. The other team scores whatever points they took.</li>
+            <li>A team that takes all 180 points scores a grand slam and earns all 180 points.</li>
+            <li>The team that takes the last trick also gets the points dropped into the widow.</li>
+            <li>Outside of a grand slam, the bidding team scores their bid if they took at least that many
+              points, and loses their bid if they didn't. The other team scores whatever points they took.</li>
             <li>First team to 500 (and ahead) wins.</li>
             <li>When the game ends, anyone can download it as a CSV for a spreadsheet: <strong>Hand by Hand</strong>
               (one row per hand), <strong>Trick by Trick</strong> (one row per trick), or, after a few rounds of
               <strong>Play Again</strong>, <strong>All Games</strong> from the session. The host can also export the
-              game so far from the Score Sheet at any time.</li>
+              game so far from the Score Sheet at any time.
+            </li>
           </ul>
 
           <h3>Playing Online</h3>
@@ -184,37 +281,6 @@
     </div>
   </section>
 
-  <!-- Name + host/join picker -->
-  <dialog class="rook-modal" id="modeModal" aria-labelledby="modeTitle">
-    <h2 id="modeTitle">Play Rook</h2>
-
-    <div class="rook-name">
-      <label class="rook-modal-label" for="nameInput">Your name</label>
-      <input type="text" id="nameInput" maxlength="16" placeholder="Name" autocomplete="off" data-1p-ignore
-        data-lpignore="true">
-      <p class="rook-name-error" id="nameError" hidden>Enter your name first.</p>
-    </div>
-
-    <div class="rook-modes">
-      <div class="rook-mode">
-        <span class="rook-mode-icon">🐦</span>
-        <strong>Host a Game</strong>
-        <span class="rook-mode-desc">Start a table and invite three friends.</span>
-        <button type="button" class="btn btn-navy btn-sm" id="hostBtn">Host a Game</button>
-      </div>
-
-      <div class="rook-mode">
-        <span class="rook-mode-icon">🌐</span>
-        <strong>Join a Game</strong>
-        <span class="rook-mode-desc">Got a code or link from the host?</span>
-        <div class="rook-join">
-          <input type="text" id="joinInput" placeholder="Game code" aria-label="Game code" autocomplete="off">
-          <button type="button" class="btn btn-primary btn-sm" id="joinBtn">Join</button>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
@@ -242,8 +308,8 @@
       menu.classList.toggle('open');
     });
   </script>
-  <script src="../js/rook-engine.js?v=1"></script>
-  <script src="../js/rook.js?v=1"></script>
+  <script src="../js/rook-engine.js?v=4"></script>
+  <script src="../js/rook.js?v=21"></script>
 </body>
 
 </html>

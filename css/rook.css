@@ -72,6 +72,34 @@
 }
 
 .rook-idle p { margin-bottom: 1rem; color: var(--grey-700); }
+.rook-start-panel h2 { color: var(--navy); margin: 0 0 1rem; }
+.rook-start-panel .rook-name { margin-bottom: 1.25rem; }
+.rook-start-panel .rook-name input { background: #fff; }
+.rook-start-panel .rook-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); text-align: left; }
+.rook-start-panel .rook-mode { height: 100%; }
+.rook-start-panel .rook-practice-mode { display: none; }
+.rook-start-panel .rook-mode input#practiceSeedInput { box-sizing: border-box; }
+html.rook-private-practice .rook-start-panel h2,
+html.rook-private-practice .rook-start-panel .rook-mode:not(.rook-practice-mode) { display: none !important; }
+html.rook-private-practice .rook-start-panel .rook-practice-mode { display: flex !important; }
+html.rook-private-practice .rook-start-panel .rook-modes { grid-template-columns: minmax(0, 520px); justify-content: center; }
+html.rook-private-practice .rook-idle { padding: 0.5rem; border: 0; background: transparent; }
+.rook-host-config {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--warm-dark);
+  border-radius: var(--radius);
+  background: var(--warm);
+}
+.rook-host-config h2 { margin: 0 0 0.55rem; color: var(--navy); font-size: 1rem; }
+.rook-host-config-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; }
+.rook-host-config-note { margin: 0.5rem 0 0; color: var(--grey-500); font-size: 0.8rem; }
+.rook-game-type-control,
+.rook-game-goal-value { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--navy); font-size: 0.9rem; font-weight: 600; }
+.rook-game-type-control select,
+.rook-game-goal-value input { max-width: 100%; }
+.rook-host-config input:disabled,
+.rook-host-config select:disabled { opacity: 0.75; }
 
 /* ---------- Lobby ---------- */
 .rook-lobby-teams {
@@ -279,6 +307,7 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
 
 /* ---------- Deal animation ---------- */
 .rook-felt { position: relative; }   /* flying cards are positioned against the felt */
+.rook-dropped-felt-button { position: absolute; right: 0.75rem; bottom: 0.75rem; z-index: 3; font-size: 0.8rem; }
 
 .rook-deck {
   position: relative;
@@ -364,7 +393,7 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
   border: 2px solid transparent;
   color: var(--white);
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 0.9;
   transition: opacity var(--transition), border-color var(--transition);
 }
 
@@ -374,8 +403,12 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
 .rook-trump.g { background: #2e7d32; }
 .rook-trump.y { background: #c99a06; }
 .rook-trump.b { background: #222; }
+.rook-trump strong { display: inline-grid; place-items: center; min-width: 1.35em; min-height: 1.35em; margin-left: 0.35rem; border-radius: 50%; background: rgba(255, 255, 255, 0.22); font-size: 0.8em; }
+.rook-trump.active { transform: translateY(-2px); }
+.rook-widow-toggle { flex-basis: 100%; justify-content: center; }
 
 .rook-count { font-size: 0.9rem; color: var(--grey-700); font-weight: 600; }
+.rook-step { flex-basis: 100%; text-align: center; color: var(--navy); font-weight: 700; }
 
 /* Hand summary shown between hands */
 .rook-summary {
@@ -428,6 +461,17 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
   padding: 1.1rem 0 0.25rem;
   min-height: calc(var(--cw) * 1.6 + 1.35rem);
 }
+.rook-hand.rtl { flex-direction: row-reverse; }
+.rook-hand.grouped { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; padding-top: 0.5rem; }
+.rook-suit-row { display: flex; align-items: center; gap: 0.45rem; min-height: calc(var(--cw) * 1.6 + 2.5rem); }
+.rook-suit-label { flex: 0 0 4.2rem; font-size: 0.72rem; font-weight: 700; text-align: right; color: var(--grey-700); }
+.rook-suit-label.b { color: #222; } .rook-suit-label.r { color: #c62828; }
+.rook-suit-label.g { color: #2e7d32; } .rook-suit-label.y { color: #a77d00; }
+.rook-suit-label.rook-label { color: var(--navy); }
+.rook-suit-cards { display: flex; flex: 1; min-width: 0; justify-content: flex-start; }
+.rook-hand.rtl .rook-suit-cards { flex-direction: row-reverse; }
+.rook-suit-cards { overflow-x: auto; overflow-y: visible; padding-block: 1.25rem; }
+.rook-suit-cards .rook-card { flex: 0 0 var(--cw); }
 
 .rook-hand:empty { min-height: 0; padding: 0; }
 
@@ -441,7 +485,8 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
   transition: transform 0.15s ease;
 }
 
-.rook-card:last-child { flex-shrink: 0; }
+.rook-hand:not(.rtl) > .rook-card:last-child { flex-shrink: 0; }
+.rook-hand.rtl:not(.grouped) > .rook-card:first-child { flex-shrink: 0; }
 
 .rook-card img {
   display: block;
@@ -457,12 +502,27 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
 
 .rook-card.live { cursor: pointer; }
 .rook-card.live:hover { transform: translateY(-8px); }
+.rook-card.dim { z-index: 0; }
 .rook-card.dim img { filter: brightness(0.6) grayscale(0.4); }
+.rook-card.live { z-index: 1; }
 .rook-card.sel { transform: translateY(-16px); }
 .rook-card.sel img { box-shadow: 0 0 0 3px var(--warm-darker), -2px 1px 5px rgba(20, 54, 66, 0.35); }
 .rook-card.new img { outline: 3px solid var(--accent); outline-offset: -3px; }
+.rook-card.sel { z-index: 2; }
+.rook-card.pending { transform: translateY(-16px); z-index: 2; }
+.rook-card.pending img { box-shadow: 0 0 0 3px var(--warm-darker), -2px 1px 5px rgba(20, 54, 66, 0.35); }
+.rook-play-confirm-label { font-weight: 600; color: var(--navy); }
+.rook-hand-preferences { display: flex; justify-content: center; margin: 0.2rem 0 0; }
+.rook-confirm-card-toggle { margin: 0; }
+.rook-hand-sorting { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0.5rem 0; }
 
 .rook-hand-hint { text-align: center; font-size: 0.85rem; color: var(--grey-500); min-height: 1.3rem; }
+.rook-summary.grand-slam { border: 2px solid #f2b632; box-shadow: 0 0 24px rgba(242, 182, 50, 0.35); }
+.rook-slam-label { color: #b77900; font-size: 1.2rem; }
+.rook-fireworks { position: fixed; inset: 0; z-index: 10000; pointer-events: none; overflow: hidden; }
+.rook-fireworks i { position: absolute; left: var(--x); top: var(--y); width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: hsl(var(--hue) 95% 60%); box-shadow: 0 0 10px 2px hsl(var(--hue) 95% 60%); opacity: 0; animation: rook-firework 1.8s var(--delay) ease-out forwards; }
+@keyframes rook-firework { 0% { transform: rotate(var(--angle)) translateX(0) scale(0.25); opacity: 1; } 75% { opacity: 1; } 100% { transform: rotate(var(--angle)) translateX(var(--distance)) scale(0.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rook-fireworks { display: none; } }
 
 /* ---------- Last trick + history ---------- */
 .rook-last {
@@ -495,6 +555,80 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
 }
 
 .rook-history th { color: var(--grey-500); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+.rook-paper-scorecard {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1.25rem 1.25rem 2.5rem;
+  border: 1px solid #e2d487;
+  border-radius: 4px;
+  background-color: #fff9d8;
+  background-image: linear-gradient(to right, transparent 0, transparent 1.55rem, rgba(205, 73, 73, 0.38) 1.55rem, rgba(205, 73, 73, 0.38) 1.62rem, transparent 1.62rem);
+  box-shadow: 0 2px 8px rgba(80, 70, 30, 0.12);
+  font-family: 'Caveat', 'Bradley Hand', 'Segoe Print', cursive;
+  clip-path: polygon(0 8px, 5% 4px, 10% 9px, 16% 3px, 22% 8px, 29% 4px, 36% 9px, 44% 3px, 51% 8px, 59% 4px, 67% 9px, 74% 3px, 82% 8px, 90% 4px, 96% 9px, 100% 5px, 100% 100%, 0 100%);
+}
+.rook-paper-tape {
+  content: "";
+  position: absolute;
+  top: 0.05rem;
+  width: 4.2rem;
+  height: 1.25rem;
+  border: 1px solid rgba(173, 151, 87, 0.4);
+  background: rgba(239, 226, 174, 0.58);
+  box-shadow: 0 1px 2px rgba(80, 70, 30, 0.12);
+  transform: rotate(var(--tape-turn, -3deg));
+  pointer-events: none;
+  z-index: 1;
+}
+.rook-paper-scorecard.tearing { animation: rook-paper-tear 0.5s ease-in forwards; transform-origin: 15% 50%; }
+@keyframes rook-paper-tear {
+  0% { clip-path: inset(0); transform: translate(0) rotate(0); opacity: 1; }
+  55% { clip-path: polygon(0 0, 100% 0, 100% 88%, 85% 93%, 69% 88%, 53% 94%, 36% 89%, 18% 94%, 0 89%); transform: translate(0) rotate(0); opacity: 1; }
+  100% { clip-path: polygon(0 0, 100% 0, 100% 88%, 85% 93%, 69% 88%, 53% 94%, 36% 89%, 18% 94%, 0 89%); transform: translate(2rem, -1rem) rotate(2deg); opacity: 0; }
+}
+.rook-paper-pagination { display: flex; align-items: center; justify-content: center; gap: 0.65rem; margin: 0.35rem 0 0.5rem; font: 500 0.85rem 'Inter', sans-serif; color: var(--grey-700); }
+.rook-paper-pagination .btn:disabled { opacity: 0.45; cursor: default; }
+.rook-paper-scorecard h3 small { margin-left: 0.35rem; color: var(--grey-500); font: 500 0.78rem 'Inter', sans-serif; }
+.rook-score-ack { display: grid; justify-items: center; gap: 0.35rem; padding: 0.8rem 0 0.1rem; text-align: center; font: 500 0.95rem 'Inter', sans-serif; }
+.rook-score-ack p { margin: 0; }
+.rook-paper-spread { display: flex; align-items: flex-start; gap: 1rem; overflow-x: auto; padding: 0.4rem 0.2rem 0.8rem; }
+.rook-paper-spread .rook-paper-scorecard { flex: 0 0 min(42vw, 470px); }
+@media (prefers-reduced-motion: reduce) { .rook-paper-scorecard.tearing { animation: none; opacity: 0; } }
+.rook-paper-scorecard table {
+  border-collapse: collapse;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 2.95rem, rgba(94, 154, 190, 0.28) 2.95rem, rgba(94, 154, 190, 0.28) 3rem);
+  background-size: 100% 3rem;
+}
+.rook-paper-scorecard th, .rook-paper-scorecard td { height: 3rem; padding: 0.15rem 0.8rem; border: 0; font-size: 1.35rem; }
+.rook-paper-scorecard tbody td { vertical-align: bottom; padding-bottom: 0.12rem; }
+.rook-paper-scorecard h3 { font-family: 'Caveat', 'Bradley Hand', 'Segoe Print', cursive; font-size: 1.7rem; }
+.rook-paper-scorecard thead th { font-family: 'Inter', sans-serif; font-size: 0.75rem; }
+.rook-paper-scorecard .rook-paper-bid-row.has-total td > span { display: inline-block; min-width: 2.5rem; padding: 0 0.15rem; border-bottom: 2px solid rgba(70, 70, 55, 0.75); }
+.rook-paper-scorecard .rook-paper-total td { font-weight: 600; }
+.rook-paper-minus { color: #c62828; }
+
+.rook-table-tools { display: flex; justify-content: flex-end; gap: 0.5rem; margin: 0 0 0.75rem; }
+.rook-data-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; width: min(1100px, calc(100vw - 2rem)); max-width: none; max-height: min(85vh, 900px); padding: 1.25rem; border: 1px solid var(--grey-200); border-radius: var(--radius); color: var(--navy); }
+#scoreDialog { width: min(760px, calc(100vw - 2rem)); }
+#scoreDialog.rook-score-spread { width: min(96vw, 1600px); }
+.rook-data-dialog::backdrop { background: rgba(17, 34, 40, 0.62); }
+.rook-data-dialog-inner { max-height: calc(85vh - 2.5rem); overflow: auto; }
+.rook-data-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
+.rook-data-dialog-heading h2 { color: var(--navy); font-size: 1.25rem; margin: 0; }
+.rook-data-dialog .rook-history { margin-top: 0; }
+.rook-dropped-cards { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.5rem 0; }
+.rook-dropped-cards figure { display: grid; justify-items: center; gap: 0.3rem; margin: 0; }
+.rook-dropped-cards .rook-cardimg { --tw: clamp(76px, 13vw, 120px); border-radius: 7px; box-shadow: 0 2px 8px rgba(20, 54, 66, 0.2); }
+@media (max-width: 700px) {
+  .rook-paper-spread .rook-paper-scorecard { flex-basis: min(82vw, 430px); }
+}
+
+html.rook-embed .navbar,
+html.rook-embed .page-header,
+html.rook-embed footer,
+html.rook-embed .rook-rules-text { display: none !important; }
+html.rook-embed .section { padding: 0.5rem 0; }
+html.rook-embed .container { width: 100%; max-width: none; padding-left: 1rem; padding-right: 1rem; }
 
 /* ---------- Modal ---------- */
 .rook-modal {
@@ -538,14 +672,33 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
   min-width: 0;
 }
 
-.rook-name input { width: min(280px, 100%); text-align: center; font-weight: 600; }
+.rook-name input {
+  width: min(280px, 100%);
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--grey-300);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+.rook-name input:focus,
+.rook-join input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rook-practice-seed-label { margin-top: 0.35rem; }
+.rook-practice-rig { display: flex; align-items: center; gap: 0.4rem; margin: 0.45rem 0 0.25rem; font-size: 0.9rem; }
+.rook-practice-suit { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; }
+.rook-practice-suit select { width: auto; min-width: 7rem; }
+.rook-practice-rig-note { font-size: 0.78rem; color: #687386; margin-bottom: 0.35rem; }
+.rook-mode input#practiceSeedInput { width: 100%; text-align: center; font-size: 0.85rem; }
 .rook-name input.invalid { border-color: #c62828; box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.2); }
 .rook-name-error { color: #c62828; font-size: 0.85rem; margin-top: 0.35rem; }
 .rook-name-error[hidden] { display: none; }
 
 .rook-modes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -574,10 +727,29 @@ button.rook-lobby-seat:hover { border-color: var(--navy-100); background: var(--
   .rook-modal { padding: 1.5rem 1.25rem; }
   .rook-modes { grid-template-columns: 1fr; }
   .rook-lobby-teams { grid-template-columns: 1fr; }
+  .rook-host-config-controls { align-items: flex-start; flex-direction: column; gap: 0.65rem; }
+  .rook-game-type-control { align-items: flex-start; flex-direction: column; }
+  .rook-game-type-control select { width: 100%; }
+  .rook-game-goal-value { width: 100%; }
+  .rook-game-goal-value input { flex: 1; min-width: 0; }
   .rook-scoreboard { grid-template-columns: 1fr 1fr; }
   .rook-handinfo { grid-column: 1 / -1; grid-row: 2; }
   .rook-felt { padding: 0.5rem 0.25rem; gap: 0.25rem; }
   .rook-seat { padding: 0.3rem 0.35rem; font-size: 0.85rem; }
+  .rook-suit-row { min-height: calc(var(--cw) * 1.6 + 2.5rem); }
+  .rook-suit-label { flex-basis: 3.5rem; font-size: 0.65rem; }
+  .rook-hand.grouped { --cw: min(13vw, 70px); }
+}
+
+@media (min-width: 1200px) {
+  .rook { max-width: none; }
+  .rook-desktop-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  #scoreboard { width: 100%; }
 }
 
 /* ---------- Collapsible sections (same look as Cardoku) ---------- */

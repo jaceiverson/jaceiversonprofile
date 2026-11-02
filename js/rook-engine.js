@@ -67,10 +67,18 @@
 
   const minBid = G => (G.highBid ? G.highBid + 5 : MIN_BID);
 
-  function newGame(seats, pastGames = []) {
+  function normalizeGameType(type = {}) {
+    const mode = type.mode === 'hands' ? 'hands' : 'points';
+    const fallback = mode === 'hands' ? 10 : WIN_SCORE;
+    const max = mode === 'hands' ? 100 : 5000;
+    const value = Number.isFinite(Number(type.value)) ? Math.max(1, Math.min(max, Math.floor(Number(type.value)))) : fallback;
+    return { mode, value };
+  }
+
+  function newGame(seats, pastGames = [], type = { mode: 'points', value: WIN_SCORE }) {
     const G = {
       seats, scores: [0, 0], history: [], log: [], handNo: 0, dealer: -1, winner: null,
-      pastGames, gameNo: pastGames.length + 1   // earlier games this session, for the all-games export
+      pastGames, gameNo: pastGames.length + 1, gameType: normalizeGameType(type)
     };
     startHand(G);
     return G;
@@ -97,6 +105,7 @@
       bidWinner: null,
       bid: 0,
       widowSeen: [false, false, false, false],
+      scoreSeen: [false, false, false, false],
       trump: null,
       discards: [],
       trick: [],                        // [{ seat, card }] in play order
@@ -163,6 +172,12 @@
         if (G.widowSeen.every(Boolean)) pickUpWidow(G);
         return true;
 
+      case 'score-seen':
+        if (G.phase !== 'score-review' || G.scoreSeen[seat]) return false;
+        G.scoreSeen[seat] = true;
+        if (G.scoreSeen.every(Boolean)) startHand(G);
+        return true;
+
       case 'widow': {
         if (G.phase !== 'widow' || seat !== G.bidWinner) return false;
         const hand = G.hands[seat];
@@ -200,13 +215,11 @@
       }
 
       case 'next':
-        if (G.phase !== 'handover') return false;
-        startHand(G);
-        return true;
+        return false;
 
       case 'again':
         if (G.phase !== 'gameover') return false;
-        Object.assign(G, newGame(G.seats, G.pastGames.concat(currentGame(G))));
+        Object.assign(G, newGame(G.seats, G.pastGames.concat(currentGame(G)), G.gameType));
         return true;
     }
     return false;
@@ -226,37 +239,45 @@
     const lastTeam = teamOf(G.lastTrick.winner);
     const bidTeam = teamOf(G.bidWinner);
     const widowPts = sumPoints(G.discards);
-    G.taken[lastTeam] += widowPts;   // last trick takes the buried widow
+    G.taken[lastTeam] += widowPts;   // last trick takes the five cards dropped into the widow
 
+    const grandSlam = G.taken[0] === 180 || G.taken[1] === 180;
+    const slamTeam = G.taken[0] === 180 ? 0 : 1;
     const made = G.taken[bidTeam] >= G.bid;
     const delta = [0, 0];
-    delta[bidTeam] = made ? G.bid : -G.bid;
-    delta[1 - bidTeam] = G.taken[1 - bidTeam];
+    if (grandSlam) delta[slamTeam] = 180;
+    else {
+      delta[bidTeam] = made ? G.bid : -G.bid;
+      delta[1 - bidTeam] = G.taken[1 - bidTeam];
+    }
     G.scores = G.scores.map((s, t) => s + delta[t]);
 
     G.result = {
-      bidWinner: G.bidWinner, bid: G.bid, trump: G.trump, made, delta,
+      bidWinner: G.bidWinner, bid: G.bid, trump: G.trump, made, grandSlam, delta,
       taken: G.taken.slice(), widow: G.widow.slice(), discards: G.discards.slice(), widowPts, widowTeam: lastTeam
     };
     G.history.push({ hand: G.handNo, ...G.result, scores: G.scores.slice() });
 
-    // First to 500 wins, but only if they're ahead (game.py check_for_game_winner)
+    // Point goals end when a team reaches the goal and leads; fixed-hand games end after their final hand.
     const lead = G.scores[0] > G.scores[1] ? 0 : G.scores[1] > G.scores[0] ? 1 : null;
-    if (lead !== null && G.scores[lead] >= WIN_SCORE) {
+    const pointsReached = G.gameType.mode === 'points' && lead !== null && G.scores[lead] >= G.gameType.value;
+    const handsComplete = G.gameType.mode === 'hands' && G.handNo >= G.gameType.value;
+    if (pointsReached || handsComplete) {
       G.winner = lead;
       G.phase = 'gameover';
     } else {
-      G.phase = 'handover';
+      G.phase = 'score-review';
+      G.scoreSeen = [false, false, false, false];
     }
   }
 
-  // What one seat is allowed to see: their own hand, the widow until it's buried, and the trick log
+  // What one seat is allowed to see: their own hand, the widow until the drop is complete, and the trick log
   // if the host allows it (everyone gets the full log once the game is over)
   function viewFor(G, seat, { log = false, live = false } = {}) {
     const v = {
-      phase: G.phase, mySeat: seat, handNo: G.handNo, dealer: G.dealer, turn: G.turn,
+      phase: G.phase, mySeat: seat, handNo: G.handNo, dealer: G.dealer, turn: G.turn, gameType: G.gameType,
       bids: G.bids, highBid: G.highBid, highBidder: G.highBidder, bidWinner: G.bidWinner, bid: G.bid,
-      widowSeen: G.widowSeen, log: log || G.phase === 'gameover' ? G.log : null, live,
+      widowSeen: G.widowSeen, scoreSeen: G.scoreSeen, log: log || G.phase === 'gameover' ? G.log : null, live,
       trump: G.trump, trick: G.trick, trickDone: G.trickDone, trickNo: G.trickNo,
       taken: G.taken, tricksWon: G.tricksWon, lastTrick: G.lastTrick, scores: G.scores,
       history: G.history, result: G.result, winner: G.winner, gameNo: G.gameNo,
@@ -266,6 +287,7 @@
       hand: seat >= 0 ? G.hands[seat] : []
     };
     if (G.phase === 'reveal' || G.phase === 'widow') v.widow = G.widow;
+    if (seat === G.bidWinner && G.discards && G.discards.length === 5) v.droppedCards = G.discards.slice();
     return v;
   }
   // ---------- CSV export ----------
@@ -278,7 +300,7 @@
 
   // Snapshot of a game for exporting (names are kept as they were in that game)
   function currentGame(G) {
-    return { game: G.gameNo, names: G.seats.map(s => s.name), log: G.log, history: G.history };
+    return { game: G.gameNo, names: G.seats.map(s => s.name), log: G.log, history: G.history, gameType: G.gameType };
   }
 
   function csvCell(v) {
@@ -304,7 +326,7 @@
     };
   }
 
-  const HAND_HEAD = ['Game', 'Hand', 'Dealer', 'Bids', 'Bid Winner', 'Bidding Team', 'Bid', 'Trump', 'Widow', 'Buried'];
+  const HAND_HEAD = ['Game', 'Hand', 'Dealer', 'Bids', 'Bid Winner', 'Bidding Team', 'Bid', 'Trump', 'Widow', 'Dropped'];
   const RESULT_HEAD = ['Bid Made', 'Team 1 Points Taken', 'Team 2 Points Taken', 'Team 1 Hand Score',
     'Team 2 Hand Score', 'Team 1 Total', 'Team 2 Total'];
 

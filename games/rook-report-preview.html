@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rook Scorecard and Log Preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; color: #17343d; }
+    body { display: flex; flex-direction: column; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.6rem 1rem; background: #f8f7f1; border-bottom: 1px solid #d9e0e2; }
+    header strong { font-size: 1rem; }
+    header span { color: #64747a; font-size: 0.9rem; }
+    header a { color: #176b82; white-space: nowrap; }
+    iframe { flex: 1; width: 100%; min-height: 0; border: 0; }
+    @media (max-width: 600px) { header { align-items: flex-start; flex-wrap: wrap; } header span { order: 3; flex-basis: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Rook scorecard and game log preview</strong>
+    <span>10-hand sample game · Open the score sheet or game log to review the full game.</span>
+    <a href="rook.html">Open Rook</a>
+  </header>
+  <iframe src="rook.html?preview=reports&amp;embed=1&amp;sample=10" title="Completed 10-hand sample Rook game"></iframe>
+</body>
+</html>
