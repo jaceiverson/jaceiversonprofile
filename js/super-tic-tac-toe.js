@@ -70,7 +70,7 @@
     return [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(isOpen);
   }
 
-  const myTurn = () => myMark === null || state.turn === myMark;
+  const myTurn = () => myMark === null || !!(conn && conn.open && state.turn === myMark);
 
   // Applies a move if it's legal; returns whether it was applied.
   function play(b, c) {
@@ -114,6 +114,7 @@
   const opponent = () => esc(theirName || 'Your opponent');
 
   function statusText(playable) {
+    if (myMark !== null && !(conn && conn.open)) return 'Waiting for the other player to connect…';
     if (state.gameWinner === TIE) return "It's a draw!";
     if (state.gameWinner) {
       if (myMark === null) return `${mark(state.gameWinner)} wins the game! 🎉`;
@@ -155,6 +156,8 @@
     }
 
     statusEl.innerHTML = statusText(playable);
+    newBtn.textContent = state.gameWinner ? 'Play Again' : 'New Game';
+    newBtn.title = 'Start a fresh board with the same players and keep voice connected';
 
     // No undo online
     undoBtn.disabled = myMark !== null || history.length === 0;
@@ -179,6 +182,7 @@
   newBtn.addEventListener('click', () => {
     reset();
     send({ type: 'reset', rule });
+    renderVoice();
   });
 
   undoBtn.addEventListener('click', () => {
@@ -221,6 +225,7 @@
 
   function hostGame() {
     if (!peerAvailable()) return;
+    myMark = 'X'; reset(); renderVoice();
     const code = randomCode();
     showOnline('Creating game…');
     peer = new Peer(PEER_PREFIX + code);
@@ -238,6 +243,7 @@
 
   function joinGame(code) {
     if (!code || !peerAvailable()) return;
+    myMark = 'O'; reset(); renderVoice();
     showOnline('Connecting…');
     peer = new Peer();
     voice.attach(peer);
@@ -256,7 +262,9 @@
       renderVoice();
     });
     c.on('data', msg => {
-      if (msg.type === 'move') play(msg.b, msg.c);
+      if (msg.type === 'move') {
+        if (state.turn !== myMark && Number.isInteger(msg.b) && Number.isInteger(msg.c) && msg.b >= 0 && msg.b < 9 && msg.c >= 0 && msg.c < 9) play(msg.b, msg.c);
+      }
       else if (msg.type === 'reset') { rule = msg.rule === 'free' ? 'free' : 'dead'; reset(); }
       else if (msg.type === 'hello') {
         theirName = cleanName(msg.name);
@@ -271,7 +279,7 @@
     });
     c.on('close', () => {
       conn = null;
-      myMark = null;
+      // Keep the assigned online mark until Change Mode explicitly leaves the room.
       theirVoice = null;
       voice.leave();
       render();

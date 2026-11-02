@@ -837,8 +837,8 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 .page-header {
   background-color: var(--navy);
   color: var(--white);
-  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
-  min-height: clamp(12rem, 32vh, 18rem);
+  padding: clamp(1.25rem, 3vw, 1.75rem) 0;
+  min-height: 0;
   display: flex;
   align-items: center;
   position: relative;
@@ -872,7 +872,7 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 
 .page-header h1 {
   color: var(--white);
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: clamp(1.5rem, 3vw, 2rem);
   margin-bottom: 0.4rem;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 24px rgba(0, 0, 0, 0.2);
 }
