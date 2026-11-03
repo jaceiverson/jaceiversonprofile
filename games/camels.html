@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css?v=4">
-  <link rel="stylesheet" href="../css/camels.css?v=25">
+  <link rel="stylesheet" href="../css/camels.css?v=26">
   <script defer src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script defer src="../js/game-voice.js"></script>
   <script defer src="../js/camels-results.js?v=1"></script>
@@ -185,11 +185,29 @@
         </div>
       </div>
     </section>
-    <footer>An unofficial family implementation of Camel Up, designed by Steffen Bogen. Original interface and artwork.
+    <div class="game-credits">An unofficial family implementation of Camel Up, designed by Steffen Bogen. Original interface and artwork.
       <a href="https://boardgamegeek.com/filepage/176062/camel-up-second-edition-en-rules" target="_blank"
         rel="noopener">Second-edition rulebook ↗</a>
-    </footer>
+    </div>
   </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">Jace Iverson</span>
+        <div class="footer-links">
+          <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:iverson.jace@gmail.com">Email</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a
+            coffee</a>
+        </div>
+        <span>&copy;
+          <script>document.write(new Date().getFullYear())</script> Jace Iverson
+        </span>
+      </div>
+    </div>
+  </footer>
   <dialog id="roundModal" class="camel-game round-results" aria-labelledby="roundTitle">
     <div id="fireworks" class="fireworks" aria-hidden="true"></div><div id="coinFlights" class="coin-flights" aria-hidden="true"></div>
     <section id="score" class="scoring"></section>
