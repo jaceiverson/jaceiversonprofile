@@ -11,11 +11,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css?v=4">
-  <link rel="stylesheet" href="../css/camels.css?v=14">
+  <link rel="stylesheet" href="../css/camels.css?v=25">
   <script defer src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script defer src="../js/game-voice.js"></script>
-  <script defer src="../js/camels-engine.js?v=8"></script>
-  <script defer src="../js/camels.js?v=13"></script>
+  <script defer src="../js/camels-results.js?v=1"></script>
+  <script defer src="../js/camels-engine.js?v=10"></script>
+  <script defer src="../js/camels.js?v=27"></script>
 </head>
 
 <body class="camel-page">
@@ -51,12 +52,27 @@
     <section id="welcome" class="welcome panel">
       <div>
         <p class="eyebrow">The camels are bellowing</p>
-        <div class="welcome-title"><h2>Lets play.</h2><button id="helpBtn" class="help-pill" type="button" aria-haspopup="dialog" aria-controls="help">How to play →</button></div>
+        <div class="welcome-title">
+          <h2>Lets play.</h2><button id="helpBtn" class="help-pill" type="button" aria-haspopup="dialog"
+            aria-controls="help">How to play →</button>
+        </div>
         <p>Enter your name, and click "Create a room" to start.</p>
         <label for="name">Your name</label><input id="name" maxlength="24" placeholder="Desert adventurer"
           autocomplete="nickname">
         <div class="buttons"><button id="hostBtn" class="primary">Create a room ↗</button><button id="practiceBtn">Try
             on this device</button></div>
+        <label class="practice-count" for="practicePlayers">Local players
+          <select id="practicePlayers" aria-label="Players for Try on this device">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8" selected>8</option>
+          </select>
+        </label>
+        <p class="small">Alliances are available with 6–8 players. Pass this device between players to test.</p>
         <p class="small">The host keeps the room running. Keep their tab open.</p>
       </div>
       <div class="join-box">
@@ -87,20 +103,21 @@
             <section class="race panel">
               <div class="race-heading">
                 <div><span class="eyebrow">THE RACE TRACK</span>
-                  <h2>Desert dash <span id="leg"></span></h2>
+                  <h2>Camel Up<span id="leg"></span></h2>
                 </div>
-                <div id="diceCount" class="pill"></div>
               </div>
               <section class="betting-table" aria-labelledby="bettingTitle">
-                <p class="eyebrow" id="bettingTitle">LEG BETTING SLIPS</p>
-                <p class="small">Take the top slip to back this leg’s leader.</p>
-                <div id="bettingSlips" class="slip-market"></div>
+                <p class="eyebrow">End of Game Bets</p>
                 <div id="finishPiles" class="finish-piles"></div>
                 <div id="finishChoices" class="finish-choices"></div>
+                <p class="eyebrow" id="bettingTitle">Round Bets</p>
+                <div id="bettingSlips" class="slip-market"></div>
+                <div id="partnerControls" class="partner-controls" hidden aria-label="Betting partnerships"></div>
+                <p class="eyebrow">Cheer &amp; Jeer</p>
+                <div class="tile-toolbar" aria-label="Place a spectator tile"><button id="cheerTile" disabled
+                    aria-pressed="false">♧ Cheer +1</button><button id="jeerTile" disabled aria-pressed="false">Jeer
+                    −1</button></div>
               </section>
-              <div class="tile-toolbar" aria-label="Place a spectator tile"><button id="cheerTile" disabled
-                  aria-pressed="false">♧ Cheer +1</button><button id="jeerTile" disabled aria-pressed="false">Jeer
-                  −1</button></div>
               <div id="board" class="board" aria-label="Race track">
                 <div id="track"></div>
                 <div class="infield"><button id="pyramidRoll" class="pyramid-button" type="button" disabled
@@ -119,18 +136,15 @@
                 <div class="finish-line" role="img"
                   aria-label="Checkered start and finish line between spaces 16 and 1"></div>
                 <div id="camels"></div>
-                <div class="finish-label">START / FINISH ↗</div>
               </div>
-              <div class="race-footer"><span id="raceNote" role="status" aria-live="polite"></span><span>↑ Top of a
-                  stack leads</span><span>♧ Cheer +1 · Jeer −1</span><label><input type="checkbox" id="reduceMotion">
-                  Reduce motion</label></div>
+              <div class="race-footer"><span id="raceNote" role="status" aria-live="polite"></span></div>
               <section class="positions" aria-labelledby="positionsTitle">
-                <h3 id="positionsTitle">Current positions</h3>
+                <h3 id="positionsTitle">Current camel positions</h3>
                 <div id="ranking" class="ranking"></div>
               </section>
             </section>
             <section class="player-table" aria-label="Players and their betting slips">
-              <div class="player-table-heading"><span class="small">Players & betting slips</span></div>
+              <div class="player-table-heading"><span class="small">Players &amp; betting slips</span><span class="coin-legend">Silver = 1 · Gold = 5</span></div>
               <div id="players" class="players" aria-label="Player cards" tabindex="0"></div>
               <div class="player-navigation" aria-label="Browse players">
                 <button id="previousPlayer" aria-label="Previous player">←</button>
@@ -177,7 +191,7 @@
     </footer>
   </main>
   <dialog id="roundModal" class="camel-game round-results" aria-labelledby="roundTitle">
-    <div id="fireworks" class="fireworks" aria-hidden="true"></div>
+    <div id="fireworks" class="fireworks" aria-hidden="true"></div><div id="coinFlights" class="coin-flights" aria-hidden="true"></div>
     <section id="score" class="scoring"></section>
   </dialog>
   <dialog id="help" class="camel-game"><button id="closeHelp" class="close" aria-label="Close guide">✕</button>

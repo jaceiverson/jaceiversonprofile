@@ -1,12 +1,24 @@
 /* Local-first UI and host-authoritative PeerJS rooms. No game narration. */
 (() => {
   'use strict';
+  const isLocalFile = location.protocol === 'file:';
+  const gamePath = isLocalFile ? location.pathname : location.pathname.replace(/\.html$/i, '');
+  function updateAddress(url) {
+    if (isLocalFile) return;
+    try { window.history.replaceState(null, '', url); } catch { /* URL cleanup must never prevent play. */ }
+  }
+  if (gamePath !== location.pathname) updateAddress(gamePath + location.search + (location.hash || ''));
   const E = window.CamelUp, $ = id => document.getElementById(id);
+  const {camelSvg, render:victoryMarkup} = window.CamelsResults;
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const reducedMotion = () => motionPreference.matches;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const color = c => `<span class="dot" style="--c:var(--${c})"></span>${c}`;
   const PREFIX = 'jiv-camelup-v1-';
   const connections = new Map();
   let peer, conn, host = false, practice = false, code = '', seats = [], game = null, view = null;
+  let paying = false;
+  const payoutBalances = new Map();
   let busy = false, lastRevision = -1, screen = '', pending = false, online = false, animation = 0;
   let timer, joinTimer;
   let tileSide = null, finishKind = 'winner', diceRenderKey = '';
@@ -47,14 +59,16 @@
     view = v;
     if (busy && old && v.revision === old.revision) { renderPlayers(); renderVoice(); return; }
     const animate = old && old.phase !== 'lobby' && v.event && v.event.id !== old.event?.id && v.revision !== lastRevision;
+    const payout = old && v.payoutEvent && v.payoutEvent.id !== old.payoutEvent?.id;
     lastRevision = v.revision;
+    if (payout && !reducedMotion()) { animatePayout(old,v); return; }
     if (animate) {
       busy = true; screen = ''; render(); animateMove(old, v);
     } else render();
     renderVoice();
   }
   function clean() {
-    clearTimeout(timer); clearTimeout(joinTimer); animation++; busy = false; pending = false; screen = '';
+    clearTimeout(timer); clearTimeout(joinTimer); animation++; paying = false; payoutBalances.clear(); $('coinFlights').innerHTML=''; busy = false; pending = false; screen = '';
     voice.leave(); connections.forEach(c => c.close()); connections.clear();
     const old = peer; peer = conn = null; if (old) old.destroy();
     view = null; game = null; seats = []; online = false; lastRevision = -1; playerTurnKey = null; selectedPlayer = 0; celebratedFinish = ''; lastRevealCard = ''; journalOpen.clear(); journalRound = null; journalRenderKey = ''; $('fireworks').innerHTML = '';
@@ -129,7 +143,7 @@
     });
   }
   function reject(c, reason) { c.send({type:'reject',reason}); setTimeout(() => c.close(),500); }
-  function setRoomUrl() { history.replaceState(null,'',location.pathname + '?join=' + code); }
+  function setRoomUrl() { updateAddress(gamePath + '?join=' + code); }
   function joinRoom() {
     const wanted = $('code').value.trim().toUpperCase();
     if (!/^[A-Z2-9]{6}$/.test(wanted)) return message('Enter the six-character room code.');
@@ -152,7 +166,9 @@
   }
   function startPractice() {
     if (!prepare(true,true)) return;
-    code = 'LOCAL'; seats = [{name:name(),connected:true},{name:'Player 2',connected:true},{name:'Player 3',connected:true}];
+    const requested = Number($('practicePlayers').value);
+    const count = Number.isInteger(requested) && requested >= 2 && requested <= 8 ? requested : 8;
+    code = 'LOCAL'; seats = Array.from({length:count},(_,i)=>({name:i === 0 ? name() : `Player ${i+1}`,connected:true}));
     game = E.create(seats); broadcast();
   }
   function actHost(seat, a, revision) {
@@ -162,7 +178,7 @@
       // Their leg and phase identify the result being reviewed; each seat is counted once.
       E.apply(game,seat,a); broadcast(); return;
     }
-    if (busy || revision !== game.revision || !people().every(p => p.connected)) return broadcast();
+    if (busy || paying || revision !== game.revision || !people().every(p => p.connected)) return broadcast();
     E.apply(game,seat,a); broadcast();
   }
   function send(a) {
@@ -191,7 +207,6 @@
       return;
     }
     $('leg').textContent = 'Leg ' + view.leg;
-    $('diceCount').textContent = `${view.rolled.length} / 5 dice revealed`;
     drawBoard(view); renderDice(view); if (!busy) $('raceNote').textContent = view.event?.message || ''; renderActions(); renderSatchel(); renderScore(); renderBettingSlips();
     $('ranking').innerHTML = E.ranking(view).map((c,i) => `<span class="rank">${i+1}. ${color(c)}</span>`).join('');
     renderJournal();
@@ -209,11 +224,23 @@
       return `<details class="journal-round" data-round="${r.round}" ${open ? 'open' : ''}><summary>${r.round ? 'Round ' + r.round : 'Earlier activity'}${r.round === view.leg ? ' · Current' : ''}<span>${r.entries.length} entries</span></summary><ol>${r.entries.map(t => `<li>${esc(t)}</li>`).join('')}</ol></details>`;
     }).join('');
   }
+  function coinPurse(total) {
+    const gold = Math.floor(total / 5), silver = total % 5;
+    function group(count, value, color) {
+      if (!count) return '';
+      const piles = Array.from({length:Math.ceil(count / 5)},(_,pile) => {
+        const size = Math.min(5,count - pile * 5);
+        return `<span class="coin-stack ${color}" style="--coin-count:${size}">${Array.from({length:size},(_,level)=>`<span class="coin ${color}" style="--coin-level:${level}">${value}</span>`).join('')}</span>`;
+      }).join('');
+      return `<span class="coin-group" aria-hidden="true"><span class="coin-piles">${piles}</span><span class="coin-count">${count} × ${value}</span></span>`;
+    }
+    return `<div class="coin-purse" role="img" aria-label="${total} GOLD: ${gold} gold coin${gold===1?'':'s'} worth 5 each and ${silver} silver coin${silver===1?'':'s'} worth 1 each">${group(gold,5,'gold')}${group(silver,1,'silver')}${!total?'<span class="small" aria-hidden="true">No coins yet</span>':''}</div>`;
+  }
   function renderPlayers() {
     const turnKey = `${view.phase}:${view.leg}:${view.turn}`;
     if (turnKey !== playerTurnKey) { selectedPlayer = view.turn ?? 0; playerTurnKey = turnKey; }
     selectedPlayer = Math.max(0, Math.min(selectedPlayer, view.players.length - 1));
-    const markup = view.players.map((p,i) => `<div class="player ${view.phase === 'playing' && view.turn === i ? 'active' : ''} ${selectedPlayer === i ? 'mobile-selected' : ''}" data-player="${i}"><div class="player-name">${esc(p.name)}${i === view.mySeat && !practice ? ' · you' : ''} <span class="voice-icon"></span></div>${p.money !== undefined ? `<div class="player-money">${p.money} <span>GOLD</span></div>` : ''}<div class="player-slips">${(p.tickets || []).map(t => `<span class="mini-slip" style="--slip-color:var(--${t.color})" title="${t.color} leg slip, ${t.value} GOLD">${t.color}<strong>${t.value}</strong><span>1st · GOLD</span></span>`).join('')}${p.pyramids ? `<span class="mini-slip" style="--slip-color:#b28c46">△<strong>${p.pyramids}</strong><span>GOLD paid</span></span>` : ''}</div>${p.money !== undefined ? `<p class="remaining-cards"><strong>${p.finishCardsRemaining ?? p.hand?.length ?? 5}</strong> final-bet cards left</p>` : ''}<small>${!p.connected ? 'Disconnected · waiting' : p.partner != null ? 'Partner: ' + esc(view.players[p.partner].name) : i === view.turn && view.phase === 'playing' ? 'Their turn' : ''}</small></div>`).join('');
+    const markup = view.players.map((player,i) => { const p = payoutBalances.has(i) ? {...player,money:payoutBalances.get(i)} : player; return `<div class="player ${view.phase === 'playing' && view.turn === i ? 'active' : ''} ${selectedPlayer === i ? 'mobile-selected' : ''}" data-player="${i}"><div class="player-identity"><div class="player-name">${esc(p.name)}${i === view.mySeat && !practice ? ' · you' : ''} <span class="voice-icon"></span></div>${p.money !== undefined ? `<div class="player-money">${p.money} <span>GOLD</span></div>` : ''}</div>${p.money !== undefined ? coinPurse(p.money) : ''}<div class="player-slips">${(p.tickets || []).map(t => `<span class="mini-slip" style="--slip-color:var(--${t.color})" title="${t.color} leg slip, ${t.value} GOLD">${t.color}<strong>${t.value}</strong><span>1st · GOLD</span></span>`).join('')}${p.pyramids ? `<span class="mini-slip" style="--slip-color:#b28c46">△<strong>${p.pyramids}</strong><span>GOLD paid</span></span>` : ''}</div><small class="player-status">${!p.connected ? 'Disconnected · waiting' : i === view.turn && view.phase === 'playing' ? 'Their turn' : ''}</small><div class="player-footer">${p.money !== undefined ? `<p class="remaining-cards"><strong>${p.finishCardsRemaining ?? p.hand?.length ?? 5}</strong> final-bet cards left</p>` : ''}${view.players.length >= 6 ? `<small class="player-partner">Partner: <strong>${p.partner != null ? esc(view.players[p.partner].name) : 'None this round'}</strong></small>` : ''}</div></div>`; }).join('');
     $('players').innerHTML = markup;
     $('lobbyPlayers').innerHTML = markup;
     $('playerPosition').textContent = `${selectedPlayer + 1} / ${view.players.length} · ${view.players[selectedPlayer].name}${selectedPlayer === view.turn && view.phase === 'playing' ? ' · active' : ''}`;
@@ -235,7 +262,7 @@
     const base = Math.max(y*25+11, (height-1)*3.2+1);
     return {x:x*16.666+3.4,y:base-level*3.2};
   }
-  function camelSvg(c) { return `<svg viewBox="0 0 100 75" role="img" aria-label="${c} camel"><g ${['white','black'].includes(c) ? 'transform="translate(100 0) scale(-1 1)"' : ''}><path d="M14 46 L15 64 Q18 69 22 64 L26 50 L48 50 L56 65 Q61 68 62 62 L61 45 Q73 40 74 26 L79 16 L89 18 Q96 17 94 11 L77 8 Q69 7 68 18 L60 35 Q55 30 51 25 Q44 12 36 30 Q30 15 22 30 L18 36 Q10 33 7 41 L3 47" fill="var(--${c})" stroke="#3a4238" stroke-width="2.3" stroke-linejoin="round"/><circle cx="83" cy="12" r="1.7" fill="#263b33"/><path d="M73 9L73 3M76 9L79 4" stroke="#3a4238" stroke-width="2"/></g><text x="37" y="44" text-anchor="middle">${c[0].toUpperCase()}</text></svg>`; }
+
   let boardReady = false;
   function drawBoard(g) {
     if (!boardReady) {
@@ -294,6 +321,7 @@
     return `<span class="bet-slip" style="--slip-color:var(--${c})"><span class="slip-label">${label}</span><span class="slip-camel">${camelSvg(c)}</span><span class="slip-color">${c}</span><strong class="slip-value">${value}<small>${detail}</small></strong><span class="slip-terms">${extra || '2nd +1 · Other −1'}</span></span>`;
   }
   function renderBettingSlips() {
+    renderPartnerControls();
     const ready = canAct();
     $('bettingSlips').innerHTML = E.COLORS.map(c => {
       const pile = view.supply[c];
@@ -305,10 +333,22 @@
     $('finishChoices').innerHTML = ready && screen === 'bet' ? `<p class="small">Choose a slip for the overall ${finishKind}. Your choice stays secret.</p><div class="slip-market">${E.COLORS.map(c => `<button class="slip-choice" data-bet="${c}" data-kind="${finishKind}" ${!hand.includes(c) ? 'disabled' : ''} aria-label="Secretly back ${c} as overall ${finishKind}">${betSlip(c, '?', 'FINISH BET', hand.includes(c) ? finishKind : 'Used', 'Correct: 8 / 5 / 3 / 2 / 1')}</button>`).join('')}</div>` : '';
 
   }
+  function renderPartnerControls() {
+    const box = $('partnerControls');
+    box.hidden = view.players.length < 6 || view.players.length > 8;
+    if (box.hidden) { box.innerHTML = ''; return; }
+    const me = view.players[mySeat()], ready = canAct();
+    if (me.partner !== null) {
+      box.innerHTML = `<p class="eyebrow">Better Partner</p><strong>Partner: ${esc(view.players[me.partner].name)}</strong><p class="small">Copy your partner’s best positive ticket reward at the end of this leg.</p>`;
+      return;
+    }
+    const available = view.players.map((p,i)=>({p,i})).filter(({p,i})=>i!==mySeat() && p.partner===null);
+    box.innerHTML = `<p class="eyebrow">Better Partner</p>${ready && screen === 'partner' ? `<div class="partner-choices">${available.map(({p,i})=>`<button data-partner="${i}">${esc(p.name)}</button>`).join('')}</div><button class="quiet" data-screen="">Cancel partnership</button>` : `<button data-screen="partner" ${!ready || !available.length ? 'disabled' : ''}>Choose a betting partner</button>`}${!available.length ? '<p class="small">No partners available this leg.</p>' : ''}`;
+  }
   const pause = ms => new Promise(resolve => setTimeout(resolve,ms));
   async function animateMove(old, next) {
     const ticket = ++animation, ev = next.event;
-    if ($('reduceMotion').checked) {
+    if (reducedMotion()) {
       placeCamels(next); renderDice(next); busy = false; render(); renderVoice(); return;
     }
     $('board').classList.add('reduced-motion'); placeCamels(old); void $('board').offsetWidth; $('board').classList.remove('reduced-motion'); renderDice(next,true); $('raceNote').textContent = 'Shaking the pyramid…';
@@ -345,11 +385,7 @@
       box.innerHTML += `<p class="small">${legal.length ? 'Click a highlighted board space to place your ' + (tileSide === 1 ? 'cheer' : 'jeer') + '.' : 'No legal spaces this turn.'}</p><button class="quiet" data-screen="">Cancel placement</button>`;
     } else if (screen === 'bet') {
       box.innerHTML += `<p class="small">Choose your ${finishKind} slip above the board.</p><button class="quiet" data-screen="">Cancel finish bet</button>`;
-    } else if (screen === 'partner') {
-      box.innerHTML += view.players.map((p,i)=>i!==mySeat() && p.partner===null ? `<button data-partner="${i}">${esc(p.name)}</button>`:'').join('') || '<p>No partners available this leg.</p>';
-      box.innerHTML += '<button class="quiet" data-screen="">Cancel partnership</button>';
-    } else if (view.players.length >= 6 && me.partner === null) {
-      box.innerHTML += '<button data-screen="partner">Choose a betting partner</button>';
+
     }
   }
 
@@ -363,7 +399,7 @@
     const key = `${code}:${view.leg}:${view.event.id}`;
     if (celebratedFinish === key) return;
     celebratedFinish = key;
-    const calm = $('reduceMotion').checked;
+    const calm = reducedMotion();
     $('fireworks').classList.toggle('calm',calm);
     $('fireworks').innerHTML = [ [20,25],[75,25],[48,38],[80,62],[25,65] ].map(([x,y],burst) => `<span class="firework-burst" style="left:${x}%;top:${y}%">${Array.from({length:18},(_,i)=>{
       const angle=i*Math.PI*2/18, radius=65+(i%3)*18;
@@ -371,9 +407,57 @@
     }).join('')}</span>`).join('');
     setTimeout(()=>{ if (celebratedFinish === key) $('fireworks').innerHTML=''; },calm?1200:2600);
   }
+  async function animatePayout(old,next) {
+    const ticket=++animation; paying=true; payoutBalances.clear();
+    next.payoutEvent.transfers.forEach(t=>payoutBalances.set(t.seat,t.before));
+    render();renderVoice();
+    const source=$('payoutPyramid')?.getBoundingClientRect();
+    let duration=400;
+    if (source) {
+      const sx=(source.left||0)+source.width/2,sy=(source.top||0)+source.height/2;
+      const flights=[];
+      next.payoutEvent.transfers.forEach((t,index)=>{
+        const target=document.querySelector(`[data-payout-seat="${t.seat}"]`)?.getBoundingClientRect();
+        if (!target || !t.amount) return;
+        const tx=target.left+target.width/2,ty=target.top+target.height/2;
+        const amount=Math.abs(t.amount),coins=[...Array(Math.floor(amount/5)).fill('gold'),...Array(amount%5).fill('silver')];
+        coins.forEach((coin,j)=>{
+          const start=t.amount>0?[sx,sy]:[tx,ty],end=t.amount>0?[tx,ty]:[sx,sy];
+          const dx=end[0]-start[0],dy=end[1]-start[1],delay=index*85+j*65;
+          duration=Math.max(duration,delay+800);
+          flights.push(`<span class="coin ${coin} coin-flight" style="left:${start[0]}px;top:${start[1]}px;--flight-x:${dx}px;--flight-y:${dy}px;--arc-x:${dx/2}px;--arc-y:${dy/2-55}px;--flight-delay:${delay}ms">${coin==='gold'?5:1}</span>`);
+        });
+      });
+      $('coinFlights').innerHTML=flights.join('');
+    }
+    await pause(duration);if(ticket!==animation)return;
+    paying=false;payoutBalances.clear();$('coinFlights').innerHTML='';render();renderVoice();
+  }
+  function payoutWallets() {
+    return `<div class="payout-wallets">${view.players.map((p,i)=>{
+      const money=payoutBalances.has(i)?payoutBalances.get(i):p.money;
+      return `<div class="payout-wallet" data-payout-seat="${i}"><div><strong>${esc(p.name)}</strong><span>${money} GOLD</span></div>${coinPurse(money)}</div>`;
+    }).join('')}</div>`;
+  }
+  function renderRoundPayouts() {
+    const step=view.roundStep ?? 3;
+    const titles=['Winner','Second place','The rest & partners'];
+    const stages=view.summary.map((s,i)=>({name:s.name,amount:s.stages?.[Math.max(0,step-1)]||0,seat:i}));
+    const payoutCamel = step <= 1 ? `<p class="payout-camel">First place: ${color(view.ranks[0])}</p>` : step === 2 ? `<p class="payout-camel">Second place: ${color(view.ranks[1])}</p>` : '';
+    const explanation=step===0?'Start with tickets for the winning camel.':step===1?'Winning-camel tickets pay their printed value.':step===2?'Second-place tickets pay 1 GOLD each.':'Other tickets cost 1 GOLD each; partner rewards are added. Roll GOLD was already paid.';
+    $('finalResult').hidden=true;
+    $('score').innerHTML=`<p class="eyebrow">ROUND ${view.leg} SCORING</p><h2 id="roundTitle">${paying?'Moving the coins…':step===0?'Let’s count the round bets.':titles[step-1]+' paid'}</h2>${payoutCamel}<ol class="payout-steps">${titles.map((t,i)=>`<li class="${i<step?'complete':''}">${i<step?'✓ ':''}${t}</li>`).join('')}</ol><p>${explanation}</p><div id="payoutPyramid" class="payout-pyramid" aria-hidden="true">${$('pyramidRoll').innerHTML}</div>${step?`<div class="payout-breakdown">${stages.map(s=>`<span>${esc(s.name)} <strong>${s.amount>0?'+':''}${s.amount} GOLD</strong></span>`).join('')}</div>`:''}${payoutWallets()}${host?`<button id="roundPayoutNext" class="primary" ${paying?'disabled':''}>${paying?'Moving coins…':step<3?'Pay '+titles[step]+' →':'Continue →'}</button>`:'<p class="small">The host is walking everyone through the payouts.</p>'}`;
+    const modal=$('roundModal');if(!modal.open){if($('help').open)$('help').close();modal.showModal();}
+  }
+  function finalPileColumns(last,flip=false) {
+    return `<div class="final-pile-columns">${['winner','loser'].map(kind=>{
+      const revealed=view.finishResults.filter(b=>b.kind===kind),total=view.bets[kind].length;
+      return `<section class="final-pile-column"><h3>Overall ${kind}</h3><p class="small">${revealed.length} / ${total} revealed · ${color(view.ranks[kind==='winner'?0:4])}</p><div aria-live="polite">${revealed.length?revealedCard(revealed.at(-1),flip&&last?.kind===kind):total?'<span class="card-back" aria-hidden="true">?</span>':'<p class="small">No bets placed.</p>'}</div><ol class="pile-revealed-cards">${revealed.map(b=>`<li>${esc(view.players[b.seat].name)} · ${color(b.color)} <strong>${b.reward>0?'+':''}${b.reward} GOLD</strong></li>`).join('')}</ol></section>`;
+    }).join('')}</div>`;
+  }
   function revealedCard(card, flip = false) {
     if (!card) return '<div class="reveal-placeholder"><span class="card-back">?</span><p>The finish bets are still secret.</p></div>';
-    return `<div class="reveal-card ${flip && !$('reduceMotion').checked ? 'reveal-flip' : ''}">${betSlip(card.color, card.reward > 0 ? '+'+card.reward : '−1', card.kind.toUpperCase()+' BET', 'GOLD', card.reward > 0 ? 'Correct prediction' : 'Incorrect prediction')}<div><h3>${esc(view.players[card.seat].name)}</h3><p>Backed ${color(card.color)} as overall ${card.kind}.</p><strong>${card.reward > 0 ? 'Correct! +' + card.reward + ' GOLD' : card.delta === 0 ? 'Incorrect · already at 0 GOLD' : 'Incorrect · −1 GOLD'}</strong><p class="small">Now ${card.money} GOLD</p></div></div>`;
+    return `<div class="reveal-card ${flip && !reducedMotion() ? 'reveal-flip' : ''}">${betSlip(card.color, card.reward > 0 ? '+'+card.reward : '−1', card.kind.toUpperCase()+' BET', 'GOLD', card.reward > 0 ? 'Correct prediction' : 'Incorrect prediction')}<div><h3>${esc(view.players[card.seat].name)}</h3><p>Backed ${color(card.color)} as overall ${card.kind}.</p><strong>${card.reward > 0 ? 'Correct! +' + card.reward + ' GOLD' : card.delta === 0 ? 'Incorrect · already at 0 GOLD' : 'Incorrect · −1 GOLD'}</strong><p class="small">Now ${card.money} GOLD</p></div></div>`;
   }
   function revealHistory() {
     return view.finishResults?.length ? `<details class="reveal-history"><summary>Review ${view.finishResults.length} revealed card${view.finishResults.length===1?'':'s'}</summary>${view.finishResults.map(b=>`<div class="score-row"><span>${esc(view.players[b.seat].name)} · ${color(b.color)} ${b.kind}</span><strong>${b.reward>0?'+':''}${b.reward} GOLD</strong></div>`).join('')}</details>` : '';
@@ -385,30 +469,43 @@
     const flipKey=`${view.leg}:${cursor}`, flip=cursor>0 && lastRevealCard!==flipKey;
     lastRevealCard=flipKey;
     $('finalResult').hidden=true;
-    $('score').innerHTML=`<p class="eyebrow">THE RACE HAS FINISHED · FINAL BETS</p><h2 id="roundTitle">Let’s turn over the cards.</h2><p>Winning camel: ${color(view.ranks[0])} · Last camel: ${color(view.ranks[4])}</p><p class="small">Final leg tickets have been scored. Reveal winner bets first, then loser bets, in the order they were placed.</p><div aria-live="polite">${revealedCard(last,flip)}</div><p><strong>${cursor} / ${view.revealTotal}</strong> cards revealed</p>${host ? `<button id="revealNext" class="primary">Reveal ${nextKind} card ${pileNumber} →</button>` : `<p class="small">Waiting for the host to reveal ${nextKind} card ${pileNumber}.</p>`}${revealHistory()}<details><summary>Final leg scoring</summary>${view.summary.map(s=>`<div class="score-row"><strong>${esc(s.name)}</strong><span>${s.delta>=0?'+':''}${s.delta} GOLD → ${s.money} GOLD</span></div>`).join('')}</details>`;
+    $('score').innerHTML=`<p class="eyebrow">THE RACE HAS FINISHED · FINAL BETS</p><h2 id="roundTitle">Let’s turn over the cards.</h2><p>Winning camel: ${color(view.ranks[0])} · Last camel: ${color(view.ranks[4])}</p><p class="small">Final leg tickets have been scored. Reveal winner bets first, then loser bets, in the order they were placed.</p>${finalPileColumns(last,flip)}<p><strong>${cursor} / ${view.revealTotal}</strong> cards revealed</p>${host ? `<button id="revealNext" class="primary">Reveal ${nextKind} card ${pileNumber} →</button>` : `<p class="small">Waiting for the host to reveal ${nextKind} card ${pileNumber}.</p>`}${revealHistory()}<details><summary>Final leg scoring</summary>${view.summary.map(s=>`<div class="score-row"><strong>${esc(s.name)}</strong><span>${s.delta>=0?'+':''}${s.delta} GOLD → ${s.money} GOLD</span></div>`).join('')}</details>`;
     if (!modal.open) { if ($('help').open) $('help').close(); modal.showModal(); }
   }
   function renderScore() {
     celebrateFinish();
-    if (view.phase === 'revealing' && !busy) { renderFinishReveal(); return; }
-    const modal = $('roundModal'), final = view.phase === 'finished';
-    const show = ['scoring','finished'].includes(view.phase) && !view.roundReviewed && !busy;
+    const scoringPhase=['scoring','revealing','finished'].includes(view.phase);
+    if (scoringPhase && !busy && ((view.roundStep ?? 3)<3 || paying)) {renderRoundPayouts();return;}
+    if (view.phase === 'revealing' && view.finalCardsOpened && !busy) { renderFinishReveal(); return; }
+    const modal = $('roundModal'), final = view.phase === 'finished' && (view.finalCardsOpened || view.roundReviewed);
+    const finalRound = ['revealing','finished'].includes(view.phase) && !view.finalCardsOpened && !view.roundReviewed;
+    const show = ['scoring','revealing','finished'].includes(view.phase) && !view.roundReviewed && !busy;
     $('finalResult').hidden = !final || !view.roundReviewed;
     if (final && view.roundReviewed) {
-      $('finalResult').innerHTML = `<h2>${view.winners.map(i=>esc(view.players[i].name)).join(' & ')} ${view.winners.length>1?'share the win!':'wins!'}</h2><p>${view.players.map(p=>esc(p.name)+' '+p.money+' GOLD').join(' · ')}</p>${host ? '<div class="buttons"><button id="playAgain" class="primary">Play Again</button><button id="backToLobby">Back to lobby</button></div><p class="small">Same players, same room, voice stays connected.</p>' : '<p class="small">Waiting for the host to return to the lobby.</p>'}`;
+      $('finalResult').innerHTML = `${victoryMarkup(view)}${host ? '<div class="buttons"><button id="playAgain" class="primary">Play Again</button><button id="backToLobby">Back to lobby</button></div><p class="small">Same players, same room, voice stays connected.</p>' : '<p class="small">Waiting for the host to return to the lobby.</p>'}`;
     }
     if (!show) { if (modal.open) modal.close(); return; }
     const acknowledged = view.acknowledged || view.players.map(() => false);
     const seat = practice ? acknowledged.findIndex(a => !a) : mySeat();
     const mine = acknowledged[seat], count = acknowledged.filter(Boolean).length;
-    $('score').innerHTML = `<p class="eyebrow">${final?'THE FINISH LINE':'LEG '+view.leg+' COMPLETE'}</p><h2 id="roundTitle">${final?view.winners.map(i=>esc(view.players[i].name)).join(' & ') + (view.winners.length>1?' share the win!':' wins!'):'GOLD counted. Camels ready.'}</h2><p>Leg leader: ${color(view.ranks[0])} · Second: ${color(view.ranks[1])}</p>${view.summary.map(s=>`<div class="score-row"><strong>${esc(s.name)}</strong><span>Tickets ${s.own>=0?'+':''}${s.own}${s.bonus?' · partner +'+s.bonus:''} → ${s.money} GOLD after leg</span></div>`).join('')}${final?`<h3 class="finish-results-title">Finish bets revealed</h3>${view.finishResults.length ? revealedCard(view.finishResults.at(-1)) + revealHistory() : '<p>No finish bets placed.</p>'}<p>Final totals: ${view.players.map(p=>esc(p.name)+' '+p.money+' GOLD').join(' · ')}</p>`:'<p class="small">Roll GOLD was already paid. The next leg starts after everyone acknowledges these results.</p>'}<div class="round-acknowledgements" aria-live="polite"><p><strong>${count} / ${view.players.length}</strong> players ready</p>${view.players.map((p,i)=>`<span class="ack-status ${acknowledged[i]?'ready':''}">${acknowledged[i]?'✓':'○'} ${esc(p.name)}${!p.connected?' · reconnecting':''}</span>`).join('')}</div><button id="acknowledgeRound" class="primary" ${mine || pending || !online ? 'disabled' : ''}>${practice ? esc(view.players[seat]?.name || '') + ': acknowledge results' : mine ? 'Acknowledged · waiting for everyone' : 'Acknowledge results'}</button>`;
+    if (final) {
+      $('score').innerHTML=victoryMarkup(view,'roundTitle')+`<details class="victory-bet-review"><summary>Review final winner & loser bets</summary>${finalPileColumns(view.finishResults.at(-1))}</details>${practice?'':`<div class="round-acknowledgements" aria-live="polite"><p>${count} / ${view.players.length} players ready</p>${view.players.map((p,i)=>`<span class="ack-status ${acknowledged[i]?'ready':''}">${acknowledged[i]?'✓':'○'} ${esc(p.name)}</span>`).join('')}</div>`}<button id="acknowledgeRound" class="primary" ${mine||pending||!online?'disabled':''}>${mine?'Waiting for everyone':'Finish game'}</button>`;
+      if(!modal.open){if($('help').open)$('help').close();modal.showModal();}return;
+    }
+    $('score').innerHTML = `<p class="eyebrow">${final?'THE FINISH LINE':'LEG '+view.leg+' COMPLETE'}</p><h2 id="roundTitle">${final?view.winners.map(i=>esc(view.players[i].name)).join(' & ') + (view.winners.length>1?' share the win!':' wins!'):'GOLD counted. Camels ready.'}</h2><p>Leg leader: ${color(view.ranks[0])} · Second: ${color(view.ranks[1])}</p>${view.summary.map(s=>`<div class="score-row"><strong>${esc(s.name)}</strong><span>Tickets ${s.own>=0?'+':''}${s.own}${s.bonus?' · partner +'+s.bonus:''} → ${s.money} GOLD after leg</span></div>`).join('')}${final?`<h3 class="finish-results-title">Finish bets revealed</h3>${finalPileColumns(view.finishResults.at(-1))}<p>Final totals: ${view.players.map(p=>esc(p.name)+' '+p.money+' GOLD').join(' · ')}</p>`:`<p class="small">Roll GOLD was already paid. ${finalRound ? 'Review this final round, then view the final bet cards.' : practice ? 'Acknowledge once to start the next leg.' : 'The next leg starts after everyone acknowledges these results.'}</p>`}${practice ? '' : `<div class="round-acknowledgements" aria-live="polite"><p><strong>${count} / ${view.players.length}</strong> players ready</p>${view.players.map((p,i)=>`<span class="ack-status ${acknowledged[i]?'ready':''}">${acknowledged[i]?'✓':'○'} ${esc(p.name)}${!p.connected?' · reconnecting':''}</span>`).join('')}</div>`}<button id="acknowledgeRound" class="primary" ${(mine && !(finalRound && host && view.roundScoringReviewed)) || pending || !online ? 'disabled' : ''}>${finalRound ? (host ? 'View final bet cards' : mine ? 'Ready · waiting for everyone' : 'Ready to view final bets') : practice ? 'Acknowledge results' : mine ? 'Acknowledged · waiting for everyone' : 'Acknowledge results'}</button>`;
     if (!modal.open) { if ($('help').open) $('help').close(); modal.showModal(); }
   }
   function acknowledgeRound() {
-    if (!view || busy || pending || !online || !['scoring','finished'].includes(view.phase)) return;
+    if (!view || busy || paying || pending || !online || !['scoring','revealing','finished'].includes(view.phase)) return;
+    if (host && view.roundScoringReviewed && !view.finalCardsOpened) {actHost(0,{type:'openFinalBets'},game.revision);return;}
     const seat = practice ? (view.acknowledged || view.players.map(() => false)).findIndex(a => !a) : mySeat();
     const action = {type:'acknowledge',leg:view.leg,phase:view.phase};
-    if (host) actHost(seat,action,game.revision);
+    if (practice && host) {
+      const seatsToConfirm = game.players.map((_,i)=>i).filter(i=>!game.acknowledged?.[i]);
+      for (const player of seatsToConfirm) E.apply(game,player,action);
+      if (game.roundScoringReviewed && !game.finalCardsOpened) E.openFinalBets(game,0);
+      broadcast();
+    } else if (host) actHost(seat,action,game.revision);
     else if (conn?.open) { pending = true; conn.send({type:'action',action,revision:view.revision}); renderScore(); }
   }
   function renderVoice() {
@@ -435,7 +532,12 @@
   $('actions').onclick = e => {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     if ('screen' in b.dataset) { screen=b.dataset.screen; tileSide=null; renderActions(); }
-    if (b.dataset.partner) send({type:'partner',seat:Number(b.dataset.partner)});
+  };
+  $('partnerControls').onclick = e => {
+    const button = e.target.closest('button');
+    if (!button || button.disabled || !canAct() || view.players.length < 6 || view.players.length > 8) return;
+    if ('screen' in button.dataset) { screen=button.dataset.screen; tileSide=null; renderActions(); }
+    if (button.dataset.partner !== undefined) send({type:'partner',seat:Number(button.dataset.partner)});
   };
   $('previousPlayer').onclick = () => browsePlayer(-1);
   $('nextPlayer').onclick = () => browsePlayer(1);
@@ -478,7 +580,9 @@
   $('roundModal').oncancel = e => e.preventDefault();
   $('score').onclick = e => {
     const button=e.target.closest('button'); if (!button || button.disabled) return;
-    if (button.id === 'revealNext') {
+    if (button.id === 'roundPayoutNext') {
+      if (host && !paying && !busy) actHost(0,{type:'roundStep',step:view.roundStep},game.revision);
+    } else if (button.id === 'revealNext') {
       if (host && view?.phase==='revealing' && !busy && online) actHost(0,{type:'reveal',index:view.revealCursor},game.revision);
     } else if (button.id === 'acknowledgeRound') acknowledgeRound();
   };
@@ -501,19 +605,18 @@
   $('voiceMute').onclick = () => {voice.setMuted(!voice.muted);syncVoice();};
   $('voiceLeave').onclick = () => {voice.leave();syncVoice();};
   $('copyBtn').onclick = async () => {
-    const url=location.origin+location.pathname+'?join='+code;
-    try { await navigator.clipboard.writeText(url); message('Invite link copied.'); } catch { message('Share this room code: '+code); }
+    const url=isLocalFile ? code : location.origin+gamePath+'?join='+code;
+    try { await navigator.clipboard.writeText(url); message(isLocalFile ? 'Room code copied.' : 'Invite link copied.'); } catch { message('Share this room code: '+code); }
   };
   $('leaveBtn').onclick = () => {
     if (host && !practice && !confirm('Leaving closes this room for everyone. Leave the table?')) return;
-    clean(); history.replaceState(null,'',location.pathname); render(); message('You left the table.');
+    clean(); updateAddress(gamePath); render(); message('You left the table.');
   };
   for (const id of ['helpBtn','rulesBtn']) $(id).onclick = () => $('help').showModal();
   $('closeHelp').onclick = () => $('help').close();
   $('help').onclick = e => {if(e.target===$('help')){const r=$('help').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('help').close();}};
-  $('reduceMotion').onchange = () => {$('board').classList.toggle('reduced-motion',$('reduceMotion').checked);safeSet('camel-reduced-motion',$('reduceMotion').checked?'yes':'no');};
-  $('reduceMotion').checked = safeGet('camel-reduced-motion')==='yes' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  $('reduceMotion').onchange();
+  motionPreference.onchange = () => $('board').classList.toggle('reduced-motion', reducedMotion());
+  motionPreference.onchange();
   new ResizeObserver(()=>{if(view && view.phase!=='lobby' && !busy)placeCamels(view);}).observe($('board'));
   window.addEventListener('beforeunload',()=>{persist();voice.leave();});
   $('name').value = safeGet('camel-name') || '';

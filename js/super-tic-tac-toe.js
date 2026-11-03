@@ -1,5 +1,12 @@
 // Super Tic Tac Toe (games/super-tic-tac-toe.html)
 (function () {
+  const isLocalFile = location.protocol === 'file:';
+  const gamePath = isLocalFile ? location.pathname : location.pathname.replace(/\.html$/i, '');
+  function updateAddress(url) {
+    if (isLocalFile) return;
+    try { window.history.replaceState(null, '', url); } catch { /* URL cleanup must never prevent play. */ }
+  }
+  if (gamePath !== location.pathname) updateAddress(gamePath + location.search + (location.hash || ''));
   const LINES = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -231,7 +238,7 @@
     peer = new Peer(PEER_PREFIX + code);
     voice.attach(peer);
     peer.on('open', () => {
-      shareLink = `${location.origin}${location.pathname}?join=${code}`;
+      shareLink = isLocalFile ? code : `${location.origin}${gamePath}?join=${code}`;
       showOnline(`Game code <strong>${code}</strong>. Send the link to a friend. Waiting for them to join…`, { link: true });
     });
     peer.on('connection', c => {
@@ -313,7 +320,7 @@
     peer = conn = null;
     myMark = null;
     onlinePanel.hidden = true;
-    window.history.replaceState(null, '', location.pathname);  // drop ?join= so a refresh doesn't rejoin
+    updateAddress(gamePath);  // drop ?join= so a refresh doesn't rejoin
     reset();
   }
 

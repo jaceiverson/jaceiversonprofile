@@ -1,7 +1,8 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const E = require('../../js/camels-engine.js');
-function approve(g) { const leg = g.leg; g.players.forEach((_,i) => E.acknowledge(g,i,leg)); }
+function payRound(g) { while(g.roundStep!==null && g.roundStep!==undefined && g.roundStep<3) assert.equal(E.advanceRound(g,0,g.roundStep),true); }
+function approve(g) { payRound(g); const leg = g.leg; g.players.forEach((_,i) => E.acknowledge(g,i,leg)); }
 const newGame = (n=3) => E.create(Array.from({length:n},(_,i)=>({name:'Player '+i,connected:true})),()=>.1);
 function board(g, stacks) {g.board=Array.from({length:21},()=>[]);for(const [s,c] of Object.entries(stacks))g.board[s]=c;return g;}
 function fixed(values) {let i=0;return ()=>values[i++%values.length];}
@@ -15,7 +16,7 @@ test('exactly five of six dice end a leg and next player starts the next leg',()
 test('turn validation and invalid actions preserve state',()=>{const g=newGame();for(const [seat,a] of [[1,{type:'roll'}],[0,{type:'ticket',color:'black'}],[0,{type:'tile',space:1,side:1}],[0,{type:'partner',seat:1}]]){const before=JSON.stringify(g);assert.equal(E.apply(g,seat,a),false);assert.equal(JSON.stringify(g),before);}});
 test('leg scoring nets rewards before flooring; partnership copies best reward',()=>{const g=board(newGame(6),{1:['red'],2:['blue'],3:['purple'],4:['yellow'],5:['green'],14:['white'],15:['black']});g.players[0].money=0;g.players[0].tickets=[{color:'red',value:5},{color:'green',value:5}];g.players[0].partner=1;g.players[1].tickets=[{color:'green',value:3}];E.scoreLeg(g);assert.equal(g.players[0].money,7);assert.equal(g.summary[0].own,4);assert.equal(g.summary[0].bonus,3);});
 test('finish cards use a single shared hand and stay private in guest views',()=>{const g=newGame();E.apply(g,0,{type:'bet',kind:'winner',color:'red'});assert.ok(!g.players[0].hand.includes('red'));assert.equal(E.view(g,1).bets.winner[0].color,undefined);assert.equal(E.view(g,0).bets.winner[0].color,'red');assert.equal(E.view(g,1).players[0].hand,null);g.turn=0;assert.equal(E.apply(g,0,{type:'bet',kind:'loser',color:'red'}),false);});
-test('finish immediately scores current leg then chronological finish bets',()=>{const g=board(newGame(6),{16:['red'],2:['blue','green','yellow','purple'],14:['white'],15:['black']});g.dice=['red'];g.bets.winner=[{seat:0,color:'blue'},...Array.from({length:5},(_,seat)=>({seat,color:'red'}))];g.bets.loser=[{seat:5,color:'blue'}];E.apply(g,0,{type:'roll'},()=>0);assert.equal(g.phase,'revealing');while(g.phase==='revealing')E.revealNext(g,0,g.revealCursor);assert.equal(g.phase,'finished');assert.deepEqual(g.ranks,['red','purple','yellow','green','blue']);assert.deepEqual(g.finishResults.map(x=>x.reward),[-1,8,5,3,2,1,8]);assert.equal(g.players[0].money,11);assert.equal(g.players[5].money,11);assert.deepEqual(g.winners,[0,5]);});
+test('finish immediately scores current leg then chronological finish bets',()=>{const g=board(newGame(6),{16:['red'],2:['blue','green','yellow','purple'],14:['white'],15:['black']});g.dice=['red'];g.bets.winner=[{seat:0,color:'blue'},...Array.from({length:5},(_,seat)=>({seat,color:'red'}))];g.bets.loser=[{seat:5,color:'blue'}];E.apply(g,0,{type:'roll'},()=>0);assert.equal(g.phase,'revealing');approve(g);E.openFinalBets(g,0);while(g.phase==='revealing')assert.equal(E.revealNext(g,0,g.revealCursor),true);assert.equal(g.phase,'finished');assert.deepEqual(g.ranks,['red','purple','yellow','green','blue']);assert.deepEqual(g.finishResults.map(x=>x.reward),[-1,8,5,3,2,1,8]);assert.equal(g.players[0].money,11);assert.equal(g.players[5].money,11);assert.deepEqual(g.winners,[0,5]);});
 test('crazy camel crossing backward ends game; carried racers rank last',()=>{const g=board(newGame(),{1:['black','red'],3:['white'],5:['blue','green','purple','yellow']});g.dice=['grey'];E.apply(g,0,{type:'roll'},()=>0);assert.equal(g.phase,'finished');assert.equal(g.ranks[4],'red');assert.equal(E.locate(g,'red').space,0);});
 test('partnership available only at 6+ players and resets each leg',()=>{const g=newGame(6);assert.equal(E.apply(g,0,{type:'partner',seat:1}),true);assert.equal(g.players[1].partner,0);assert.equal(E.apply(g,1,{type:'partner',seat:2}),false);g.phase='scoring';approve(g);assert.ok(g.players.every(p=>p.partner===null));});
 test('500 complete random races preserve camels, dice and nonnegative money',()=>{let state=163;const rng=()=>((state=Math.imul(state,1664525)+1013904223>>>0)/4294967296);for(let trial=0;trial<500;trial++){const g=E.create(Array.from({length:2+trial%7},(_,i)=>({name:'P'+i})),rng);let turns=0;while(g.phase!=='finished'&&turns++<1000){if(g.phase==='scoring'){approve(g);continue;}const c=E.COLORS[Math.floor(rng()*5)];const a=rng()<.3&&g.supply[c].length?{type:'ticket',color:c}:{type:'roll'};assert.equal(E.apply(g,g.turn,a,rng),true);assert.deepEqual(g.board.flat().slice().sort(),E.ALL.slice().sort());assert.ok(g.players.every(p=>p.money>=0));assert.equal(g.dice.length+g.rolled.length,6);}assert.equal(g.phase,'finished');assert.ok(g.winners.length);}});
@@ -46,7 +47,7 @@ test('round waits for every acknowledgement, rejects duplicates and protects the
  const g=board(newGame(),{1:['red','blue','green','yellow','purple'],16:['black','white']});
  for(let i=0;i<5;i++)E.apply(g,g.turn,{type:'roll'},()=>0);
  assert.equal(g.phase,'scoring');assert.equal(E.nextLeg(g),false);
- const ack={type:'acknowledge',leg:1,phase:'scoring'};
+ payRound(g);const ack={type:'acknowledge',leg:1,phase:'scoring'};
  assert.equal(E.apply(g,0,ack),true);assert.equal(E.apply(g,0,ack),false);
  assert.equal(E.apply(g,1,ack),true);assert.equal(g.phase,'scoring');
  assert.equal(E.apply(g,2,{...ack,leg:0}),false);
@@ -62,6 +63,7 @@ test('public remaining-card counts update without exposing hidden colors',()=>{
 test('final results require all acknowledgements and never start another leg',()=>{
  const g=board(newGame(),{16:['red'],2:['blue','green','purple','yellow'],14:['black'],15:['white']});
  g.dice=['red'];E.apply(g,0,{type:'roll'},()=>0);assert.equal(g.phase,'finished');
+ approve(g);assert.equal(g.roundScoringReviewed,true);E.openFinalBets(g,0);
  E.acknowledge(g,0,1);E.acknowledge(g,1,1);assert.equal(g.roundReviewed,false);
  E.acknowledge(g,2,1);assert.equal(g.roundReviewed,true);assert.equal(g.phase,'finished');
  assert.equal(E.nextLeg(g),false);
@@ -75,6 +77,7 @@ test('finish reveals one card at a time, in pile order, without leaking future c
  assert.equal(g.players[1].money,3);assert.equal(g.finishResults.length,0);
  assert.equal(E.view(g,0).bets.winner[1].color,undefined);
  assert.equal(E.acknowledge(g,0,g.leg),false);
+ approve(g);E.openFinalBets(g,0);
  assert.equal(E.revealNext(g,1,0),false);
  assert.equal(E.revealNext(g,0,0),true);assert.equal(g.finishResults.length,1);assert.equal(g.players[1].money,2);
  assert.equal(E.view(g,0).bets.winner[0].color,'blue');assert.equal(E.view(g,0).bets.winner[1].color,undefined);
@@ -129,4 +132,46 @@ test('journal preserves distinct round histories after the next leg begins',()=>
  assert.equal(g.journal.length,2);assert.equal(g.journal[0].round,1);
  assert.deepEqual(g.journal[0].entries,first);
  assert.equal(g.journal[1].round,2);assert.match(g.journal[1].entries[0],/red leg ticket/);
+});
+
+test('round payout stages expose balances in podium order without paying twice',()=>{
+ const g=board(newGame(),{5:['red'],4:['blue'],3:['green'],2:['purple'],1:['yellow'],14:['white'],15:['black']});
+ g.players[0].tickets=[{color:'red',value:5},{color:'red',value:2},{color:'purple',value:2}];
+ g.players[1].tickets=[{color:'blue',value:3}];g.players[2].tickets=[{color:'yellow',value:5}];
+ E.scoreLeg(g);g.phase='scoring';
+ assert.equal(g.players[0].money,9);assert.equal(E.view(g,0).players[0].money,3);
+ assert.equal(E.advanceRound(g,1,0),false);
+ assert.equal(E.advanceRound(g,0,0),true);assert.equal(E.view(g,0).players[0].money,10);
+ assert.equal(g.payoutEvent.transfers[0].amount,7);
+ assert.equal(E.advanceRound(g,0,0),false);assert.equal(g.players[0].money,9);
+ assert.equal(E.advanceRound(g,0,1),true);assert.equal(E.view(g,0).players[1].money,4);
+ assert.equal(E.advanceRound(g,0,2),true);assert.equal(E.view(g,0).players[0].money,9);
+ assert.equal(g.payoutEvent.transfers[0].amount,-1);assert.equal(E.view(g,0).players[2].money,2);
+ assert.equal(E.advanceRound(g,0,3),false);
+});
+test('final bets stay locked until final-round payouts and everyone’s round review are complete',()=>{
+ const g=board(newGame(),{16:['red'],2:['blue','green','purple','yellow'],14:['black'],15:['white']});
+ g.dice=['red'];g.bets.winner=[{seat:1,color:'red'}];E.apply(g,0,{type:'roll'},()=>0);
+ assert.equal(g.phase,'revealing');assert.equal(E.openFinalBets(g,0),false);assert.equal(E.revealNext(g,0,0),false);
+ payRound(g);E.acknowledge(g,0,g.leg);E.acknowledge(g,1,g.leg);
+ assert.equal(E.openFinalBets(g,0),false);E.acknowledge(g,2,g.leg);
+ assert.equal(g.roundScoringReviewed,true);assert.equal(g.roundReviewed,false);
+ assert.equal(E.openFinalBets(g,1),false);assert.equal(E.openFinalBets(g,0),true);
+ assert.deepEqual(g.acknowledged,[false,false,false]);assert.equal(E.revealNext(g,0,0),true);
+ assert.equal(g.phase,'finished');assert.equal(g.roundReviewed,false);
+});
+
+test('grey die displayed color always matches the moving camel after carrying and stacking overrides',()=>{
+ const scenarios=[
+  {stacks:{5:['black','red'],7:['white'],1:['blue','green','yellow','purple']},randomFace:'white',expected:'black'},
+  {stacks:{5:['white','red'],7:['black'],1:['blue','green','yellow','purple']},randomFace:'black',expected:'white'},
+  {stacks:{14:['black','white'],1:['red','blue','green','yellow','purple']},randomFace:'black',expected:'white'},
+  {stacks:{14:['white','black'],1:['red','blue','green','yellow','purple']},randomFace:'white',expected:'black'}
+ ];
+ for(const {stacks,randomFace,expected} of scenarios){
+  const g=board(newGame(),stacks);g.dice=['grey'];const values=[0,.4,randomFace==='black'?.1:.9];let i=0;
+  E.apply(g,0,{type:'roll'},()=>values[i++]);
+  assert.equal(g.event.camel,expected);assert.equal(g.event.face,expected);assert.equal(g.rolled[0].face,expected);
+  assert.equal(E.view(g,1).rolled[0].face,expected);
+ }
 });

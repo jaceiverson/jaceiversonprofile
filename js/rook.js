@@ -1,5 +1,12 @@
 // Rook (games/rook.html): online play and the table. The rules are in js/rook-engine.js.
 (function () {
+  const isLocalFile = location.protocol === 'file:';
+  const gamePath = isLocalFile ? location.pathname : location.pathname.replace(/\.html$/i, '');
+  function updateAddress(url) {
+    if (isLocalFile) return;
+    try { window.history.replaceState(null, '', url); } catch { /* URL cleanup must never prevent play. */ }
+  }
+  if (gamePath !== location.pathname) updateAddress(gamePath + location.search + (location.hash || ''));
   const {
     SUITS, SUIT_NAMES, DECK, MAX_BID, sumPoints, teamOf, effSuit, cardName, shuffle, legalPlays, minBid,
     newGame, applyAction, collectTrick, viewFor, currentGame, handsCsv, tricksCsv
@@ -139,7 +146,7 @@
     peer = new Peer(PEER_PREFIX + gameCode);
     voice.attach(peer);
     peer.on('open', () => {
-      shareLink = `${location.origin}${location.pathname}?join=${gameCode}`;
+      shareLink = isLocalFile ? gameCode : `${location.origin}${gamePath}?join=${gameCode}`;
       broadcast();
     });
     peer.on('connection', c => {
@@ -410,7 +417,7 @@
     teardown();
     gameCode = '';
     onlinePanel.hidden = true;
-    window.history.replaceState(null, '', location.pathname);  // drop ?join= so a refresh doesn't rejoin
+    updateAddress(gamePath);  // drop ?join= so a refresh doesn't rejoin
     render();
   }
 

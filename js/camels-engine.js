@@ -33,6 +33,7 @@
     g.dice = [...COLORS, 'grey']; g.rolled = [];
     g.supply = Object.fromEntries(COLORS.map(c => [c, [5, 3, 2, 2]]));
     g.acknowledged = g.players.map(() => false); g.roundReviewed = false;
+    g.roundStep = null; g.payoutEvent = null; g.roundScoringReviewed = false; g.finalCardsOpened = false;
     g.tiles = []; g.players.forEach(p => { p.tickets = []; p.pyramids = 0; p.partner = null; });
   }
   function locate(g, camel) {
@@ -86,9 +87,27 @@
       const partner = p.partner === null ? null : g.players[p.partner];
       const bonus = partner ? Math.max(0, partner.pyramids ? 1 : 0, ...partner.tickets.map(t => ticketValue(t, ranks))) : 0;
       const before = p.money; p.money = Math.max(0, p.money + own + bonus);
-      return { name: p.name, own, bonus, delta: p.money - before, money: p.money };
+      const first = p.tickets.filter(t=>t.color===ranks[0]).reduce((sum,t)=>sum+t.value,0);
+      const second = p.tickets.filter(t=>t.color===ranks[1]).length;
+      return { name:p.name, own, bonus, delta:p.money-before, money:p.money, before, stages:[first,second,own-first-second+bonus] };
     });
-    g.ranks = ranks;
+    g.ranks = ranks; g.roundStep = 0; g.payoutEvent = null;
+  }
+  function roundBalance(g, seat, step) {
+    const s = g.summary[seat];
+    if (!s.stages) return g.players[seat].money;
+    return Math.max(0,s.before+s.stages.slice(0,step).reduce((sum,n)=>sum+n,0));
+  }
+  function advanceRound(g, seat, expectedStep) {
+    if (seat !== 0 || !['scoring','revealing','finished'].includes(g.phase) || g.roundStep !== expectedStep || expectedStep >= 3) return false;
+    const step=g.roundStep;
+    const transfers=g.players.map((_,i)=>({seat:i,before:roundBalance(g,i,step),after:roundBalance(g,i,step+1)})).map(t=>({...t,amount:t.after-t.before}));
+    g.roundStep++;g.revision++;g.payoutEvent={id:g.revision,step,transfers};
+    return true;
+  }
+  function openFinalBets(g, seat) {
+    if (seat !== 0 || !['revealing','finished'].includes(g.phase) || !g.roundScoringReviewed || g.finalCardsOpened) return false;
+    g.finalCardsOpened=true;g.acknowledged=g.players.map(()=>false);g.revision++;return true;
   }
   function finish(g) {
     g.finishResults = []; g.revealCursor = 0;
@@ -101,7 +120,7 @@
     g.winners = g.players.map((p,i) => p.money === max ? i : -1).filter(i => i >= 0);
   }
   function revealNext(g, seat, expectedIndex) {
-    if (g.phase !== 'revealing' || seat !== 0 || expectedIndex !== g.revealCursor) return false;
+    if (!g.finalCardsOpened || g.phase !== 'revealing' || seat !== 0 || expectedIndex !== g.revealCursor) return false;
     const cards = ['winner','loser'].flatMap(kind => g.bets[kind].map(b => ({...b,kind})));
     const card = cards[g.revealCursor];
     if (!card) return false;
@@ -116,6 +135,8 @@
     return true;
   }
   function apply(g, seat, a, rng = Math.random) {
+    if (a?.type === 'roundStep') return advanceRound(g,seat,a.step);
+    if (a?.type === 'openFinalBets') return openFinalBets(g,seat);
     if (a?.type === 'reveal') return revealNext(g,seat,a.index);
     if (a?.type === 'acknowledge') {
       if (a.phase !== g.phase) return false;
@@ -126,8 +147,11 @@
     const previousEvent = g.event; g.event = null;
     if (a.type === 'roll') {
       const index = Math.floor(rng() * g.dice.length), color = g.dice.splice(index, 1)[0];
-      const steps = die(rng), face = color === 'grey' ? (rng() < .5 ? 'black' : 'white') : color;
-      const camel = color === 'grey' ? crazy(g, face) : color;
+      const steps = die(rng), rolledFace = color === 'grey' ? (rng() < .5 ? 'black' : 'white') : color;
+      const camel = color === 'grey' ? crazy(g, rolledFace) : color;
+      // Resolve carrying/stacking rules before choosing the face shown on screen.
+      // The displayed grey-die result must always name the camel that moves.
+      const face = color === 'grey' ? camel : rolledFace;
       // Roll rewards are paid now; pyramid tickets only track rolls and partner copies.
       p.pyramids++; p.money++; const movement = move(g, camel, steps);
       g.rolled.push({ color, steps, face });
@@ -155,25 +179,28 @@
   }
   function allAcknowledged(g) { return g.acknowledged?.length === g.players.length && g.acknowledged.every(Boolean); }
   function acknowledge(g, seat, leg) {
-    if (!['scoring','finished'].includes(g.phase) || leg !== g.leg || !Number.isInteger(seat) || !g.players[seat] || g.roundReviewed) return false;
+    if (!['scoring','revealing','finished'].includes(g.phase) || (g.phase==='revealing' && g.finalCardsOpened) || (g.roundStep!==null && g.roundStep!==undefined && g.roundStep<3) || leg !== g.leg || !Number.isInteger(seat) || !g.players[seat] || g.roundReviewed) return false;
     if (!g.acknowledged) g.acknowledged = g.players.map(() => false);
     if (g.acknowledged[seat]) return false;
     g.acknowledged[seat] = true; g.revision++;
     if (allAcknowledged(g)) {
       if (g.phase === 'scoring') nextLeg(g);
+      else if (!g.finalCardsOpened) g.roundScoringReviewed = true;
       else g.roundReviewed = true;
     }
     return true;
   }
   function nextLeg(g) {
-    if (g.phase !== 'scoring' || !allAcknowledged(g)) return false;
+    if (g.phase !== 'scoring' || (g.roundStep!==null && g.roundStep<3) || !allAcknowledged(g)) return false;
     g.leg++; resetLeg(g); g.phase = 'playing'; g.event = null; g.revision++; return true;
   }
   // Only the host holds the full hidden finish-card decks.
   function view(g, seat) {
     const v = JSON.parse(JSON.stringify(g));
-    v.players.forEach((p,i) => { p.finishCardsRemaining = g.players[i].hand.length; });
-    if (g.phase !== 'finished') {
+    v.players.forEach((p,i) => { p.finishCardsRemaining = g.players[i].hand.length;
+      if (g.summary && g.roundStep!==null && g.roundStep!==undefined && g.roundStep<3 && g.phase!=='playing') p.money=roundBalance(g,i,g.roundStep);
+    });
+    if (g.phase !== 'finished' || !g.finalCardsOpened) {
       for (const kind of ['winner', 'loser']) {
         const revealed = g.finishResults?.filter(b => b.kind === kind).length || 0;
         v.bets[kind] = g.bets[kind].map((b,i) => ({ seat:b.seat, ...(b.seat === seat || i < revealed ? {color:b.color} : {}) }));
@@ -182,6 +209,6 @@
     }
     v.mySeat = seat; return v;
   }
-  const api = { COLORS, ALL, create, locate, ranking, crazy, validTile, move, ticketValue, scoreLeg, revealNext, apply, allAcknowledged, acknowledge, nextLeg, view };
+  const api = { COLORS, ALL, create, locate, ranking, crazy, validTile, move, ticketValue, scoreLeg, roundBalance, advanceRound, openFinalBets, revealNext, apply, allAcknowledged, acknowledge, nextLeg, view };
   if (typeof module !== 'undefined') module.exports = api; else root.CamelUp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

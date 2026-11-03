@@ -171,8 +171,8 @@ dialog.camel-game.round-results { max-width: 740px; }
 .camel-game.round-results details summary { cursor: pointer; padding: 10px 0; font-size: 13px; }
 @media(prefers-reduced-motion:reduce) { .camel-game .firework-spark { animation: none; opacity: .65; transform: translate(var(--dx),var(--dy)); } .camel-game .reveal-card.reveal-flip .bet-slip { animation: none; } }
 @media(max-width:500px) { .camel-game .reveal-card { grid-template-columns: 85px 1fr; gap: 14px; padding: 12px; } .camel-game .reveal-card h3 { font-size: 20px; } .camel-game .reveal-card p { font-size: 12px; } }
-/* Center the results dialog explicitly despite the shared page margin reset. */
-dialog.camel-game.round-results { position: fixed; inset: 0; margin: auto; height: fit-content; max-height: 90vh; max-height: 90dvh; }
+/* Center both dialogs despite the shared page margin reset. */
+dialog.camel-game { position: fixed; inset: 0; margin: auto; height: fit-content; max-height: 90vh; max-height: 90dvh; }
 .camel-game .positions { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 15px; }
 .camel-game .positions h3 { font-size: 13px; margin-bottom: 10px; }
 .camel-game .positions .ranking { margin: 0; border: 0; padding: 0; }
@@ -209,3 +209,119 @@ dialog.camel-game.round-results { position: fixed; inset: 0; margin: auto; heigh
 }
 
 .camel-game .welcome-title { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+.camel-game .practice-count { display: flex; align-items: center; gap: 12px; }
+.camel-game .practice-count select { width: 80px; }
+.camel-game .partner-controls { margin-top: 20px; }
+.camel-game .partner-controls .eyebrow { margin-bottom: 8px; }
+.camel-game .partner-controls>button:not(.quiet) { width: 100%; }
+.camel-game .partner-choices { display: grid; grid-template-columns: repeat(auto-fit,minmax(110px,1fr)); gap: 8px; }
+/* Keep each partnership at the foot of its player card. */
+.camel-game .player { display: flex; flex-direction: column; }
+.camel-game .player-status:empty { display: none; }
+.camel-game .player-status:last-child { margin-top: auto; }
+.camel-game .player-partner { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+.camel-game .player-partner strong { font-weight: 600; }
+@media (max-width:680px) {
+  .camel-game .player-table .player.mobile-selected { display: flex; }
+  .camel-game .player-navigation { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; }
+  .camel-game .player-navigation #activePlayer { grid-column: 1 / -1; }
+}
+
+.camel-game .betting-table>.finish-piles { margin-top: 0; margin-bottom: 20px; }
+.camel-game .betting-table>.finish-choices:not(:empty) { margin-bottom: 20px; }
+/* Money stays numeric for scoring; the purse breaks it into 5s and 1s. */
+.camel-game .player-identity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; }
+.camel-game .player-identity .player-name { min-width: 0; flex: 1; }
+.camel-game .player-identity .player-money { margin: 0; font-size: 19px; white-space: nowrap; }
+.camel-game .player-table-heading { flex-wrap: wrap; }
+.camel-game .coin-legend { font-size: 10px; color: var(--muted); }
+.camel-game .coin-purse { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; min-height: 50px; margin: 12px 0 8px; }
+.camel-game .coin-group { display: inline-flex; flex-direction: column; align-items: center; gap: 7px; }
+.camel-game .coin-piles { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; }
+.camel-game .coin-stack { position: relative; display: block; width: 28px; height: calc(13px + (var(--coin-count) - 1) * 4px); }
+.camel-game .coin { position: absolute; left: 0; bottom: calc(var(--coin-level) * 4px); display: grid; place-items: center; width: 28px; height: 13px; border-radius: 50%; font: 700 8px/1 'DM Sans',sans-serif; }
+.camel-game .coin.gold { color: #795315; border: 1px solid #a77a29; background: radial-gradient(ellipse at 35% 25%,#fff2b3,#e6be57 65%,#c99836); box-shadow: 0 2px 0 #aa7a27, 0 3px 0 #795b2933, inset 0 0 0 2px #f6dc8a; }
+.camel-game .coin.silver { color: #5b626b; border: 1px solid #8a939d; background: radial-gradient(ellipse at 35% 25%,#fff,#d3d9df 65%,#a6afb8); box-shadow: 0 2px 0 #86919b, 0 3px 0 #39495422, inset 0 0 0 2px #e8edf0; }
+.camel-game .coin-count { font-size: 9px; color: var(--muted); }
+
+.camel-game .player-footer { margin-top: auto; padding-top: 12px; }
+.camel-game .player-footer .remaining-cards { margin: 0 0 8px; }
+.camel-game .player-footer .remaining-cards:last-child { margin-bottom: 0; }
+.camel-game .player-footer .player-partner { display: block; margin-top: 0; padding-top: 8px; }
+/* Shared round payouts: podium order, a pyramid bank, and player coin pills. */
+.camel-game .payout-steps { display: flex; gap: 8px; flex-wrap: wrap; padding: 0; list-style: none; margin: 16px 0; }
+.camel-game .payout-steps li { padding: 6px 10px; border-radius: 99px; background: #eee9da; font-size: 11px; margin: 0; }
+.camel-game .payout-steps li.complete { background: #dcebd7; }
+.camel-game .payout-pyramid { width: 85px; margin: 12px auto; }
+.camel-game .payout-pyramid svg { width: 100%; display: block; }
+.camel-game .payout-breakdown { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 12px 0; font-size: 11px; }
+.camel-game .payout-wallets { display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap: 8px; margin: 12px 0; }
+.camel-game .payout-wallet { border: 1px solid var(--line); background: #f2efe4; border-radius: 12px; padding: 10px; }
+.camel-game .payout-wallet>div:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: 11px; }
+.camel-game .payout-wallet .coin-purse { margin: 8px 0 0; min-height: 36px; }
+.camel-game #roundPayoutNext { width: 100%; min-height: 44px; }
+.camel-game .coin-flights { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+.camel-game .coin-flight { position: fixed; bottom: auto; z-index: 10; animation: payout-coin .8s ease-in-out var(--flight-delay) both; }
+@keyframes payout-coin { 0% { transform: translate(0,0) scale(.8); opacity: 0; } 10% { opacity: 1; } 50% { transform: translate(var(--arc-x),var(--arc-y)) rotate(170deg) scale(1.15); opacity: 1; } 90% { opacity: 1; } 100% { transform: translate(var(--flight-x),var(--flight-y)) rotate(360deg) scale(.8); opacity: 0; } }
+.camel-game .final-pile-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 20px 0; }
+.camel-game .final-pile-column { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #f4f0e5; }
+.camel-game .final-pile-column h3 { font-size: 20px; }
+.camel-game .final-pile-column .reveal-card { display: flex; flex-direction: column; gap: 12px; padding: 12px; align-items: center; text-align: center; margin: 12px 0; }
+.camel-game .final-pile-column .reveal-card .bet-slip { width: 105px; }
+.camel-game .pile-revealed-cards { padding-left: 16px; }
+.camel-game .pile-revealed-cards li { font-size: 11px; overflow-wrap: anywhere; }
+@media(max-width:500px) { .camel-game .final-pile-columns { gap: 8px; } .camel-game .final-pile-column { padding: 8px; } .camel-game .final-pile-column h3 { font-size: 16px; } .camel-game .payout-wallets { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(prefers-reduced-motion:reduce) { .camel-game .coin-flight { animation: none; display: none; } }
+/* Final results: people, GOLD overhead, and a podium made of camels. */
+dialog.camel-game.winner-preview { max-width: 820px; }
+.camel-game .preview-victory { margin-top: 8px; font-size: 12px; }
+.camel-game .preview-label { color: var(--muted); font-size: 10px; letter-spacing: 2px; text-align: center; }
+.camel-game .victory-screen { padding: 12px 0 0; }
+.camel-game .victory-screen>.eyebrow { text-align: center; }
+.camel-game h2.victory-title { font: 800 clamp(32px,5vw,54px)/1.08 Outfit,sans-serif; text-align: center; overflow-wrap: anywhere; color: var(--ink); letter-spacing: -1.3px; }
+.camel-game .victory-subtitle { text-align: center; color: #947031; font-weight: 700; font-size: 14px; }
+.camel-game .camel-winners-podium { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: end; gap: 12px; margin: 24px auto 12px; max-width: 650px; padding-bottom: 20px; border-bottom: 2px solid #d6bc82; }
+.camel-game .podium-place { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+.camel-game .podium-gold { display: flex; flex-direction: column; align-items: center; background: #f8e7ad; color: #77511b; border: 1px solid #e0c36c; border-radius: 99px; padding: 7px 18px; margin-bottom: 8px; }
+.camel-game .podium-gold strong { font: 800 27px/1 Outfit,sans-serif; }
+.camel-game .podium-gold>span { font-size: 9px; font-weight: 700; letter-spacing: 1.8px; margin-top: 3px; }
+.camel-game .podium-person { width: 64px; height: 88px; margin-bottom: -26px; position: relative; z-index: 8; overflow: visible; }
+.camel-game .camel-podium { width: min(100%,160px); position: relative; height: calc(112px + (var(--tower-count) - 1) * 38px); }
+.camel-game .podium-camel { position: absolute; left: 0; bottom: calc(var(--camel-level) * 38px); width: 100%; height: 112px; filter: drop-shadow(0 3px 1px #0002); }
+.camel-game .podium-camel svg { width: 100%; height: 100%; overflow: visible; }
+.camel-game .podium-camel text { display: none; }
+.camel-game .crazy-podium { height: 86px; }
+.camel-game .crazy-podium .podium-camel { width: 88px; height: 66px; bottom: 8px; transform: rotate(90deg); transform-origin: center; }
+.camel-game .crazy-podium .podium-camel-black { left: 3%; }
+.camel-game .crazy-podium .podium-camel-white { left: 38%; transform: rotate(-90deg); }
+.camel-game .podium-place-label { display: grid; place-items: center; width: 40px; height: 40px; margin-top: 8px; border: 1px solid #b69950; background: #e8ce79; border-radius: 50%; font: 700 17px Outfit,sans-serif; }
+.camel-game .podium-rank-2 .podium-place-label { background: #e1e5e8; border-color: #b4bcc1; }
+.camel-game .podium-rank-3 .podium-place-label { background: #dcc4ad; border-color: #bb9675; }
+.camel-game .podium-player-name { text-align: center; margin-top: 9px; font-size: 16px; overflow-wrap: anywhere; }
+.camel-game .final-standings { margin-top: 16px; }
+.camel-game .final-standings summary, .camel-game .victory-bet-review summary { cursor: pointer; font-size: 13px; padding: 10px 0; }
+.camel-game .final-standings ol { list-style: none; padding: 0; }
+.camel-game .final-standings li { display: grid; grid-template-columns: 24px minmax(0,1fr) auto; gap: 8px; align-items: baseline; border-top: 1px solid var(--line); padding: 8px 0; font-size: 13px; }
+.camel-game .standing-rank { color: var(--muted); }
+.camel-game .victory-bet-review { margin: 12px 0; }
+@media(max-width:500px) {
+  .camel-game .camel-winners-podium { gap: 4px; }
+  .camel-game .podium-gold { padding: 7px 10px; }
+  .camel-game .podium-gold strong { font-size: 22px; }
+  .camel-game .podium-person { width: 45px; height: 70px; margin-bottom: -20px; }
+  .camel-game .camel-podium { height: calc(75px + (var(--tower-count) - 1) * 26px); }
+  .camel-game .podium-camel { height: 75px; bottom: calc(var(--camel-level) * 26px); }
+  .camel-game .crazy-podium { height: 62px; }
+  .camel-game .crazy-podium .podium-camel { width: 52px; height: 40px; bottom: 7px; }
+  .camel-game .crazy-podium .podium-camel-black { left: 0; }
+  .camel-game .crazy-podium .podium-camel-white { left: 35%; }
+  .camel-game .podium-player-name { font-size: 12px; }
+}
+.camel-game .victory-other-players { max-width: 650px; margin: 24px auto 0; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.camel-game .other-player-lineup { display: grid; grid-template-columns: repeat(auto-fit,minmax(75px,1fr)); align-items: end; gap: 12px; }
+.camel-game .other-player { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.camel-game .other-player .podium-gold { padding: 7px 12px; }
+.camel-game .other-player .podium-gold strong { font-size: 22px; }
+.camel-game .other-player .podium-person { height: 72px; width: 52px; margin: 0; }
+.camel-game .other-player .podium-player-name { font-size: 12px; }

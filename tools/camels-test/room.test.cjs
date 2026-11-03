@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const {EventEmitter} = require('node:events');
 const E = require('../../js/camels-engine.js');
+const resultsSource = fs.readFileSync(require.resolve('../../js/camels-results.js'),'utf8');
 const source = fs.readFileSync(require.resolve('../../js/camels.js'),'utf8');
 const markup = fs.readFileSync(require.resolve('../../games/camels.html'),'utf8');
 const ids = [...markup.matchAll(/id="([^"]+)"/g)].map(m=>m[1]);
@@ -23,18 +24,20 @@ class Peer extends EventEmitter {
   reconnect(){}
 }
 function element(){return {value:'',textContent:'',innerHTML:'',hidden:false,disabled:false,checked:false,style:{},dataset:{},offsetWidth:900,classList:{add(){},remove(){},toggle(){}},focus(){},addEventListener(type,handler){this['on'+type]=handler;},contains(){return true;},querySelector(){return element();},getBoundingClientRect(){return {width:900,height:650};},showModal(){this.open=true;},close(){this.open=false;}};}
-function client(name,{local=new Map(),session=new Map(),engine=E}={}){
+function client(name,{local=new Map(),session=new Map(),engine=E,protocol='http:',replaceState=()=>{},select=()=>null}={}){
  const els=new Map(ids.map(id=>[id,element()]));
  const get=id=>{if(!els.has(id))els.set(id,element());return els.get(id);};
  const storage=map=>({getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,v)});
  const timeouts=new Set();
- const context={window:null,CamelUp:engine,document:{getElementById:get,querySelector:selector=>{assert.doesNotMatch(selector,/ style=/);return null;}},Peer,GameVoice:class{constructor(){this.joined=false;}attach(){}leave(){this.joined=false;}sync(){}isSpeaking(){return false;}async join(){this.joined=true;}setMuted(v){this.muted=v;}},localStorage:storage(local),sessionStorage:storage(session),crypto:require('node:crypto').webcrypto,history:{replaceState(){}},location:{pathname:'/games/camels.html',search:'',origin:'http://localhost'},navigator:{clipboard:{writeText:async()=>{}}},ResizeObserver:class{observe(){}},matchMedia:()=>({matches:false}),addEventListener(){},URLSearchParams,confirm:()=>true,setTimeout:(fn,ms)=>{const t=setTimeout(fn,ms);t.unref();timeouts.add(t);return t;},clearTimeout};
- context.window=context;vm.runInNewContext(source,context);
- get('name').value=name;
+ const motion={matches:false};
+ const context={window:null,CamelUp:engine,document:{getElementById:get,querySelector:selector=>{assert.doesNotMatch(selector,/ style=/);return select(selector);}},Peer,GameVoice:class{constructor(){this.joined=false;}attach(){}leave(){this.joined=false;}sync(){}isSpeaking(){return false;}async join(){this.joined=true;}setMuted(v){this.muted=v;}},localStorage:storage(local),sessionStorage:storage(session),crypto:require('node:crypto').webcrypto,history:{replaceState},location:{protocol,pathname:'/games/camels.html',search:'',origin:'http://localhost'},navigator:{clipboard:{writeText:async()=>{}}},ResizeObserver:class{observe(){}},matchMedia:()=>motion,addEventListener(){},URLSearchParams,confirm:()=>true,setTimeout:(fn,ms)=>{const t=setTimeout(fn,ms);t.unref();timeouts.add(t);return t;},clearTimeout};
+ context.window=context;vm.runInNewContext(resultsSource,context);vm.runInNewContext(source,context);
+ get('name').value=name;get('practicePlayers').value='3';
  const click=(id,data={})=>get(id).onclick?.({target:{id:data.id||(id==='score'?'acknowledgeRound':id),dataset:data,disabled:false,closest(){return this;}}});
- return {get,click,local,session,dispose(){for(const t of timeouts)clearTimeout(t);},context};
+ return {get,click,local,session,motion,dispose(){for(const t of timeouts)clearTimeout(t);},context};
 }
 const tick=()=>new Promise(r=>setImmediate(r));
+const walkRound=c=>{for(let i=0;i<3;i++)c.click('score',{id:'roundPayoutNext'});};
 test('actual room controller: join, start, secret bets, voice, disconnect, token rejoin, host refresh',async()=>{
  const h=client('Host'),g=client('Guest');
  h.click('hostBtn');await tick();const code=h.get('roomCode').textContent;assert.match(code,/^[A-Z2-9]{6}$/);
@@ -62,7 +65,7 @@ test('shared-device table switches players and keeps finish cards out of satchel
 
 test('board tile placement, visible public slips, secret card backs and reduced-motion preference',()=>{
  const c=client('Family');c.click('practiceBtn');
- assert.equal(c.get('reduceMotion').checked,false);
+ assert.equal(c.motion.matches,false);assert.doesNotMatch(markup,/id="reduceMotion"/);
  assert.match(c.get('players').innerHTML,/mobile-selected" data-player="0"/);
  assert.match(c.get('bettingSlips').innerHTML,/bet-slip/);
  c.click('track',{space:'8'});
@@ -80,8 +83,8 @@ test('board tile placement, visible public slips, secret card backs and reduced-
  assert.doesNotMatch(c.get('players').innerHTML,/card-back/);
  assert.match(c.get('players').innerHTML,/<strong>4<\/strong> final-bet cards left/);
  assert.doesNotMatch(c.get('players').innerHTML,/title="winner finish bet: red"/);
- c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();
- const next=client('Family',{local:c.local});assert.equal(next.get('reduceMotion').checked,true);
+ c.motion.matches=true;c.motion.onchange();
+ const next=client('Family',{local:c.local});assert.equal(next.motion.matches,false);
  c.dispose();next.dispose();
 });
 
@@ -104,7 +107,7 @@ test('player browser defaults to active player, wraps, swipes and follows the ne
 test('pyramid and final slips act directly and respect the active turn',()=>{
  const c=client('Family');c.click('practiceBtn');
  assert.equal(c.get('pyramidRoll').disabled,false);
- c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();
+ c.motion.matches=true;c.motion.onchange();
  c.click('pyramidRoll');
  assert.match(c.get('journal').innerHTML,/Family rolled [a-z]+ [123] and earned 1 GOLD/);
  assert.match(c.get('turnTitle').textContent,/Player 2/);
@@ -123,7 +126,7 @@ test('pyramid and final slips act directly and respect the active turn',()=>{
 
 test('dice remain inside the board between turns and roll GOLD is immediately visible',()=>{
  const c=client('Family');c.click('practiceBtn');
- c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();
+ c.motion.matches=true;c.motion.onchange();
  assert.ok(markup.indexOf('id="dice"')>markup.indexOf('class="infield"'));
  assert.ok(markup.indexOf('id="dice"')<markup.indexOf('id="camels"'));
  for(let i=1;i<=3;i++){
@@ -138,27 +141,26 @@ test('dice remain inside the board between turns and roll GOLD is immediately vi
  c.dispose();
 });
 
-test('results modal waits for every local player and closes after the final acknowledgement',()=>{
- const c=client('Family');c.click('practiceBtn');c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();
+test('local results modal closes after one acknowledgement for all players',()=>{
+ const c=client('Family',{engine:{...E,create:p=>E.create(p,()=>.1),apply:(g,s,a)=>E.apply(g,s,a,()=>0)}});c.click('practiceBtn');c.motion.matches=true;c.motion.onchange();
  for(let i=0;i<5;i++)c.click('pyramidRoll');
  assert.equal(c.get('roundModal').open,true);
- assert.match(c.get('score').innerHTML,/0 \/ 3/);
+ assert.doesNotMatch(c.get('score').innerHTML,/players ready/);
  let prevented=false;c.get('roundModal').oncancel({preventDefault(){prevented=true;}});assert.equal(prevented,true);
- c.click('score');assert.equal(c.get('roundModal').open,true);assert.match(c.get('score').innerHTML,/1 \/ 3/);
- c.click('score');assert.equal(c.get('roundModal').open,true);assert.match(c.get('score').innerHTML,/2 \/ 3/);
- c.click('score');assert.equal(c.get('roundModal').open,false);
+ walkRound(c);c.click('score');assert.equal(c.get('roundModal').open,false);
  if(c.get('leg').textContent==='Leg 2') assert.equal(c.get('dice').innerHTML,'');
  else assert.equal(c.get('finalResult').hidden,false);
  c.dispose();
 });
 
 test('online players can acknowledge simultaneously and the host cannot skip anyone',async()=>{
- const h=client('Host'),g=client('Guest');h.click('hostBtn');await tick();
+ const h=client('Host',{engine:{...E,create:p=>E.create(p,()=>.1),apply:(g,s,a)=>E.apply(g,s,a,()=>0)}}),g=client('Guest');h.click('hostBtn');await tick();
  g.get('code').value=h.get('roomCode').textContent;g.click('joinBtn');await tick();
  h.get('starter').value='0';h.click('startBtn');await tick();
- for(const c of [h,g]){c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();}
+ for(const c of [h,g]){c.motion.matches=true;c.motion.onchange();}
  for(let i=0;i<5;i++){(i%2===0?h:g).click('pyramidRoll');await tick();}
  assert.equal(h.get('roundModal').open,true);assert.equal(g.get('roundModal').open,true);
+ for(let i=0;i<3;i++){h.click('score',{id:'roundPayoutNext'});await tick();}
  // Both clicks use the same starting revision; both must count.
  g.click('score');h.click('score');await tick();
  assert.equal(h.get('roundModal').open,false);assert.equal(g.get('roundModal').open,false);
@@ -173,25 +175,25 @@ test('finish celebration and paced card reveals lead into the everyone-ready fin
  game.board[16]=['red'];game.board[2]=['blue','green','purple','yellow'];game.board[14]=['white'];game.board[15]=['black'];
  game.dice=['red'];game.bets.winner=[{seat:1,color:'red'}];game.bets.loser=[{seat:2,color:'blue'}];
  game.players[1].hand=game.players[1].hand.filter(c=>c!=='red');game.players[2].hand=game.players[2].hand.filter(c=>c!=='blue');
- const c=client('Family',{engine:{...E,create:()=>game}});c.click('practiceBtn');c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();c.click('pyramidRoll');
+ const c=client('Family',{engine:{...E,create:()=>game}});c.click('practiceBtn');c.motion.matches=true;c.motion.onchange();c.click('pyramidRoll');
  assert.equal(c.get('roundModal').open,true);assert.match(c.get('fireworks').innerHTML,/firework-spark/);
+ walkRound(c);c.click('score');
  assert.match(c.get('score').innerHTML,/0 \/ 2/);assert.match(c.get('score').innerHTML,/Reveal winner card 1/);
  assert.doesNotMatch(c.get('score').innerHTML,/Player 2.*Backed/);
  c.click('score',{id:'revealNext'});assert.equal(game.players[1].money,11);
  assert.match(c.get('score').innerHTML,/1 \/ 2/);assert.match(c.get('score').innerHTML,/Reveal loser card 1/);
  c.click('score',{id:'revealNext'});assert.equal(game.players[2].money,11);
- assert.match(c.get('score').innerHTML,/share the win/);assert.match(c.get('score').innerHTML,/0 \/ 3/);
- c.click('score');c.click('score');assert.equal(c.get('roundModal').open,true);
+ assert.match(c.get('score').innerHTML,/share the win/);assert.doesNotMatch(c.get('score').innerHTML,/players ready/);
  c.click('score');assert.equal(c.get('roundModal').open,false);assert.equal(c.get('finalResult').hidden,false);
  c.dispose();
 });
 
 test('journal opens the current round and collapses past rounds while preserving manual toggles',()=>{
  const c=client('Family',{engine:{...E,create:players=>E.create(players,()=>.1),apply:(g,seat,a)=>E.apply(g,seat,a,()=>0)}});
- c.click('practiceBtn');c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();
+ c.click('practiceBtn');c.motion.matches=true;c.motion.onchange();
  assert.match(c.get('journal').innerHTML,/data-round="1" open/);
  for(let i=0;i<5;i++)c.click('pyramidRoll');
- c.click('score');c.click('score');c.click('score');
+ walkRound(c);c.click('score');
  assert.match(c.get('journal').innerHTML,/data-round="2" open/);
  assert.doesNotMatch(c.get('journal').innerHTML,/data-round="1" open/);
  c.get('journal').ontoggle({target:{dataset:{round:'1'},open:true,matches:()=>true}});
@@ -204,8 +206,9 @@ test('journal opens the current round and collapses past rounds while preserving
 test('grey die has three faces of each pip color and settles on its selected color and value',()=>{
  for(const face of ['black','white']){
   const g=E.create(['Family','Player 2','Player 3'].map(name=>({name,connected:true})),()=>.1);g.dice=['grey'];
+  g.board=g.board.map(stack=>stack.filter(c=>E.COLORS.includes(c)));g.board[14]=['black'];g.board[15]=['white'];
   const c=client('Family',{engine:{...E,create:()=>g,apply:(game,seat,action)=>{const values=[0,.4,face==='black'?.1:.9];let i=0;return E.apply(game,seat,action,()=>values[i++]);}}});
-  c.click('practiceBtn');c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();c.click('pyramidRoll');
+  c.click('practiceBtn');c.motion.matches=true;c.motion.onchange();c.click('pyramidRoll');
   const html=c.get('dice').innerHTML;
   const faces=[...html.matchAll(/class="die-face ([a-z]+)" style="--pip-color:(#[a-f0-9]+)">([\s\S]*?)<\/span>/g)];
   assert.equal(faces.length,6);
@@ -225,7 +228,7 @@ test('finishing camels cross the checkered line and continue through their remai
   g.board=Array.from({length:21},()=>[]);g.board[16]=['red','blue'];g.board[14]=['green'];g.board[15]=['purple','yellow'];g.board[12]=['black'];g.board[13]=['white'];g.dice=['red'];
   const c=client('Family',{engine:{...E,create:()=>g,apply:(game,seat,a)=>E.apply(game,seat,a,()=>(steps-.5)/3)}});
   c.click('practiceBtn');const start=c.get('camel-red').style.transform;
-  c.get('reduceMotion').checked=true;c.get('reduceMotion').onchange();c.click('pyramidRoll');
+  c.motion.matches=true;c.motion.onchange();c.click('pyramidRoll');
   assert.equal(E.locate(g,'red').space,16+steps);
   const transform=c.get('camel-red').style.transform;
   assert.notEqual(transform,start);
@@ -280,4 +283,151 @@ test('Tic Tac Toe locks the host to X while waiting and alternates authorized tu
  assert.deepEqual([...peers.keys()].sort(),peerIds);
  for(const p of [...peers.values()])p.destroy();
  assert.ok(h.get('board').children.every(b=>b.children.every(c=>c.disabled)));
+});
+
+test('local practice supports 5–8 players and makes alliances available at 6+',()=>{
+ for(const count of [5,6,7,8]){
+  const c=client('Family');c.get('practicePlayers').value=String(count);c.click('practiceBtn');
+  assert.equal((c.get('players').innerHTML.match(/data-player=/g)||[]).length,count);
+  if(count>=6){
+   assert.equal(c.get('partnerControls').hidden,false);
+   assert.match(c.get('partnerControls').innerHTML,/Choose a betting partner/);
+   assert.doesNotMatch(c.get('actions').innerHTML,/Choose a betting partner/);
+   c.click('partnerControls',{screen:'partner'});c.click('partnerControls',{partner:'1'});
+   assert.match(c.get('journal').innerHTML,/Family partnered with Player 2/);
+   assert.match(c.get('players').innerHTML,/Partner: <strong>Player 2<\/strong>/);
+   assert.match(c.get('players').innerHTML,/Partner: <strong>Family<\/strong>/);
+  }else { assert.equal(c.get('partnerControls').hidden,true); assert.equal(c.get('partnerControls').innerHTML,''); }
+  c.dispose();
+ }
+ const c=client('Family');c.get('practicePlayers').value='';c.click('practiceBtn');
+ assert.equal((c.get('players').innerHTML.match(/data-player=/g)||[]).length,8);c.dispose();
+});
+
+test('file:// pages can launch local practice and host a room without History API access',async()=>{
+ let attempts=0;
+ const c=client('Family',{protocol:'file:',replaceState(){attempts++;throw Error('SecurityError: file URLs cannot be rewritten');}});
+ assert.equal(attempts,0);
+ c.get('practicePlayers').value='8';c.click('practiceBtn');
+ assert.equal(c.get('welcome').hidden,true);assert.equal(c.get('table').hidden,false);
+ assert.equal((c.get('players').innerHTML.match(/data-player=/g)||[]).length,8);
+ c.click('leaveBtn');assert.equal(c.get('welcome').hidden,false);
+ c.click('hostBtn');await tick();assert.match(c.get('roomCode').textContent,/^[A-Z2-9]{6}$/);
+ assert.equal(c.get('lobby').hidden,false);assert.equal(attempts,0);
+ c.dispose();for(const p of [...peers.values()])p.destroy();
+});
+test('blocked URL cleanup cannot prevent game initialization on hosted pages',()=>{
+ const c=client('Family',{replaceState(){throw Error('SecurityError');}});
+ c.click('practiceBtn');assert.equal(c.get('table').hidden,false);c.dispose();
+});
+
+test('coin stacks represent each exact balance with gold fives and silver ones',()=>{
+ const balances=[0,1,4,5,12,25,37,100];
+ const g=E.create(balances.map((_,i)=>({name:'Player '+i,connected:true})),()=>.1);
+ g.players.forEach((p,i)=>{p.money=balances[i];});
+ const c=client('Family',{engine:{...E,create:()=>g}});c.click('practiceBtn');
+ const purses=[...c.get('players').innerHTML.matchAll(/<div class="coin-purse"[^>]*>([\s\S]*?)<\/div>/g)];
+ assert.equal(purses.length,8);
+ purses.forEach((purse,i)=>{
+  const gold=(purse[1].match(/class="coin gold"/g)||[]).length;
+  const silver=(purse[1].match(/class="coin silver"/g)||[]).length;
+  assert.equal(gold,Math.floor(balances[i]/5));assert.equal(silver,balances[i]%5);
+  assert.equal(gold*5+silver,balances[i]);
+ });
+ assert.match(c.get('players').innerHTML,/<div class="player-identity"><div class="player-name">Player 4[\s\S]*?<div class="player-money">12 <span>GOLD/);
+ c.dispose();
+});
+
+test('payout coins travel from the pyramid into player pills, then update the displayed stacks',async()=>{
+ const game=E.create(['Family','Player 2','Player 3'].map(name=>({name,connected:true})),()=>.1);
+ game.board=Array.from({length:21},()=>[]);game.board[5]=['red'];game.board[4]=['blue'];game.board[3]=['green'];game.board[2]=['purple'];game.board[1]=['yellow'];game.board[14]=['black'];game.board[15]=['white'];
+ game.players[0].tickets=[{color:'red',value:5},{color:'red',value:2}];E.scoreLeg(game);game.phase='scoring';
+ const c=client('Family',{engine:{...E,create:()=>game},select:selector=>selector.startsWith('[data-payout-seat=')?{getBoundingClientRect:()=>({left:100,top:400,width:120,height:80})}:null});
+ c.click('practiceBtn');assert.match(c.get('score').innerHTML,/Let’s count the round bets/);
+ c.click('score',{id:'roundPayoutNext'});
+ assert.equal((c.get('coinFlights').innerHTML.match(/coin-flight/g)||[]).length,3);
+ assert.match(c.get('coinFlights').innerHTML,/coin gold/);assert.match(c.get('coinFlights').innerHTML,/coin silver/);
+ assert.match(c.get('score').innerHTML,/Moving the coins/);
+ c.click('score',{id:'roundPayoutNext'});assert.equal(game.roundStep,1);
+ await new Promise(resolve=>setTimeout(resolve,1100));
+ assert.equal(c.get('coinFlights').innerHTML,'');assert.match(c.get('players').innerHTML,/<div class="player-money">10 <span>GOLD/);
+ c.motion.matches=true;walkRound(c);c.dispose();
+});
+test('final round review precedes separate winner and loser reveal columns',()=>{
+ const g=E.create(['Family','Player 2','Player 3'].map(name=>({name,connected:true})),()=>.1);
+ g.board=Array.from({length:21},()=>[]);g.board[16]=['red'];g.board[2]=['blue','green','purple','yellow'];g.board[14]=['black'];g.board[15]=['white'];g.dice=['red'];
+ g.bets.winner=[{seat:1,color:'red'}];g.bets.loser=[{seat:2,color:'blue'}];
+ const c=client('Family',{engine:{...E,create:()=>g}});c.click('practiceBtn');c.motion.matches=true;c.motion.onchange();c.click('pyramidRoll');
+ assert.match(c.get('score').innerHTML,/ROUND 1 SCORING/);assert.doesNotMatch(c.get('score').innerHTML,/final-pile-columns/);
+ walkRound(c);assert.match(c.get('score').innerHTML,/View final bet cards/);assert.equal(g.finalCardsOpened,false);
+ c.click('score');assert.equal(g.finalCardsOpened,true);assert.match(c.get('score').innerHTML,/final-pile-columns/);
+ assert.match(c.get('score').innerHTML,/<h3>Overall winner<\/h3>/);assert.match(c.get('score').innerHTML,/<h3>Overall loser<\/h3>/);
+ assert.doesNotMatch(markup,/id="diceCount"/);c.dispose();
+});
+
+test('round payouts show only the camel color for the placement being paid',()=>{
+ const g=E.create(['Family','Player 2','Player 3'].map(name=>({name,connected:true})),()=>.1);
+ g.board=Array.from({length:21},()=>[]);g.board[5]=['red'];g.board[4]=['blue'];g.board[3]=['green'];g.board[2]=['purple'];g.board[1]=['yellow'];g.board[14]=['black'];g.board[15]=['white'];E.scoreLeg(g);g.phase='scoring';
+ const c=client('Family',{engine:{...E,create:()=>g}});c.motion.matches=true;c.click('practiceBtn');
+ c.click('score',{id:'roundPayoutNext'});
+ let line=c.get('score').innerHTML.match(/<p class="payout-camel">([\s\S]*?)<\/p>/)[1];
+ assert.match(line,/First place:/);assert.match(line,/var\(--red\)/);assert.doesNotMatch(line,/blue/);
+ c.click('score',{id:'roundPayoutNext'});
+ line=c.get('score').innerHTML.match(/<p class="payout-camel">([\s\S]*?)<\/p>/)[1];
+ assert.match(line,/Second place:/);assert.match(line,/var\(--blue\)/);assert.doesNotMatch(line,/red/);
+ c.dispose();
+});
+
+function standaloneFinalPreview() {
+ const html=fs.readFileSync(require.resolve('../../games/camels-final-screen.html'),'utf8');
+ const elements=new Map();
+ const context={window:null,document:{getElementById:id=>{if(!elements.has(id))elements.set(id,{innerHTML:''});return elements.get(id);}}};context.window=context;
+ vm.runInNewContext(resultsSource,context);
+ const inline=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n');
+ vm.runInNewContext(inline,context);return elements.get('finalPreview').innerHTML;
+}
+test('winners preview shows stick figures, GOLD overhead and 3 / 2 / sideways-camel podiums without starting a game',()=>{
+ const peerIds=[...peers.keys()];const html=standaloneFinalPreview();
+ assert.match(html,/Jace wins!/);
+ const first=html.match(/<div class="podium-place podium-rank-1"[\s\S]*?(?=<div class="podium-place|<\/div><details class="final-standings")/)[0];
+ const second=html.match(/<div class="podium-place podium-rank-2"[\s\S]*?(?=<div class="podium-place)/)[0];
+ assert.equal((first.match(/class="podium-camel podium-camel-/g)||[]).length,3);
+ assert.equal((second.match(/class="podium-camel podium-camel-/g)||[]).length,2);
+ assert.match(html,/crazy-podium/);assert.match(html,/podium-camel-black/);assert.match(html,/podium-camel-white/);
+ assert.ok(first.indexOf('podium-gold')<first.indexOf('podium-person'));
+ assert.match(first,/<strong>42<\/strong><span>GOLD/);
+ assert.match(first,/stroke="#141414"/);
+ assert.deepEqual([...peers.keys()],peerIds);
+});
+test('final winners screen preserves joint winners and uses the real GOLD standings',()=>{
+ const g=E.create(['First','Joint First','Third'].map(name=>({name,connected:true})),()=>.1);
+ g.players.forEach((p,i)=>{p.money=i<2?42:20;});g.phase='finished';g.roundReviewed=true;g.winners=[0,1];g.ranks=E.ranking(g);g.summary=[];g.finishResults=[];
+ const c=client('Family',{engine:{...E,create:()=>g}});c.click('practiceBtn');
+ const html=c.get('finalResult').innerHTML;
+ assert.match(html,/First &amp; Joint First share the win!/);
+ assert.equal((html.match(/class="podium-place podium-rank-1"/g)||[]).length,2);
+ assert.equal((html.match(/class="podium-place podium-rank-3"/g)||[]).length,1);
+ assert.match(html,/Play Again/);assert.match(html,/All players & final GOLD/);c.dispose();
+});
+
+test('remaining players stand below the camel podium with GOLD above their heads and an optional full list',()=>{
+ const html=standaloneFinalPreview();
+ const remaining=html.match(/<section class="victory-other-players"[\s\S]*?<\/section>/)[0];
+ assert.equal((remaining.match(/class="other-player"/g)||[]).length,5);
+ assert.equal((remaining.match(/class="podium-person"/g)||[]).length,5);
+ assert.ok(remaining.indexOf('podium-gold')<remaining.indexOf('podium-person'));
+ assert.match(remaining,/<strong>17<\/strong><span>GOLD/);assert.match(remaining,/Player 8/);
+ assert.doesNotMatch(remaining,/podium-camel/);
+ assert.ok(html.indexOf('camel-winners-podium')<html.indexOf('victory-other-players'));
+ assert.ok(html.indexOf('victory-other-players')<html.indexOf('class="final-standings"'));
+ assert.match(html,/<details class="final-standings"><summary>/);
+});
+
+test('standalone final-screen preview is excluded from deployment and not linked from the game',()=>{
+ const config=fs.readFileSync(require.resolve('../../_config.yml'),'utf8');
+ assert.match(config,/^  - games\/camels-final-screen\.html(?:\s|$)/m);
+ assert.doesNotMatch(markup,/id="previewVictory"|id="winnerPreview"/);
+ assert.doesNotMatch(source,/function previewVictory|preview.*=== 'final'/);
+ const preview=fs.readFileSync(require.resolve('../../games/camels-final-screen.html'),'utf8');
+ assert.match(preview,/camels-results\.js/);assert.doesNotMatch(preview,/peerjs|camels-engine\.js|src="[^"]*camels\.js/);
 });

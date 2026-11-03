@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Camels — Final Screen Preview</title>
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="../css/style.css?v=4">
+  <link rel="stylesheet" href="../css/camels.css?v=25">
+  <style>
+    .preview-header { max-width: 900px; margin: 24px auto 0; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font: 13px system-ui,sans-serif; }
+    main.camel-game.preview-main { max-width: 900px; padding-top: 20px; }
+    .preview-caption { font-size: 12px; color: #6d766b; text-align: center; margin-top: 20px; }
+  </style>
+</head>
+<body class="camel-page">
+  <header class="preview-header"><strong>Camels · Final screen preview</strong><a href="camels.html">← Back to the game</a></header>
+  <main class="camel-game preview-main">
+    <section class="panel" id="finalPreview" aria-labelledby="previewTitle"></section>
+    <p class="preview-caption">Local preview · Eight sample players · Excluded from the published website</p>
+  </main>
+  <script src="../js/camels-results.js?v=1"></script>
+  <script>
+    const samplePlayers = [
+      {name:'Jace',money:42}, {name:'Player 2',money:31},
+      {name:'Player 3',money:24}, {name:'Player 4',money:17},
+      {name:'Player 5',money:15}, {name:'Player 6',money:11},
+      {name:'Player 7',money:8}, {name:'Player 8',money:4}
+    ];
+    document.getElementById('finalPreview').innerHTML = CamelsResults.render({players:samplePlayers}, 'previewTitle');
+  </script>
+</body>
+</html>
