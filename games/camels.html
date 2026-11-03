@@ -10,13 +10,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/style.css?v=4">
-  <link rel="stylesheet" href="../css/camels.css?v=26">
+  <link rel="stylesheet" href="../css/style.css?v=5">
+  <link rel="stylesheet" href="../css/camels.css?v=27">
   <script defer src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script defer src="../js/game-voice.js"></script>
   <script defer src="../js/camels-results.js?v=1"></script>
   <script defer src="../js/camels-engine.js?v=10"></script>
-  <script defer src="../js/camels.js?v=28"></script>
+  <script defer src="../js/camels.js?v=30"></script>
+  <script src="../js/game-dialogs.js?v=1"></script>
 </head>
 
 <body class="camel-page">
@@ -212,7 +213,7 @@
     <div id="fireworks" class="fireworks" aria-hidden="true"></div><div id="coinFlights" class="coin-flights" aria-hidden="true"></div>
     <section id="score" class="scoring"></section>
   </dialog>
-  <dialog id="help" class="camel-game"><button id="closeHelp" class="close" aria-label="Close guide">✕</button>
+  <dialog id="help" class="camel-game"><button id="closeHelp" class="game-dialog-close" type="button" data-dialog-close aria-label="Close guide">✕</button>
     <p class="eyebrow">WELCOME TO THE TABLE</p>
     <h2>One turn. One choice.</h2>
     <p>Everyone starts with 3 GOLD. Camels belong to nobody; anyone can back any racing camel.</p>

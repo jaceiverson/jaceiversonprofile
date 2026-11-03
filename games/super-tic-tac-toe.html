@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/style.css?v=4">
+  <link rel="stylesheet" href="../css/style.css?v=5">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
   <script>
@@ -347,6 +347,7 @@
 
     .sttt-rules-text li { margin-bottom: 0.35rem; }
   </style>
+  <script src="../js/game-dialogs.js?v=1"></script>
 </head>
 
 <body>
@@ -451,6 +452,7 @@
 
   <!-- Game mode picker, shown on load and from "Change Mode" -->
   <dialog class="sttt-modal" id="modeModal" aria-labelledby="modeTitle">
+    <button type="button" class="game-dialog-close" data-dialog-close aria-label="Close game mode picker">×</button>
     <h2 id="modeTitle">How do you want to play?</h2>
 
     <div class="sttt-modal-rules">
@@ -517,7 +519,7 @@
       menu.classList.toggle('open');
     });
   </script>
-  <script src="../js/super-tic-tac-toe.js?v=5"></script>
+  <script src="../js/super-tic-tac-toe.js?v=6"></script>
 </body>
 
 </html>

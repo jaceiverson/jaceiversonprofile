@@ -419,14 +419,7 @@
     openPicker();
   });
   document.getElementById('localBtn').addEventListener('click', () => modal.close());
-  // Clicking the dimmed area outside the picker closes it (and plays locally), like pressing Esc
-  let pressedOutside = false;
-  const outside = e => {
-    const r = modal.getBoundingClientRect();
-    return e.target === modal && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
-  };
-  modal.addEventListener('pointerdown', e => { pressedOutside = outside(e); });
-  modal.addEventListener('click', e => { if (pressedOutside && outside(e)) modal.close(); });
+  GameDialogs.bind(modal);
   document.getElementById('hostBtn').addEventListener('click', () => {
     if (!requireName()) return;
     modal.close();

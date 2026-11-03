@@ -2,7 +2,13 @@
 (function(root) {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-  function camelSvg(c) { return `<svg viewBox="0 0 100 75" role="img" aria-label="${c} camel"><g ${['white','black'].includes(c) ? 'transform="translate(100 0) scale(-1 1)"' : ''}><path d="M14 46 L15 64 Q18 69 22 64 L26 50 L48 50 L56 65 Q61 68 62 62 L61 45 Q73 40 74 26 L79 16 L89 18 Q96 17 94 11 L77 8 Q69 7 68 18 L60 35 Q55 30 51 25 Q44 12 36 30 Q30 15 22 30 L18 36 Q10 33 7 41 L3 47" fill="var(--${c})" stroke="#3a4238" stroke-width="2.3" stroke-linejoin="round"/><circle cx="83" cy="12" r="1.7" fill="#263b33"/><path d="M73 9L73 3M76 9L79 4" stroke="#3a4238" stroke-width="2"/></g><text x="37" y="44" text-anchor="middle">${c[0].toUpperCase()}</text></svg>`; }
+  function originalCamelSvg(c) { return `<svg viewBox="0 0 100 75" role="img" aria-label="${c} camel"><g ${['white','black'].includes(c) ? 'transform="translate(100 0) scale(-1 1)"' : ''}><path d="M14 46 L15 64 Q18 69 22 64 L26 50 L48 50 L56 65 Q61 68 62 62 L61 45 Q73 40 74 26 L79 16 L89 18 Q96 17 94 11 L77 8 Q69 7 68 18 L60 35 Q55 30 51 25 Q44 12 36 30 Q30 15 22 30 L18 36 Q10 33 7 41 L3 47" fill="var(--${c})" stroke="#3a4238" stroke-width="2.3" stroke-linejoin="round"/><circle cx="83" cy="12" r="1.7" fill="#263b33"/><path d="M73 9L73 3M76 9L79 4" stroke="#3a4238" stroke-width="2"/></g><text x="37" y="44" text-anchor="middle">${c[0].toUpperCase()}</text></svg>`; }
+  function camelSvg(c) {
+    const palette={blue:'#347fb9',green:'#438c62',yellow:'#dfb338',purple:'#9472bd',red:'#ce6454',black:'#3d4247',white:'#f6f4e6'};
+    const channels=palette[c].slice(1).match(/../g).map(n=>parseInt(n,16)/176);
+    return `<svg viewBox="0 0 100 75" role="img" aria-label="${c} camel"><defs><filter id="camel-color-${c}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${channels[0]} 0 0 0 0 0 ${channels[1]} 0 0 0 0 0 ${channels[2]} 0 0 0 0 0 1 0"/></filter></defs><g ${['black','white'].includes(c)?'transform="translate(100 0) scale(-1 1)"':''}><svg width="100" height="75" viewBox="100 115 1180 880"><image href="../img/camel.png" width="1427" height="1102" filter="url(#camel-color-${c})"/></svg></g><text x="37" y="44" text-anchor="middle">${c[0].toUpperCase()}</text></svg>`;
+  }
+
   function stickFigure(seated = false) {
     return `<svg viewBox="0 0 80 110" class="podium-person" aria-hidden="true"><circle cx="40" cy="17" r="10" fill="#141414"/><g fill="none" stroke="#141414" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${seated ? '<path d="M40 29 36 64 60 70 66 96M36 64 20 76 13 96M39 38 58 49 70 42M38 39 22 48 13 42"/>' : '<path d="M40 29 40 67M40 39 19 27 10 10M40 39 61 27 70 10M40 67 23 103M40 67 57 103"/>'}</g></svg>`;
   }
@@ -23,5 +29,5 @@
 
     return `<section class="victory-screen"><p class="eyebrow">THE FINAL RESULTS</p><h2 class="victory-title"${titleId?' id="'+titleId+'"':''}>${title}</h2><p class="victory-subtitle">${winners.length>1?'Joint champions':'Race-night champion'} · ${sorted[0].money} GOLD</p><div class="camel-winners-podium" aria-label="Top three players on the camel podium">${[1,0,2].map(i=>podiumPlace(top[i],top[i]?rank(top[i]):0)).join('')}</div>${others}<details class="final-standings"><summary>All players & final GOLD</summary><ol>${sorted.map(p=>`<li><span class="standing-rank">${rank(p)}.</span><strong>${esc(p.name)}</strong><span>${p.money} GOLD</span></li>`).join('')}</ol></details></section>`;
   }
-  root.CamelsResults = { camelSvg, render: victoryMarkup };
+  root.CamelsResults = { camelSvg, originalCamelSvg, render: victoryMarkup };
 })(window);

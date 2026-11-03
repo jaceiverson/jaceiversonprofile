@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><title>Camels — Drawing Comparison</title>
+  <link rel="stylesheet" href="../css/style.css?v=5"><link rel="stylesheet" href="../css/camels.css?v=27">
+  <style>
+    .art-intro {margin-bottom:28px}.art-intro p{color:#6d766b;max-width:700px}.art-row{margin:22px 0}.art-samples{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-top:16px}.art-sample{padding:14px;background:#f1e8d1;border-radius:12px;min-width:0;text-align:center}.art-sample svg{width:100%;height:auto;display:block}.art-sample span{font-size:12px;text-transform:capitalize}.art-comparison h2{font-size:24px}.art-stacks{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}.art-stack-stage{position:relative;height:220px;background:#ead9ab;border-radius:14px;margin-top:14px}.art-stack-piece{position:absolute;width:125px;left:50%;bottom:calc(24px + var(--level)*43px);transform:translateX(-50%)}.art-stack-piece svg{width:100%;height:100%}.art-note{font-size:12px;color:#6d766b}@media(max-width:700px){.art-samples{grid-template-columns:repeat(3,minmax(0,1fr))}.art-stacks{gap:12px}.art-stack-piece{width:100px}}
+  </style>
+</head>
+<body class="camel-page">
+<main class="camel-game art-comparison">
+  <header class="art-intro"><p class="eyebrow">LOCAL ART EXPERIMENT</p><h1 style="font-size:42px;letter-spacing:-1px">Your camel, next to the original.</h1><p>A cleaned version of your sketch, recolored for the five racers and two crazy camels. The current game artwork is preserved.</p><a class="btn btn-navy" href="camels-art-local.html">Try both styles in a local game →</a></header>
+  <section class="panel art-row"><h2>Current game art</h2><div id="currentArt" class="art-samples"></div></section>
+  <section class="panel art-row"><h2>Your drawing</h2><p class="art-note">Black and white face backward, just like the crazy camels in the game.</p><div id="drawingArt" class="art-samples"></div></section>
+  <section class="panel art-row"><h2>Stack comparison</h2><div class="art-stacks"><div><h3>Current</h3><div id="oldStack" class="art-stack-stage"></div></div><div><h3>Your drawing</h3><div id="newStack" class="art-stack-stage"></div></div></div></section>
+  <p class="art-note">This comparison, the experimental game, and its art assets are excluded from the published website.</p>
+</main>
+<script src="../js/camels-results.js?v=1"></script><script src="../js/camels-art.local.js?v=1"></script>
+<script>
+  document.body.insertAdjacentHTML('afterbegin',CamelsDrawing.filters());
+  function samples(render){return CamelsDrawing.colors.map(c=>`<div class="art-sample">${render(c)}<span>${c}</span></div>`).join('');}
+  document.getElementById('currentArt').innerHTML=samples(CamelsResults.originalCamelSvg);
+  document.getElementById('drawingArt').innerHTML=samples(CamelsDrawing.drawing);
+  function stack(render){return ['blue','yellow','red'].map((c,i)=>`<div class="art-stack-piece" style="--level:${i}">${render(c)}</div>`).join('');}
+  document.getElementById('oldStack').innerHTML=stack(CamelsResults.originalCamelSvg);
+  document.getElementById('newStack').innerHTML=stack(CamelsDrawing.drawing);
+</script>
+</body></html>

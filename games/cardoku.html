@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
-  <link rel="stylesheet" href="../css/style.css?v=4">
+  <link rel="stylesheet" href="../css/style.css?v=5">
   <link rel="stylesheet" href="../css/cardoku.css?v=7">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
@@ -22,6 +22,7 @@
     gtag('js', new Date());
     gtag('config', 'UA-175301597-1');
   </script>
+  <script src="../js/game-dialogs.js?v=1"></script>
 </head>
 
 <body>
@@ -323,6 +324,7 @@
 
   <!-- Game feedback: a picture of the final board plus the game's data, emailed via the results script -->
   <dialog class="cdk-feedback" id="feedbackDialog" aria-labelledby="feedbackTitle">
+    <button type="button" class="game-dialog-close" data-dialog-close aria-label="Close feedback">×</button>
     <h2 id="feedbackTitle">Share game feedback</h2>
     <p class="cdk-feedback-note">Sends this board, your game data, and your note to Jace.</p>
     <img id="feedbackImage" alt="Your final board">
@@ -338,6 +340,7 @@
 
   <!-- Sharing with friends: a picture (one game, or the report card) sent through the phone's share sheet -->
   <dialog class="cdk-feedback cdk-share" id="shareDialog" aria-labelledby="shareTitle">
+    <button type="button" class="game-dialog-close" data-dialog-close aria-label="Close sharing">×</button>
     <h2 id="shareTitle">Share</h2>
     <img id="shareImage" alt="">
     <div id="shareHighlightWrap" hidden>
@@ -354,7 +357,7 @@
 
   <!-- First visit (and "How the board scores"): which way rows, columns, and boxes run and what each is worth -->
   <dialog class="cdk-modal cdk-guide" id="guideDialog" aria-labelledby="guideTitle">
-    <button type="button" class="cdk-modal-x" id="guideX" aria-label="Close">×</button>
+    <button type="button" class="cdk-modal-x" id="guideX" data-dialog-close aria-label="Close">×</button>
     <h2 id="guideTitle" tabindex="-1" autofocus>Welcome to Cardoku</h2>
     <p class="cdk-modal-note">Sudoku with playing cards.</p>
     <div class="cdk-guide-tips">
@@ -400,7 +403,7 @@
 
   <!-- End of game: score, achievements, and the Completionist checklist with this game's new checks -->
   <dialog class="cdk-modal cdk-results" id="resultsDialog" aria-labelledby="resultsTitle">
-    <button type="button" class="cdk-modal-x" id="resultsX" aria-label="Close">×</button>
+    <button type="button" class="cdk-modal-x" id="resultsX" data-dialog-close aria-label="Close">×</button>
     <div class="cdk-results-head" tabindex="-1" autofocus>
       <span class="cdk-label" id="resultsTitle">Final score</span>
       <span class="cdk-over-score" id="finalScore">0</span>
@@ -447,7 +450,7 @@
       menu.classList.toggle('open');
     });
   </script>
-  <script src="../js/cardoku.js?v=1"></script>
+  <script src="../js/cardoku.js?v=2"></script>
   <script src="../js/cardoku-transfer.js?v=2"></script>
 </body>
 

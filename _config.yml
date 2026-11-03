@@ -1,7 +1,17 @@
 # GitHub Pages builds this site with Jekyll and publishes the files as they are, except for these.
 exclude:
+  - archive/  # old site drafts and templates
+  - workflows/  # resume-generation scripts
+  - requirements.txt  # local Python dependencies
+  - venv/  # local Python environment
+  - README.md  # repository notes
   - tools/   # local helpers, not part of the site: Cardoku's Apps Script and the Rook test bench
   - games/rook-practice.local.html  # private practice launcher; keep in GitHub, not the published site
   - games/rook-report-preview.html  # local review page; keep in GitHub, not the published site
   - games/camels-final-screen.html  # local-only final results preview
   - games/camels-final-reveal.local.html  # local-only interactive end-of-game modal preview
+  - games/camels-art-preview.html  # local-only art comparison
+  - games/camels-art-local.html  # local-only drawing experiment
+  - js/camels-art.local.js  # experimental renderer
+  - img/camels-experiment/  # experimental art assets
+  - generated_images/  # working generated artwork

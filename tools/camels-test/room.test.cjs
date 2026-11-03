@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const {EventEmitter} = require('node:events');
 const E = require('../../js/camels-engine.js');
+const dialogsSource = fs.readFileSync(require.resolve('../../js/game-dialogs.js'),'utf8');
 const resultsSource = fs.readFileSync(require.resolve('../../js/camels-results.js'),'utf8');
 const source = fs.readFileSync(require.resolve('../../js/camels.js'),'utf8');
 const markup = fs.readFileSync(require.resolve('../../games/camels.html'),'utf8');
@@ -23,7 +24,7 @@ class Peer extends EventEmitter {
   destroy(){this.destroyed=true;peers.delete(this.id);for(const c of this.links)if(c.other)c.close();}
   reconnect(){}
 }
-function element(){return {value:'',textContent:'',innerHTML:'',hidden:false,disabled:false,checked:false,style:{},dataset:{},offsetWidth:900,classList:{add(){},remove(){},toggle(){}},focus(){},addEventListener(type,handler){this['on'+type]=handler;},contains(){return true;},querySelector(){return element();},getBoundingClientRect(){return {width:900,height:650};},showModal(){this.open=true;},close(){this.open=false;}};}
+function element(){return {value:'',textContent:'',innerHTML:'',hidden:false,disabled:false,checked:false,style:{},dataset:{},offsetWidth:900,classList:{add(){},remove(){},toggle(){}},focus(){},addEventListener(type,handler){this['on'+type]=handler;},contains(){return true;},querySelectorAll(){return [];},querySelector(){return element();},getBoundingClientRect(){return {width:900,height:650};},showModal(){this.open=true;},close(){this.open=false;}};}
 function client(name,{local=new Map(),session=new Map(),engine=E,protocol='http:',replaceState=()=>{},select=()=>null}={}){
  const els=new Map(ids.map(id=>[id,element()]));
  const get=id=>{if(!els.has(id))els.set(id,element());return els.get(id);};
@@ -31,7 +32,7 @@ function client(name,{local=new Map(),session=new Map(),engine=E,protocol='http:
  const timeouts=new Set();
  const motion={matches:false};
  const context={window:null,CamelUp:engine,document:{getElementById:get,querySelector:selector=>{assert.doesNotMatch(selector,/ style=/);return select(selector);}},Peer,GameVoice:class{constructor(){this.joined=false;}attach(){}leave(){this.joined=false;}sync(){}isSpeaking(){return false;}async join(){this.joined=true;}setMuted(v){this.muted=v;}},localStorage:storage(local),sessionStorage:storage(session),crypto:require('node:crypto').webcrypto,history:{replaceState},location:{protocol,pathname:'/games/camels.html',search:'',origin:'http://localhost'},navigator:{clipboard:{writeText:async()=>{}}},ResizeObserver:class{observe(){}},matchMedia:()=>motion,addEventListener(){},URLSearchParams,confirm:()=>true,setTimeout:(fn,ms)=>{const t=setTimeout(fn,ms);t.unref();timeouts.add(t);return t;},clearTimeout};
- context.window=context;vm.runInNewContext(resultsSource,context);vm.runInNewContext(source,context);
+ context.window=context;vm.runInNewContext(dialogsSource,context);vm.runInNewContext(resultsSource,context);vm.runInNewContext(source,context);
  get('name').value=name;get('practicePlayers').value='3';
  const click=(id,data={})=>get(id).onclick?.({target:{id:data.id||(id==='score'?'acknowledgeRound':id),dataset:data,disabled:false,closest(){return this;}}});
  return {get,click,local,session,motion,dispose(){for(const t of timeouts)clearTimeout(t);},context};
@@ -263,7 +264,7 @@ function ticClient(name){
  const get=id=>{if(!els.has(id))els.set(id,make());return els.get(id);};
  let voice;
  const context={window:null,document:{getElementById:get,querySelectorAll:()=>[],createElement:make},Peer,GameVoice:class{constructor(){voice=this;this.joined=false;this.leaves=0;}attach(){}leave(){this.joined=false;this.leaves++;}sync(){}isSpeaking(){return false;}async join(){this.joined=true;}setMuted(v){this.muted=v;}},localStorage:{getItem:()=>'',setItem(){}},history:{replaceState(){}},location:{pathname:'/games/super-tic-tac-toe.html',search:'',origin:'http://localhost'},navigator:{clipboard:{writeText:async()=>{}}},URLSearchParams,setTimeout,clearTimeout};context.window=context;
- vm.runInNewContext(fs.readFileSync(require.resolve('../../js/super-tic-tac-toe.js'),'utf8'),context);get('nameInput').value=name;
+ vm.runInNewContext(dialogsSource,context);vm.runInNewContext(fs.readFileSync(require.resolve('../../js/super-tic-tac-toe.js'),'utf8'),context);get('nameInput').value=name;
  return {get,voice,click:id=>get(id).onclick?.(),cell:(b,c)=>get('board').children[b].children[c]};
 }
 test('Tic Tac Toe locks the host to X while waiting and alternates authorized turns without dropping voice on replay',async()=>{
@@ -328,6 +329,7 @@ test('coin stacks represent each exact balance with gold fives and silver ones',
  const c=client('Family',{engine:{...E,create:()=>g}});c.click('practiceBtn');
  const purses=[...c.get('players').innerHTML.matchAll(/<div class="coin-purse"[^>]*>([\s\S]*?)<\/div>/g)];
  assert.equal(purses.length,8);
+ assert.doesNotMatch(c.get('players').innerHTML,/<span class="coin-count">/);
  purses.forEach((purse,i)=>{
   const gold=(purse[1].match(/class="coin gold"/g)||[]).length;
   const silver=(purse[1].match(/class="coin silver"/g)||[]).length;

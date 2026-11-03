@@ -54,6 +54,7 @@
   let paperScoreTearTimer = null;
   const paperScoreTapedPages = new Map();
   let celebratedHand = '';
+  let scoreDialogDismissal = null;
   let peer = null;
   const voice = new GameVoice({ onChange: () => renderVoice() });
   let deal = null;       // { order, step, shuffling, timer } while the deal animation plays
@@ -729,6 +730,7 @@
     renderLog();
     renderHistory();
     const scoreDialog = $('scoreDialog');
+    scoreDialogDismissal?.update();
     const scorecardReview = v.phase === 'score-review' || (v.phase === 'gameover' && paperScore);
     if (scorecardReview && !scoreDialog.open) scoreDialog.showModal();
     if (!scorecardReview && scoreDialog.open) scoreDialog.close();
@@ -1227,12 +1229,9 @@
   $('felt').addEventListener('click', e => {
     if (e.target.closest('#droppedCardsDialogOpen')) $('droppedCardsDialog').showModal();
   });
-  document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => {
-    button.closest('dialog').close();
-  }));
-  document.querySelectorAll('dialog.rook-data-dialog').forEach(dialog => dialog.addEventListener('click', e => {
-    if (e.target === dialog) dialog.close();
-  }));
+  scoreDialogDismissal = GameDialogs.bind($('scoreDialog'), {requiresConfirmation: () => view?.phase === 'score-review'});
+  GameDialogs.bind($('logDialog'));
+  GameDialogs.bind($('droppedCardsDialog'));
 
   $('lobbyTeams').addEventListener('click', e => {
     const btn = e.target.closest('button[data-seat]');

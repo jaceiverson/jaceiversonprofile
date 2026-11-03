@@ -2109,17 +2109,7 @@
     try { localStorage.setItem(WELCOMED_KEY, '1'); } catch (e) { /* storage blocked */ }
   });
   $('feedbackCancel').addEventListener('click', () => $('feedbackDialog').close());
-  // Clicking the dimmed area outside any dialog closes it (only when the press started outside too,
-  // so dragging out of a text box doesn't)
-  document.querySelectorAll('dialog').forEach(dialog => {
-    const outside = e => {
-      const r = dialog.getBoundingClientRect();
-      return e.target === dialog && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
-    };
-    let pressedOutside = false;
-    dialog.addEventListener('pointerdown', e => { pressedOutside = outside(e); });
-    dialog.addEventListener('click', e => { if (pressedOutside && outside(e)) dialog.close(); });
-  });
+  document.querySelectorAll('dialog').forEach(dialog => GameDialogs.bind(dialog));
   renderPastGames();
   // Private windows or "block all cookies" settings make storage throw; say so instead of failing silently
   try {

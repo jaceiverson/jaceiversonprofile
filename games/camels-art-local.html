@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Camels — Local Drawing Experiment</title>
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Family favorite betting game. Can you pick the right camel to win?">
+  <link rel="icon" href="../favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css?v=5">
+  <link rel="stylesheet" href="../css/camels.css?v=27">
+  <script defer src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script defer src="../js/game-voice.js"></script>
+  <script defer src="../js/camels-results.js?v=1"></script>
+  <script defer src="../js/camels-art.local.js?v=1"></script>
+  <script defer src="../js/camels-engine.js?v=10"></script>
+  <script defer src="../js/camels.js?v=30"></script>
+  <script src="../js/game-dialogs.js?v=1"></script>
+  <style>
+    .art-preview-toolbar{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:center;background:#f8e7ad;padding:12px;font:13px system-ui,sans-serif}.art-preview-toolbar label{display:flex;gap:8px;align-items:center}.art-use-drawing .art-current{display:none}body:not(.art-use-drawing) .art-drawing{display:none}
+  </style>
+</head>
+
+<body class="camel-page art-use-drawing" data-camel-drawing="true">
+  <div class="art-preview-toolbar"><strong>Local art experiment</strong><label><input id="useDrawing" type="checkbox" checked> Use my drawing</label><a href="camels-art-preview.html">Compare both styles</a></div>
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+        <a href="/" class="navbar-brand">Jace Iverson</a>
+        <button class="navbar-toggle" id="navToggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="navbar-nav" id="navMenu">
+          <li><a href="/" class="navbar-link">Home</a></li>
+          <li><a href="/projects" class="navbar-link">Projects</a></li>
+          <li><a href="/games/" class="navbar-link active">Games</a></li>
+          <li><a href="/resume" class="navbar-link">Resume</a></li>
+          <li><a href="/links" class="navbar-link">Links</a></li>
+          <li><a href="mailto:iverson.jace@gmail.com" class="navbar-link navbar-cta">Email Me</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <header class="page-header">
+    <div class="page-header-media" style="background-image: url('../img/snowbasin-images/tron.jpeg');"
+      role="presentation" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/games/">Games</a></nav>
+      <h1>Camel Up</h1>
+      <p>Family favorite betting game. Can you pick the right camel to win?</p>
+    </div>
+  </header>
+  <main class="camel-game">
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+    <section id="welcome" class="welcome panel">
+      <div>
+        <p class="eyebrow">The camels are bellowing</p>
+        <div class="welcome-title">
+          <h2>Lets play.</h2><button id="helpBtn" class="help-pill" type="button" aria-haspopup="dialog"
+            aria-controls="help">How to play →</button>
+        </div>
+        <p>Enter your name, and click "Create a room" to start.</p>
+        <label for="name">Your name</label><input id="name" maxlength="24" placeholder="Desert adventurer"
+          autocomplete="nickname">
+        <div class="buttons"><button id="hostBtn" class="primary">Create a room ↗</button><button id="practiceBtn">Try
+            on this device</button></div>
+        <label class="practice-count" for="practicePlayers">Local players
+          <select id="practicePlayers" aria-label="Players for Try on this device">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8" selected>8</option>
+          </select>
+        </label>
+        <p class="small">Alliances are available with 6–8 players. Pass this device between players to test.</p>
+        <p class="small">The host keeps the room running. Keep their tab open.</p>
+      </div>
+      <div class="join-box">
+        <div class="camel-art" aria-hidden="true">🐪</div>
+        <h3>Ready to bet?</h3><label for="code">Room code</label><input id="code" maxlength="6" placeholder="ABCDEF"
+          autocapitalize="characters"><button id="joinBtn" class="dark">Join room →</button>
+      </div>
+    </section>
+    <section id="room" hidden>
+      <div class="room-bar panel">
+        <div><span class="eyebrow">ROOM</span> <strong id="roomCode"></strong> <button id="copyBtn" class="quiet">Copy
+            invite</button></div>
+        <div class="buttons"><span id="connectionStatus"></span><button id="rejoinBtn" hidden>Rejoin
+            room</button><button id="voiceJoin">Join voice</button><button id="voiceMute" hidden>Mute</button><button
+            id="voiceLeave" hidden>Leave voice</button><button id="leaveBtn" class="quiet">Leave room</button></div>
+      </div>
+      <div id="lobbyPlayers" class="players"></div>
+      <div id="lobby" class="panel lobby">
+        <h2>Waiting on degenerate gamblers...</h2>
+        <p>Invite 2–8 players. The host chooses who goes first (the youngest player in the tabletop rules).</p><label
+          for="starter">First player</label><select id="starter"></select><button id="startBtn" class="primary">Start
+          the race →</button>
+        <p id="lobbyNote" class="small"></p>
+      </div>
+      <div id="table" hidden>
+        <div class="table-grid">
+          <div class="race-table">
+            <section class="race panel">
+              <div class="race-heading">
+                <div><span class="eyebrow">THE RACE TRACK</span>
+                  <h2>Camel Up<span id="leg"></span></h2>
+                </div>
+              </div>
+              <section class="betting-table" aria-labelledby="bettingTitle">
+                <p class="eyebrow">End of Game Bets</p>
+                <div id="finishPiles" class="finish-piles"></div>
+                <div id="finishChoices" class="finish-choices"></div>
+                <p class="eyebrow" id="bettingTitle">Round Bets</p>
+                <div id="bettingSlips" class="slip-market"></div>
+                <div id="partnerControls" class="partner-controls" hidden aria-label="Betting partnerships"></div>
+                <p class="eyebrow">Cheer &amp; Jeer</p>
+                <div class="tile-toolbar" aria-label="Place a spectator tile"><button id="cheerTile" disabled
+                    aria-pressed="false">♧ Cheer +1</button><button id="jeerTile" disabled aria-pressed="false">Jeer
+                    −1</button></div>
+              </section>
+              <div id="board" class="board" aria-label="Race track">
+                <div id="track"></div>
+                <div class="infield"><button id="pyramidRoll" class="pyramid-button" type="button" disabled
+                    aria-label="Roll the pyramid and immediately earn 1 GOLD" title="Roll the pyramid"><svg
+                      viewBox="0 0 160 120" aria-hidden="true">
+                      <path d="M80 8 151 105 9 105Z" fill="#d8ab5b" stroke="#9f7139" stroke-width="3"
+                        stroke-linejoin="round" />
+                      <path d="M80 8 151 105 93 89Z" fill="#b9843e" />
+                      <path d="M80 8 93 89 9 105Z" fill="#e4bd75" />
+                      <path d="M34 76 89 66M21 91 91 80M48 57 87 50M62 37 83 33" stroke="#c79a51" stroke-width="2" />
+                      <path d="M9 105 93 89 151 105" fill="none" stroke="#9f7139" stroke-width="2" />
+                      <circle cx="118" cy="94" r="5" fill="#f3d598" stroke="#976a34" stroke-width="2" />
+                    </svg></button>
+                  <div id="dice" class="board-dice" aria-label="Dice revealed this leg"></div>
+                </div>
+                <div class="finish-line" role="img"
+                  aria-label="Checkered start and finish line between spaces 16 and 1"></div>
+                <div id="camels"></div>
+              </div>
+              <div class="race-footer"><span id="raceNote" role="status" aria-live="polite"></span></div>
+              <section class="positions" aria-labelledby="positionsTitle">
+                <h3 id="positionsTitle">Current camel positions</h3>
+                <div id="ranking" class="ranking"></div>
+              </section>
+            </section>
+            <section class="player-table" aria-label="Players and their betting slips">
+              <div class="player-table-heading"><span class="small">Players &amp; betting slips</span><span class="coin-legend">Silver = 1 · Gold = 5</span></div>
+              <div id="players" class="players" aria-label="Player cards" tabindex="0"></div>
+              <div class="player-navigation" aria-label="Browse players">
+                <button id="previousPlayer" aria-label="Previous player">←</button>
+                <span id="playerPosition" class="small" aria-live="polite"></span>
+                <button id="nextPlayer" aria-label="Next player">→</button>
+                <button id="activePlayer" class="quiet">Active player</button>
+              </div>
+            </section>
+          </div>
+          <aside>
+            <section class="panel action-panel">
+              <p class="eyebrow">YOUR NEXT MOVE</p>
+              <h2 id="turnTitle"></h2>
+              <p id="turnHint"></p>
+              <div id="actions"></div>
+            </section>
+            <section class="panel pocket">
+              <p class="eyebrow">YOUR SATCHEL</p>
+              <div id="satchel"></div>
+            </section>
+          </aside>
+        </div>
+        <section id="finalResult" class="panel scoring" hidden></section>
+        <div class="bottom-grid">
+          <section class="panel">
+            <p class="eyebrow">AT THE TABLE</p>
+            <h3>Race journal</h3>
+            <div id="journal"></div>
+          </section>
+          <section class="panel">
+            <p class="eyebrow">A QUICK REMINDER</p>
+            <h3>You’re backing camels, not owning them.</h3>
+            <p>On your turn, take one action. Roll for an immediate 1 GOLD, take a leg ticket, place a spectator tile,
+              or secretly predict the race winner or loser.</p>
+            <p>GOLD is game points. Whoever has the most when the race ends wins.</p><button class="quiet"
+              id="rulesBtn">Read the table guide →</button>
+          </section>
+        </div>
+      </div>
+    </section>
+    <div class="game-credits">An unofficial family implementation of Camel Up, designed by Steffen Bogen. Original interface and artwork.
+      <a href="https://boardgamegeek.com/filepage/176062/camel-up-second-edition-en-rules" target="_blank"
+        rel="noopener">Second-edition rulebook ↗</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">Jace Iverson</span>
+        <div class="footer-links">
+          <a href="https://github.com/jaceiverson" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/jaceiverson" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:iverson.jace@gmail.com">Email</a>
+          <a href="https://buymeacoffee.com/jaceiverson" target="_blank" rel="noopener" class="footer-bmc">☕ Buy me a
+            coffee</a>
+        </div>
+        <span>&copy;
+          <script>document.write(new Date().getFullYear())</script> Jace Iverson
+        </span>
+      </div>
+    </div>
+  </footer>
+  <dialog id="roundModal" class="camel-game round-results" aria-labelledby="roundTitle">
+    <div id="fireworks" class="fireworks" aria-hidden="true"></div><div id="coinFlights" class="coin-flights" aria-hidden="true"></div>
+    <section id="score" class="scoring"></section>
+  </dialog>
+  <dialog id="help" class="camel-game"><button id="closeHelp" class="game-dialog-close" type="button" data-dialog-close aria-label="Close guide">✕</button>
+    <p class="eyebrow">WELCOME TO THE TABLE</p>
+    <h2>One turn. One choice.</h2>
+    <p>Everyone starts with 3 GOLD. Camels belong to nobody; anyone can back any racing camel.</p>
+    <ol>
+      <li><strong>Roll:</strong> reveal one unused die, move its camel, and immediately collect 1 GOLD. Keep the pyramid
+        ticket as a record. A leg ends after five of the six dice. Roll rewards are already paid and are not added again
+        at leg scoring.</li>
+      <li><strong>Leg ticket:</strong> take the next ticket (5, 3, 2, 2). At leg end it pays that amount for first
+        place, 1 GOLD for second, or costs 1 GOLD otherwise.</li>
+      <li><strong>Spectator tile:</strong> place or move your cheer/jeer tile onto an empty space, excluding space 1 and
+        spaces next to other tiles. A landing earns you 1 GOLD per camel in the arriving stack and sends the moving unit
+        one step forward (cheer) or back (jeer). Jeering puts it underneath any destination stack.</li>
+      <li><strong>Finish bet:</strong> secretly spend a color card on the overall winner or loser. Each color can only
+        be used once across both piles. Correct cards pay 8, 5, 3, 2, then 1 GOLD in submission order; wrong cards cost
+        1 GOLD.</li>
+    </ol>
+    <h3>Stacks & crazy camels</h3>
+    <p>A moving camel carries everything above it and lands on top of another stack. Higher racing camels rank ahead.
+      The grey die moves black or white backward: if only one carries racing camels, that one moves; if the crazy camels
+      are directly stacked, the top one moves. Spectator effects follow the moving camel’s direction.</p>
+    <h3>Legs, partners & the finish</h3>
+    <p>Leg tickets are scored as a combined total, with money never below zero. After every player acknowledges the leg
+      results, tickets, dice, spectator tiles and partnerships reset for the next leg. The next player starts the next
+      leg. With 6–8 players, you may use your turn to pair with an available player; at scoring we automatically copy
+      the best positive ticket reward from each partner.</p>
+    <p>The race ends immediately when any camel unit crosses either end of the track. Racing camels carried backward
+      across the start rank last. Final leg scoring happens first, then winner bets, then loser bets. Most GOLD wins;
+      ties share victory.</p>
+    <p class="small">Online play uses the same PeerJS service and opt-in peer-to-peer voice as Rook. The host manages
+      the rules and hidden bets. Rejoin using the same browser; keep the host tab open. Mic access needs HTTPS or
+      localhost. Some networks may block peer connections.</p>
+  </dialog>
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'navMenu');
+    toggle.addEventListener('click', () => {
+      const open = toggle.classList.toggle('open');
+      menu.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded',()=>{
+      document.getElementById('useDrawing').onchange=e=>document.body.classList.toggle('art-use-drawing',e.target.checked);
+      document.getElementById('name').value=document.getElementById('name').value||'Jace';
+      document.getElementById('practiceBtn').click();
+    });
+  </script>
+</body>
+
+</html>

@@ -243,7 +243,6 @@ dialog.camel-game { position: fixed; inset: 0; margin: auto; height: fit-content
 .camel-game .coin { position: absolute; left: 0; bottom: calc(var(--coin-level) * 4px); display: grid; place-items: center; width: 28px; height: 13px; border-radius: 50%; font: 700 8px/1 'DM Sans',sans-serif; }
 .camel-game .coin.gold { color: #795315; border: 1px solid #a77a29; background: radial-gradient(ellipse at 35% 25%,#fff2b3,#e6be57 65%,#c99836); box-shadow: 0 2px 0 #aa7a27, 0 3px 0 #795b2933, inset 0 0 0 2px #f6dc8a; }
 .camel-game .coin.silver { color: #5b626b; border: 1px solid #8a939d; background: radial-gradient(ellipse at 35% 25%,#fff,#d3d9df 65%,#a6afb8); box-shadow: 0 2px 0 #86919b, 0 3px 0 #39495422, inset 0 0 0 2px #e8edf0; }
-.camel-game .coin-count { font-size: 9px; color: var(--muted); }
 
 .camel-game .player-footer { margin-top: auto; padding-top: 12px; }
 .camel-game .player-footer .remaining-cards { margin: 0 0 8px; }

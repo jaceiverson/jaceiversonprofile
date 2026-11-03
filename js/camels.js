@@ -232,7 +232,7 @@
         const size = Math.min(5,count - pile * 5);
         return `<span class="coin-stack ${color}" style="--coin-count:${size}">${Array.from({length:size},(_,level)=>`<span class="coin ${color}" style="--coin-level:${level}">${value}</span>`).join('')}</span>`;
       }).join('');
-      return `<span class="coin-group" aria-hidden="true"><span class="coin-piles">${piles}</span><span class="coin-count">${count} × ${value}</span></span>`;
+      return `<span class="coin-group" aria-hidden="true"><span class="coin-piles">${piles}</span></span>`;
     }
     return `<div class="coin-purse" role="img" aria-label="${total} GOLD: ${gold} gold coin${gold===1?'':'s'} worth 5 each and ${silver} silver coin${silver===1?'':'s'} worth 1 each">${group(gold,5,'gold')}${group(silver,1,'silver')}${!total?'<span class="small" aria-hidden="true">No coins yet</span>':''}</div>`;
   }
@@ -613,8 +613,7 @@
     clean(); updateAddress(gamePath); render(); message('You left the table.');
   };
   for (const id of ['helpBtn','rulesBtn']) $(id).onclick = () => $('help').showModal();
-  $('closeHelp').onclick = () => $('help').close();
-  $('help').onclick = e => {if(e.target===$('help')){const r=$('help').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('help').close();}};
+  GameDialogs.bind($('help'));
   motionPreference.onchange = () => $('board').classList.toggle('reduced-motion', reducedMotion());
   motionPreference.onchange();
   new ResizeObserver(()=>{if(view && view.phase!=='lobby' && !busy)placeCamels(view);}).observe($('board'));

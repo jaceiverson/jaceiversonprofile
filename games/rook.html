@@ -18,7 +18,7 @@
     href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <!-- Bump ?v= whenever the CSS changes, or phones can pair new HTML with a stale cached stylesheet -->
-  <link rel="stylesheet" href="../css/style.css?v=4">
+  <link rel="stylesheet" href="../css/style.css?v=5">
   <link rel="stylesheet" href="../css/rook.css?v=35">
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-175301597-1"></script>
@@ -31,6 +31,7 @@
   <!-- PeerJS: browser-to-browser connection for online play (no server of our own needed) -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="../js/game-voice.js?v=1"></script>
+  <script src="../js/game-dialogs.js?v=1"></script>
 </head>
 
 <body>
@@ -183,7 +184,7 @@
           <div class="rook-data-dialog-inner">
             <div class="rook-data-dialog-heading">
               <h2 id="scoreDialogTitle">Score sheet</h2><button type="button" class="btn btn-outline btn-sm"
-                data-close-dialog>Close</button>
+                data-dialog-close aria-label="Close dialog">×</button>
             </div>
             <div class="rook-history" id="history"></div>
           </div>
@@ -192,7 +193,7 @@
           <div class="rook-data-dialog-inner">
             <div class="rook-data-dialog-heading">
               <h2 id="logDialogTitle">Game log</h2><button type="button" class="btn btn-outline btn-sm"
-                data-close-dialog>Close</button>
+                data-dialog-close aria-label="Close dialog">×</button>
             </div>
             <div class="rook-history rook-log" id="gameLog"></div>
           </div>
@@ -202,7 +203,7 @@
           <div class="rook-data-dialog-inner">
             <div class="rook-data-dialog-heading">
               <h2 id="droppedCardsDialogTitle">Dropped widow cards</h2><button type="button"
-                class="btn btn-outline btn-sm" data-close-dialog>Close</button>
+                class="btn btn-outline btn-sm" data-dialog-close aria-label="Close dialog">×</button>
             </div>
             <div class="rook-dropped-cards" id="droppedCardList"></div>
           </div>
@@ -309,7 +310,7 @@
     });
   </script>
   <script src="../js/rook-engine.js?v=4"></script>
-  <script src="../js/rook.js?v=23"></script>
+  <script src="../js/rook.js?v=24"></script>
 </body>
 
 </html>

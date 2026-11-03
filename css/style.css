@@ -1295,3 +1295,27 @@ h3 { font-size: 1.2rem; font-weight: 600; }
   .section { padding: 0; }
   .resume-wrapper { max-width: 100%; }
 }
+
+/* Optional game dialogs: a consistent, keyboard-accessible top-right close control. */
+dialog button.game-dialog-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--grey-300);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--navy);
+  font: 24px/1 sans-serif;
+  cursor: pointer;
+}
+dialog button.game-dialog-close:hover { background: var(--grey-100); }
+dialog button.game-dialog-close:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+dialog:has(> .game-dialog-close) > h2 { padding-right: 36px; }
+.rook-data-dialog-heading [data-dialog-close] { min-width: 40px; min-height: 40px; font-size: 22px; line-height: 1; }
+.rook-data-dialog-heading [data-dialog-close][hidden] { display: none; }
