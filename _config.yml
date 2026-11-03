@@ -4,3 +4,4 @@ exclude:
   - games/rook-practice.local.html  # private practice launcher; keep in GitHub, not the published site
   - games/rook-report-preview.html  # local review page; keep in GitHub, not the published site
   - games/camels-final-screen.html  # local-only final results preview
+  - games/camels-final-reveal.local.html  # local-only interactive end-of-game modal preview

@@ -16,7 +16,12 @@
 </head>
 <body class="camel-page">
   <header class="preview-header"><strong>Camels · Final screen preview</strong><a href="camels.html">← Back to the game</a></header>
-  <main class="camel-game preview-main">
+  <nav class="preview-header" aria-label="Choose preview">
+    <button id="showRevealPreview" type="button" aria-pressed="true">Final card reveals</button>
+    <button id="showPodiumPreview" type="button" aria-pressed="false">Winners podium</button>
+  </nav>
+  <iframe id="revealPreview" src="camels-final-reveal.local.html" title="Interactive end-of-game card reveal modal" style="display:block;width:100%;height:calc(100dvh - 120px);min-height:540px;border:0;margin-top:12px;"></iframe>
+  <main id="podiumPreview" class="camel-game preview-main" hidden>
     <section class="panel" id="finalPreview" aria-labelledby="previewTitle"></section>
     <p class="preview-caption">Local preview · Eight sample players · Excluded from the published website</p>
   </main>
@@ -29,6 +34,16 @@
       {name:'Player 7',money:8}, {name:'Player 8',money:4}
     ];
     document.getElementById('finalPreview').innerHTML = CamelsResults.render({players:samplePlayers}, 'previewTitle');
+    function selectPreview(reveal) {
+      document.getElementById('revealPreview').hidden = !reveal;
+      document.getElementById('revealPreview').style.display = reveal ? 'block' : 'none';
+      document.getElementById('podiumPreview').hidden = reveal;
+      document.getElementById('showRevealPreview').ariaPressed = String(reveal);
+      document.getElementById('showPodiumPreview').ariaPressed = String(!reveal);
+    }
+    document.getElementById('showRevealPreview').onclick = () => selectPreview(true);
+    document.getElementById('showPodiumPreview').onclick = () => selectPreview(false);
+
   </script>
 </body>
 </html>

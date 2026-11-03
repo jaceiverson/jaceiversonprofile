@@ -431,3 +431,26 @@ test('standalone final-screen preview is excluded from deployment and not linked
  const preview=fs.readFileSync(require.resolve('../../games/camels-final-screen.html'),'utf8');
  assert.match(preview,/camels-results\.js/);assert.doesNotMatch(preview,/peerjs|camels-engine\.js|src="[^"]*camels\.js/);
 });
+
+test('local reveal preview bootstraps the real game modal and walks six cards into the winners screen',()=>{
+ const page=fs.readFileSync(require.resolve('../../games/camels-final-reveal.local.html'),'utf8');
+ const bootstrap=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('const createGame = CamelUp.create'));
+ assert.ok(bootstrap);
+ const c=client('Preview',{engine:{...E}});
+ c.context.document.addEventListener=(type,handler)=>{if(type==='DOMContentLoaded')handler();};
+ c.get('practiceBtn').click=()=>c.click('practiceBtn');
+ vm.runInNewContext(bootstrap,c.context);
+ assert.equal(c.get('roundModal').open,true);
+ assert.match(c.get('score').innerHTML,/0 \/ 6/);
+ assert.ok(c.get('score').innerHTML.indexOf('id="revealNext"')<c.get('score').innerHTML.indexOf('class="final-pile-columns"'));
+ for(let i=0;i<6;i++)c.click('score',{id:'revealNext'});
+ assert.match(c.get('score').innerHTML,/Jace wins!/);assert.match(c.get('score').innerHTML,/<strong>47<\/strong><span>GOLD/);
+ c.dispose();
+});
+test('interactive modal preview is excluded from deployment and accessible from the local preview page',()=>{
+ const config=fs.readFileSync(require.resolve('../../_config.yml'),'utf8');
+ const page=fs.readFileSync(require.resolve('../../games/camels-final-screen.html'),'utf8');
+ assert.match(config,/^  - games\/camels-final-reveal\.local\.html(?:\s|$)/m);
+ assert.match(page,/src="camels-final-reveal.local.html"/);assert.match(page,/Final card reveals/);assert.match(page,/Winners podium/);
+ assert.doesNotMatch(markup,/camels-final-reveal\.local\.html|showRevealPreview/);
+});
