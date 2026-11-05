@@ -207,9 +207,20 @@
       return;
     }
     $('leg').textContent = 'Leg ' + view.leg;
-    drawBoard(view); renderDice(view); if (!busy) $('raceNote').textContent = view.event?.message || ''; renderActions(); renderSatchel(); renderScore(); renderBettingSlips();
+    renderTurnBanner();
+    drawBoard(view); renderDice(view); if (!busy) $('raceNote').textContent = view.log?.[0] || view.event?.message || ''; renderActions(); renderSatchel(); renderScore(); renderBettingSlips();
     $('ranking').innerHTML = E.ranking(view).map((c,i) => `<span class="rank">${i+1}. ${color(c)}</span>`).join('');
     renderJournal();
+  }
+  function renderTurnBanner() {
+    const active = view.phase === 'playing' && !busy;
+    const mine = active && !practice && view.turn === mySeat();
+    const player = view.players[view.turn];
+    const waiting = active && view.players.some(p => !p.connected);
+    const title = busy ? 'Camels moving…' : active ? `${esc(player.name)}’s turn${mine ? ' · Your turn!' : ''}` : 'Race results';
+    const hint = busy ? 'Watch the roll — the next turn is coming up.' : waiting ? 'Waiting for everyone to reconnect.' : active ? (practice ? 'Pass the device to this player.' : mine ? 'Choose your action above the board.' : 'Waiting for their action.') : 'Review the results to continue.';
+    $('turnBanner').classList.toggle('your-turn',mine);
+    $('turnBanner').innerHTML = `<span class="turn-banner-label">${active ? 'CURRENT TURN' : 'RACE UPDATE'}</span><strong>${title}</strong><span class="turn-banner-hint">${hint}</span>`;
   }
   function renderJournal() {
     const rounds = view.journal || [{round:0,entries:view.log}];
@@ -219,9 +230,9 @@
       journalOpen.delete(journalRound); journalOpen.delete(view.leg); journalRound = view.leg;
     }
     journalRenderKey = key;
-    $('journal').innerHTML = rounds.slice().reverse().map(r => {
+    $('journal').innerHTML = rounds.map(r => {
       const open = journalOpen.has(r.round) ? journalOpen.get(r.round) : r.round === view.leg;
-      return `<details class="journal-round" data-round="${r.round}" ${open ? 'open' : ''}><summary>${r.round ? 'Round ' + r.round : 'Earlier activity'}${r.round === view.leg ? ' · Current' : ''}<span>${r.entries.length} entries</span></summary><ol>${r.entries.map(t => `<li>${esc(t)}</li>`).join('')}</ol></details>`;
+      return `<details class="journal-round" data-round="${r.round}" ${open ? 'open' : ''}><summary>${r.round ? 'Round ' + r.round : 'Earlier activity'}${r.round === view.leg ? ' · Current' : ''}<span>${r.entries.length} entries</span></summary><ol>${r.entries.slice().reverse().map(t => `<li>${esc(t)}</li>`).join('')}</ol></details>`;
     }).join('');
   }
   function coinPurse(total) {
@@ -240,7 +251,7 @@
     const turnKey = `${view.phase}:${view.leg}:${view.turn}`;
     if (turnKey !== playerTurnKey) { selectedPlayer = view.turn ?? 0; playerTurnKey = turnKey; }
     selectedPlayer = Math.max(0, Math.min(selectedPlayer, view.players.length - 1));
-    const markup = view.players.map((player,i) => { const p = payoutBalances.has(i) ? {...player,money:payoutBalances.get(i)} : player; return `<div class="player ${view.phase === 'playing' && view.turn === i ? 'active' : ''} ${selectedPlayer === i ? 'mobile-selected' : ''}" data-player="${i}"><div class="player-identity"><div class="player-name">${esc(p.name)}${i === view.mySeat && !practice ? ' · you' : ''} <span class="voice-icon"></span></div>${p.money !== undefined ? `<div class="player-money">${p.money} <span>GOLD</span></div>` : ''}</div>${p.money !== undefined ? coinPurse(p.money) : ''}<div class="player-slips">${(p.tickets || []).map(t => `<span class="mini-slip" style="--slip-color:var(--${t.color})" title="${t.color} leg slip, ${t.value} GOLD">${t.color}<strong>${t.value}</strong><span>1st · GOLD</span></span>`).join('')}${p.pyramids ? `<span class="mini-slip" style="--slip-color:#b28c46">△<strong>${p.pyramids}</strong><span>GOLD paid</span></span>` : ''}</div><small class="player-status">${!p.connected ? 'Disconnected · waiting' : i === view.turn && view.phase === 'playing' ? 'Their turn' : ''}</small><div class="player-footer">${p.money !== undefined ? `<p class="remaining-cards"><strong>${p.finishCardsRemaining ?? p.hand?.length ?? 5}</strong> final-bet cards left</p>` : ''}${view.players.length >= 6 ? `<small class="player-partner">Partner: <strong>${p.partner != null ? esc(view.players[p.partner].name) : 'None this round'}</strong></small>` : ''}</div></div>`; }).join('');
+    const markup = view.players.map((player,i) => { const p = payoutBalances.has(i) ? {...player,money:payoutBalances.get(i)} : player; return `<div class="player ${view.phase === 'playing' && view.turn === i ? 'active' : ''} ${selectedPlayer === i ? 'mobile-selected' : ''}" data-player="${i}">${view.phase === 'playing' && view.turn === i ? '<span class="active-turn-badge">Taking a turn</span>' : ''}<div class="player-identity"><div class="player-name">${esc(p.name)}${i === view.mySeat && !practice ? ' · you' : ''} <span class="voice-icon"></span></div>${p.money !== undefined ? `<div class="player-money">${p.money} <span>GOLD</span></div>` : ''}</div>${p.money !== undefined ? coinPurse(p.money) : ''}<div class="player-slips">${(p.tickets || []).map(t => `<span class="mini-slip" style="--slip-color:var(--${t.color})" title="${t.color} leg slip, ${t.value} GOLD">${t.color}<strong>${t.value}</strong><span>1st · GOLD</span></span>`).join('')}${p.pyramids ? `<span class="mini-slip" style="--slip-color:#b28c46">△<strong>${p.pyramids}</strong><span>GOLD paid</span></span>` : ''}</div><small class="player-status">${!p.connected ? 'Disconnected · waiting' : i === view.turn && view.phase === 'playing' ? 'Their turn' : ''}</small><div class="player-footer">${p.money !== undefined ? `<p class="remaining-cards"><strong>${p.finishCardsRemaining ?? p.hand?.length ?? 5}</strong> final-bet cards left</p>` : ''}${view.players.length >= 6 ? `<small class="player-partner">Partner: <strong>${p.partner != null ? esc(view.players[p.partner].name) : 'None this round'}</strong></small>` : ''}</div></div>`; }).join('');
     $('players').innerHTML = markup;
     $('lobbyPlayers').innerHTML = markup;
     $('playerPosition').textContent = `${selectedPlayer + 1} / ${view.players.length} · ${view.players[selectedPlayer].name}${selectedPlayer === view.turn && view.phase === 'playing' ? ' · active' : ''}`;

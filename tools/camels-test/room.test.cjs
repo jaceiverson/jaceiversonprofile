@@ -76,11 +76,15 @@ test('board tile placement, visible public slips, secret card backs and reduced-
  assert.ok(space);
  c.click('track',{space:String(space)});
  assert.match(c.get('journal').innerHTML,new RegExp('placed jeer on space '+space));
+ assert.match(c.get('raceNote').textContent,new RegExp('Family placed jeer on space '+space));
  assert.match(c.get('turnTitle').textContent,/Player 2/);
  const color='blue';c.click('bettingSlips',{ticket:color});
+ assert.match(c.get('raceNote').textContent,/Player 2 took a blue leg ticket/);
  assert.match(c.get('players').innerHTML,/mini-slip[\s\S]*blue[\s\S]*<strong>5<\/strong>/);
  assert.match(c.get('turnTitle').textContent,/Player 3/);
  c.click('finishPiles',{finishKind:'winner'});c.click('finishChoices',{bet:'red',kind:'winner'});
+ assert.match(c.get('raceNote').textContent,/Player 3 secretly backed the overall winner/);
+ assert.doesNotMatch(c.get('raceNote').textContent,/red/);
  assert.doesNotMatch(c.get('players').innerHTML,/card-back/);
  assert.match(c.get('players').innerHTML,/<strong>4<\/strong> final-bet cards left/);
  assert.doesNotMatch(c.get('players').innerHTML,/title="winner finish bet: red"/);
@@ -195,6 +199,10 @@ test('journal opens the current round and collapses past rounds while preserving
  assert.match(c.get('journal').innerHTML,/data-round="1" open/);
  for(let i=0;i<5;i++)c.click('pyramidRoll');
  walkRound(c);c.click('score');
+ const journal=c.get('journal').innerHTML;
+ assert.ok(journal.indexOf('data-round="1"') < journal.indexOf('data-round="2"'));
+ assert.ok(journal.indexOf('The race is ready.') < journal.indexOf('Family rolled'));
+ assert.ok(journal.indexOf('Family rolled') < journal.indexOf('Player 2 rolled'));
  assert.match(c.get('journal').innerHTML,/data-round="2" open/);
  assert.doesNotMatch(c.get('journal').innerHTML,/data-round="1" open/);
  c.get('journal').ontoggle({target:{dataset:{round:'1'},open:true,matches:()=>true}});
@@ -296,6 +304,7 @@ test('local practice supports 5–8 players and makes alliances available at 6+'
    assert.doesNotMatch(c.get('actions').innerHTML,/Choose a betting partner/);
    c.click('partnerControls',{screen:'partner'});c.click('partnerControls',{partner:'1'});
    assert.match(c.get('journal').innerHTML,/Family partnered with Player 2/);
+   assert.match(c.get('raceNote').textContent,/Family partnered with Player 2/);
    assert.match(c.get('players').innerHTML,/Partner: <strong>Player 2<\/strong>/);
    assert.match(c.get('players').innerHTML,/Partner: <strong>Family<\/strong>/);
   }else { assert.equal(c.get('partnerControls').hidden,true); assert.equal(c.get('partnerControls').innerHTML,''); }
@@ -455,4 +464,16 @@ test('interactive modal preview is excluded from deployment and accessible from 
  assert.match(config,/^  - games\/camels-final-reveal\.local\.html(?:\s|$)/m);
  assert.match(page,/src="camels-final-reveal.local.html"/);assert.match(page,/Final card reveals/);assert.match(page,/Winners podium/);
  assert.doesNotMatch(markup,/camels-final-reveal\.local\.html|showRevealPreview/);
+});
+
+test('turn banner follows the active player and distinguishes local handoff from online turns',()=>{
+ const c=client('Family');c.click('practiceBtn');
+ assert.match(c.get('turnBanner').innerHTML,/Family’s turn/);
+ assert.match(c.get('turnBanner').innerHTML,/Pass the device/);
+ assert.doesNotMatch(c.get('turnBanner').innerHTML,/Your turn!/);
+ assert.match(c.get('players').innerHTML,/active-turn-badge/);
+ c.click('bettingSlips',{ticket:'blue'});
+ assert.match(c.get('turnBanner').innerHTML,/Player 2’s turn/);
+ assert.doesNotMatch(c.get('turnBanner').innerHTML,/Family’s turn/);
+ c.dispose();
 });

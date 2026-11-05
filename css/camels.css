@@ -324,3 +324,13 @@ dialog.camel-game.winner-preview { max-width: 820px; }
 .camel-game .other-player .podium-gold strong { font-size: 22px; }
 .camel-game .other-player .podium-person { height: 72px; width: 52px; margin: 0; }
 .camel-game .other-player .podium-player-name { font-size: 12px; }
+
+/* Keep the current turn visible beside the board actions on every screen size. */
+.camel-game .turn-banner{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:14px 18px;margin-bottom:14px;border:2px solid var(--orange);border-radius:12px;background:#fff2df;color:var(--ink)}
+.camel-game .turn-banner-label{font-size:11px;font-weight:800;letter-spacing:1.5px}
+.camel-game .turn-banner strong{font-size:24px;line-height:1.25;overflow-wrap:anywhere}
+.camel-game .turn-banner-hint{flex-basis:100%;font-size:13px}
+.camel-game .turn-banner.your-turn{background:var(--ink);border-color:var(--ink);color:#fff}
+.camel-game .active-turn-badge{display:block;width:fit-content;margin-bottom:9px;padding:3px 9px;border-radius:20px;background:var(--ink);color:white;font-size:11px;font-weight:700}
+.camel-game .player.active{box-shadow:0 0 0 2px var(--orange)}
+@media(max-width:600px){.camel-game .turn-banner strong{font-size:21px}.camel-game .turn-banner-label{flex-basis:100%}}

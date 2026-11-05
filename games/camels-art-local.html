@@ -12,13 +12,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css?v=5">
-  <link rel="stylesheet" href="../css/camels.css?v=27">
+  <link rel="stylesheet" href="../css/camels.css?v=28">
   <script defer src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script defer src="../js/game-voice.js"></script>
   <script defer src="../js/camels-results.js?v=1"></script>
   <script defer src="../js/camels-art.local.js?v=1"></script>
   <script defer src="../js/camels-engine.js?v=10"></script>
-  <script defer src="../js/camels.js?v=30"></script>
+  <script defer src="../js/camels.js?v=31"></script>
   <script src="../js/game-dialogs.js?v=1"></script>
   <style>
     .art-preview-toolbar{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:center;background:#f8e7ad;padding:12px;font:13px system-ui,sans-serif}.art-preview-toolbar label{display:flex;gap:8px;align-items:center}.art-use-drawing .art-current{display:none}body:not(.art-use-drawing) .art-drawing{display:none}
@@ -125,6 +125,7 @@
                     aria-pressed="false">♧ Cheer +1</button><button id="jeerTile" disabled aria-pressed="false">Jeer
                     −1</button></div>
               </section>
+              <div id="turnBanner" class="turn-banner" role="status" aria-live="polite" aria-atomic="true"></div>
               <div id="board" class="board" aria-label="Race track">
                 <div id="track"></div>
                 <div class="infield"><button id="pyramidRoll" class="pyramid-button" type="button" disabled
